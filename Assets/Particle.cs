@@ -37,8 +37,8 @@ public class Particle : MonoBehaviour
         if (xHit || yHit)
 		{
             float magnitude = VelocityDelegate(this);
-            Velocity = magnitude * new Vector3(xHit ? (-Random.value * Mathf.Sign(Velocity.x)) : RandomDirection(), 
-                                               yHit ? (-Random.value * Mathf.Sign(Velocity.y)) : RandomDirection());
+            Velocity = magnitude * new Vector3(xHit ? (-Random.value * Mathf.Sign(transform.position.x)) : RandomDirection(), 
+                                               yHit ? (-Random.value * Mathf.Sign(transform.position.y)) : RandomDirection());
 		}
     }
 }

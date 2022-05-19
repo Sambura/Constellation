@@ -2,8 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ParticleController : MonoBehaviour
+public class SimulationController : MonoBehaviour
 {
+    [Header("Objects")]
+    [SerializeField] private Camera _mainCamera;
+
     [Header("Prefabs")]
     [SerializeField] private GameObject _particlePrefab;
     [SerializeField] private GameObject _linePrefab;
@@ -25,20 +28,22 @@ public class ParticleController : MonoBehaviour
     [SerializeField] private float _maxParticleVelocity = 1;
 
     private List<Particle> _particles;
-    private List<GameObject> _lines;
+    private List<Line> _lines;
+    private float _sqrConnect;
+    private float _sqrStrong;
 
     private float GetParticleVelocity(Particle particle)
-	{
+    {
         return Random.Range(_minParticleVelocity, _maxParticleVelocity);
-	}
+    }
 
     private void Awake()
     {
-        float xBound = 10;
-        float yBound = 5;
+        float yBound = _mainCamera.orthographicSize;
+        float xBound = _mainCamera.aspect * _mainCamera.orthographicSize;
 
         _particles = new List<Particle>(_particlesCount);
-        _lines = new List<GameObject>();
+        _lines = new List<Line>();
 
         for (int i = 0; i < _particlesCount; i++)
         {
@@ -50,43 +55,52 @@ public class ParticleController : MonoBehaviour
             particle.Color = _particlesColor;
             particle.transform.localScale = Vector3.one * _particlesScale;
             if (_randomizeInitialPosition)
-			{
+            {
                 particle.transform.position = new Vector3(Random.Range(-xBound, xBound), Random.Range(-yBound, yBound));
-			}
+            }
 
             _particles.Add(particle);
         }
+
+        _sqrConnect = _connectionDistance * _connectionDistance;
+        _sqrStrong = _strongDistance * _strongDistance;
     }
 
     private void Update()
     {
-        foreach (GameObject line in _lines)
-            Destroy(line);
+        if (_showLines == false) return;
 
-        float sqrConnect = _connectionDistance * _connectionDistance;
-        float sqrStrong = _strongDistance * _strongDistance;
-
+        int lineIndex = 0;
         for (int i = 0; i < _particles.Count; i++)
-		{
+        {
             for (int j = i + 1; j < _particles.Count; j++)
-			{
+            {
                 Particle p1 = _particles[i], p2 = _particles[j];
                 float sqrDistance = Vector2.SqrMagnitude(p1.transform.position - p2.transform.position);
-                if (sqrDistance > sqrConnect) continue;
+                if (sqrDistance > _sqrConnect) continue;
+                float intensity = 1 - (sqrDistance - _sqrStrong) / (_sqrConnect - _sqrStrong);
 
-                float intensity = 1 - (sqrDistance - sqrStrong) / (sqrConnect - sqrStrong);
-                GameObject lineObject = Instantiate(_linePrefab, transform);
-                LineRenderer line = lineObject.GetComponent<LineRenderer>();
-                line.widthMultiplier = _linesWidth;
-                Color color = _lineColor.Evaluate(intensity);
-                Gradient gradient = new Gradient();
-                gradient.SetKeys(new GradientColorKey[] { new GradientColorKey(color, 0) }, 
-                                 new GradientAlphaKey[] { new GradientAlphaKey(1, 0) });
-                line.colorGradient = gradient;
-                line.SetPositions(new Vector3[] { p1.transform.position, p2.transform.position });
+                if (lineIndex >= _lines.Count)
+				{
+                    Line newLine = Instantiate(_linePrefab, transform).GetComponent<Line>();
+                    newLine.LineWidth = _linesWidth;
+                    _lines.Add(newLine);
+                }
 
-                _lines.Add(lineObject);
-			}
+                Line line = _lines[lineIndex];
+                
+                line.Color = _lineColor.Evaluate(intensity);
+                line[0] = p1.transform.position;
+                line[1] = p2.transform.position;
+                line.Enabled = true;
+
+                lineIndex++;
+            }
+        }
+
+        for (; lineIndex < _lines.Count; lineIndex++)
+		{
+            _lines[lineIndex].Enabled = false;
 		}
     }
 }

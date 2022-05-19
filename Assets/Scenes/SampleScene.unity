@@ -166,18 +166,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a728116a412cb24589376838274742b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _mainCamera: {fileID: 519420031}
   _particlePrefab: {fileID: 7827596926780307577, guid: 843d90c62134a7f49b2281270eb61bc6, type: 3}
   _linePrefab: {fileID: 7518097828275088752, guid: 172445a5c29790f4584304bd31d03296, type: 3}
   _randomizeInitialPosition: 1
   _particlesScale: 0.3
   _linesWidth: 0.3
-  _particlesCount: 100
-  _connectionDistance: 3
+  _particlesCount: 1000
+  _connectionDistance: 0.6
   _strongDistance: 0
   _particlesColor: {r: 1, g: 1, b: 1, a: 1}
   _lineColor:
     serializedVersion: 2
-    key0: {r: 0, g: 0, b: 0, a: 1}
+    key0: {r: 0.4009434, g: 0.73609114, b: 1, a: 0}
     key1: {r: 0.3066038, g: 0.51341826, b: 1, a: 1}
     key2: {r: 0, g: 0, b: 0, a: 0}
     key3: {r: 0, g: 0, b: 0, a: 0}
@@ -204,7 +205,7 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 2
     m_NumAlphaKeys: 2
-  _showParticles: 1
+  _showParticles: 0
   _showLines: 1
   _minParticleVelocity: 0
   _maxParticleVelocity: 1
