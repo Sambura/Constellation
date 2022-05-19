@@ -4,6 +4,9 @@ public class Line : MonoBehaviour
 {
     [SerializeField] private LineRenderer _lineRenderer;
 
+    private GameObject _this;
+    private bool _activeSelf;
+
     public float LineWidth
 	{
         get => _lineRenderer.widthMultiplier;
@@ -15,30 +18,47 @@ public class Line : MonoBehaviour
         get => _gradient.Evaluate(0);
         set
         {
-            _gradient.SetKeys(new GradientColorKey[] { new GradientColorKey(value, 0) },
-                              new GradientAlphaKey[] { new GradientAlphaKey(value.a, 0) });
+            _colorKeys[0].color = value;
+            _alphaKeys[0].alpha = value.a;
+            _gradient.SetKeys(_colorKeys, _alphaKeys);
             _lineRenderer.colorGradient = _gradient;
         }
     }
 
-	public Vector3 this[int index]
-	{
-		get => _lineRenderer.GetPosition(index);
-        set => _lineRenderer.SetPosition(index, value);
-    }
-
     public bool Enabled
 	{
-        get => gameObject.activeSelf;
-        set => gameObject.SetActive(value);
+        get => _activeSelf;
+        set
+        {
+            if (_activeSelf != value)
+            {
+                _activeSelf = value;
+                _this.SetActive(value);
+            }
+        }
 	}
 
     private Gradient _gradient;
+    private Vector3[] _positions;
+    private GradientColorKey[] _colorKeys;
+    private GradientAlphaKey[] _alphaKeys;
+
+    public void SetPositions(Vector3 p1, Vector3 p2)
+	{
+        _positions[0] = p1;
+        _positions[1] = p2;
+        _lineRenderer.SetPositions(_positions);
+	}
 
     private void Awake()
     {
+        _this = gameObject;
+        _activeSelf = true;
         _gradient = new Gradient();
-        _gradient.SetKeys(new GradientColorKey[] { new GradientColorKey() }, new GradientAlphaKey[] { new GradientAlphaKey() });
+        _positions = new Vector3[2];
+        _colorKeys = new GradientColorKey[] { new GradientColorKey() };
+        _alphaKeys = new GradientAlphaKey[] { new GradientAlphaKey() } ;
+        _gradient.SetKeys(_colorKeys, _alphaKeys);
         _lineRenderer.colorGradient = _gradient;
     }
 }

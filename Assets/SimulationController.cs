@@ -7,6 +7,7 @@ public class SimulationController : MonoBehaviour
 {
     [Header("Objects")]
     [SerializeField] private Camera _mainCamera;
+    [SerializeField] private SpriteRenderer _background;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject _particlePrefab;
@@ -27,16 +28,31 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private bool _showLines = true;
     [SerializeField] private float _minParticleVelocity = 0;
     [SerializeField] private float _maxParticleVelocity = 1;
+    [SerializeField] private bool _changeLinesColor = true;
+    [SerializeField] private float _colorMinHue = 0;
+    [SerializeField] private float _colorMaxHue = 1;
+    [SerializeField] private float _colorMinSaturation = 0;
+    [SerializeField] private float _colorMaxSaturation = 1;
+    [SerializeField] private float _colorMinValue = 0.3f;
+    [SerializeField] private float _colorMaxValue = 1;
+    [SerializeField] private float _colorMinFadeDuration = 2;
+    [SerializeField] private float _colorMaxFadeDuration = 4;
+    [SerializeField] private Color _backgroundColor = Color.black;
+    [SerializeField] private int _targetFps;
 
     private List<Particle> _particles;
     private List<Line> _lines;
-    private float _sqrConnect;
-    private float _sqrStrong;
     private float _xBound;
     private float _yBound;
-    private Dictionary<(int, int), List<Particle>> _regionMap;
+    private List<Particle>[,] _regionMap;
     private int _xSquareOffset;
     private int _ySquareOffset;
+    private int _maxSquareX;
+    private int _maxSquareY;
+    private float _intensityDenominator;
+    private Gradient _currentLineColor;
+    private GradientColorKey[] _currentColorKeys;
+    private GradientAlphaKey[] _currentAlphaKeys;
 
     private float GetParticleVelocity(Particle particle)
     {
@@ -48,9 +64,12 @@ public class SimulationController : MonoBehaviour
         _yBound = _mainCamera.orthographicSize;
         _xBound = _mainCamera.aspect * _mainCamera.orthographicSize;
 
+        _currentLineColor = _lineColor;
+        _currentColorKeys = new GradientColorKey[] { new GradientColorKey(_lineColor.Evaluate(1), 1) };
+        _currentAlphaKeys = _lineColor.alphaKeys;
+
         _particles = new List<Particle>(_particlesCount);
         _lines = new List<Line>();
-        _regionMap = new Dictionary<(int, int), List<Particle>>();
 
         for (int i = 0; i < _particlesCount; i++)
         {
@@ -69,10 +88,32 @@ public class SimulationController : MonoBehaviour
             _particles.Add(particle);
         }
 
-        _particles[0].Color = Color.green;
+        _intensityDenominator = _connectionDistance - _strongDistance;
+        _xSquareOffset = Mathf.FloorToInt(_xBound / _connectionDistance) + 1;
+        _ySquareOffset = Mathf.FloorToInt(_yBound / _connectionDistance) + 1;
+        _maxSquareX = _xSquareOffset * 2 - 1;
+        _maxSquareY = _ySquareOffset * 2 - 1;
+        _regionMap = new List<Particle>[_maxSquareX + 1, _maxSquareY + 1];
+        int cellsCount = (_maxSquareX + 1) * (_maxSquareY + 1);
+        int averagePerSquare = Mathf.CeilToInt((float)_particlesCount / cellsCount);
+        for (int i = 0; i <= _maxSquareX; i++)
+		{
+            for (int j = 0; j <= _maxSquareY; j++)
+			{
+                _regionMap[i, j] = new List<Particle>(averagePerSquare);
+			}
+		}
 
-        _sqrConnect = _connectionDistance * _connectionDistance;
-        _sqrStrong = _strongDistance * _strongDistance;
+        if (_changeLinesColor)
+        {
+            _currentLineColor = new Gradient();
+            StartCoroutine(ColorChanger());
+        }
+
+        _background.color = _backgroundColor;
+        _background.size = new Vector2(_xBound * 2 + 1, _yBound * 2 + 1);
+
+        Application.targetFrameRate = _targetFps;
     }
 
     private void Update()
@@ -83,86 +124,36 @@ public class SimulationController : MonoBehaviour
         {
             Particle p = _particles[i];
             (int, int) square = GetSquare(p.transform.position);
-            if (i == 0) Debug.Log(square);
-            if (_regionMap.ContainsKey(square))
-                _regionMap[square].Add(p);
-            else
-                _regionMap.Add(square, new List<Particle>() { p });
+            _regionMap[square.Item1, square.Item2].Add(p);
         }
 
-        var regionMapCopy = _regionMap.Select(x => (x.Key, x.Value)).ToList();
-
         int lineIndex = 0;
-        foreach (var region in regionMapCopy)
-		{
-            List<Particle> toConnect = region.Value;
-            List<Particle> available = new List<Particle>();
-            (int, int) coords = region.Key;
-            _regionMap.Remove(coords);
-            for (int i = -1; i < 2; i++)
-			{
-                for (int j = -1; j < 2; j++)
-				{
-                    if (i == 0 && j == 0) continue;
-                    if (_regionMap.TryGetValue((coords.Item1 + i, coords.Item2 + j), out List<Particle> value))
-					{
-                        available.AddRange(value);
-					}
-				}
-			}
-
-            for (int i = 0; i < toConnect.Count; i++)
+        for (int ry = 0; ry <= _maxSquareY; ry++) {
+            for (int rx = 0; rx <= _maxSquareX; rx++)
             {
-                for (int j = i + 1; j < toConnect.Count; j++)
+                List<Particle> current = _regionMap[rx, ry];
+                if (current.Count == 0) continue;
+
+                for (int i = 0; i < current.Count; i++)
+                    for (int j = i + 1; j < current.Count; j++)
+                        HandleParticleConnection(current[i], current[j], ref lineIndex);
+
+                for (int x = -1; x < 2; x++)
                 {
-                    Particle p1 = toConnect[i], p2 = toConnect[j];
-                    float sqrDistance = Vector2.SqrMagnitude(p1.transform.position - p2.transform.position);
-                    if (sqrDistance > _sqrConnect) continue;
-                    float intensity = 1 - (sqrDistance - _sqrStrong) / (_sqrConnect - _sqrStrong);
-
-                    if (lineIndex >= _lines.Count)
+                    for (int y = 0; y < 2; y++)
                     {
-                        Line newLine = Instantiate(_linePrefab, transform).GetComponent<Line>();
-                        newLine.LineWidth = _linesWidth;
-                        _lines.Add(newLine);
+                        if (x == 0 && y == 0) continue;
+                        int newX = rx + x, newY = ry + y;
+                        if (newX < 0 || newX > _maxSquareX || newY > _maxSquareY) continue;
+                        List<Particle> available = _regionMap[newX, newY];
+
+                        for (int j = 0; j < available.Count; j++)
+                            for (int i = 0; i < current.Count; i++)
+                                HandleParticleConnection(current[i], available[j], ref lineIndex);
                     }
-
-                    Line line = _lines[lineIndex];
-
-                    line.Color = _lineColor.Evaluate(intensity);
-                    line[0] = p1.transform.position;
-                    line[1] = p2.transform.position;
-                    line.Enabled = true;
-
-                    lineIndex++;
                 }
-            }
 
-            for (int i = 0; i < toConnect.Count; i++)
-            {
-                for (int j = 0; j < available.Count; j++)
-                {
-                    Particle p1 = toConnect[i], p2 = available[j];
-                    float sqrDistance = Vector2.SqrMagnitude(p1.transform.position - p2.transform.position);
-                    if (sqrDistance > _sqrConnect) continue;
-                    float intensity = 1 - (sqrDistance - _sqrStrong) / (_sqrConnect - _sqrStrong);
-
-                    if (lineIndex >= _lines.Count)
-                    {
-                        Line newLine = Instantiate(_linePrefab, transform).GetComponent<Line>();
-                        newLine.LineWidth = _linesWidth;
-                        _lines.Add(newLine);
-                    }
-
-                    Line line = _lines[lineIndex];
-
-                    line.Color = _lineColor.Evaluate(intensity);
-                    line[0] = p1.transform.position;
-                    line[1] = p2.transform.position;
-                    line.Enabled = true;
-
-                    lineIndex++;
-                }
+                _regionMap[rx, ry].Clear();
             }
         }
 
@@ -172,7 +163,7 @@ public class SimulationController : MonoBehaviour
 		}
 
         //////////////////////////////////////
-        
+        //return;
         for (float x = -Mathf.Floor(_xBound / _connectionDistance) * _connectionDistance; x < _xBound; x += _connectionDistance)
 		{
             Debug.DrawLine(new Vector3(x, -_yBound), new Vector3(x, _yBound), Color.red);
@@ -182,22 +173,58 @@ public class SimulationController : MonoBehaviour
         {
             Debug.DrawLine(new Vector3(-_xBound, y), new Vector3(_xBound, y), Color.red);
         }
+    }
 
-        return;
-        Color color = Color.yellow;
-        foreach (var pair in _regionMap)
+    private IEnumerator ColorChanger()
+	{
+        while (true)
 		{
-            float intensity = pair.Value.Count / (float)_particlesCount;
-            color.a = Mathf.Clamp01(intensity * 10);
-            DebugFillSquare(pair.Key.Item1, pair.Key.Item2, _connectionDistance, color);
+            Color oldColor = _currentColorKeys[0].color;
+            Color newColor = Random.ColorHSV(_colorMinHue, _colorMaxHue, _colorMinSaturation, _colorMaxSaturation, _colorMinValue, _colorMaxValue);
+            float fadeTime = Random.Range(_colorMinFadeDuration, _colorMaxFadeDuration);
+            float startTime = Time.time;
+            float progress = 0;
+
+            while (progress < 1)
+			{
+                progress = (Time.time - startTime) / fadeTime;
+                Color currentColor = Color.Lerp(oldColor, newColor, progress);
+                _currentColorKeys[0].color = currentColor;
+                _currentLineColor.SetKeys(_currentColorKeys, _currentAlphaKeys);
+
+                yield return null;
+			}
 		}
+	}
+
+    private void HandleParticleConnection(Particle p1, Particle p2, ref int lineIndex)
+	{
+        Vector3 pos1 = p1.transform.position, pos2 = p2.transform.position;
+
+        float distance = Vector3.Distance(pos1, pos2);
+        if (distance > _connectionDistance) return;
+
+        if (lineIndex >= _lines.Count)
+        {
+            Line newLine = Instantiate(_linePrefab, transform).GetComponent<Line>();
+            newLine.LineWidth = _linesWidth;
+            _lines.Add(newLine);
+        }
+
+        Line line = _lines[lineIndex];
+        lineIndex++;
+
+        float intensity = 1 - (distance - _strongDistance) / _intensityDenominator;
+        line.Color = _currentLineColor.Evaluate(intensity);
+        line.SetPositions(pos1, pos2);
+        line.Enabled = true;
     }
 
     private (int, int) GetSquare(Vector3 location)
 	{
-        int xp = Mathf.FloorToInt(location.x / _connectionDistance);
-        int yp = Mathf.FloorToInt(location.y / _connectionDistance);
-        return (xp, yp);
+        int xp = Mathf.FloorToInt(location.x / _connectionDistance) + _xSquareOffset;
+        int yp = Mathf.FloorToInt(location.y / _connectionDistance) + _ySquareOffset;
+        return (Mathf.Clamp(xp, 0, _maxSquareX), Mathf.Clamp(yp, 0, _maxSquareY));
     }
 
     private void DebugFillSquare(float x, float y, float size, Color color)
