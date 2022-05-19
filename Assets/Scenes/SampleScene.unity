@@ -170,10 +170,10 @@ MonoBehaviour:
   _particlePrefab: {fileID: 7827596926780307577, guid: 843d90c62134a7f49b2281270eb61bc6, type: 3}
   _linePrefab: {fileID: 7518097828275088752, guid: 172445a5c29790f4584304bd31d03296, type: 3}
   _randomizeInitialPosition: 1
-  _particlesScale: 0.3
+  _particlesScale: 0.6
   _linesWidth: 0.3
   _particlesCount: 1000
-  _connectionDistance: 0.6
+  _connectionDistance: 0.8
   _strongDistance: 0
   _particlesColor: {r: 1, g: 1, b: 1, a: 1}
   _lineColor:
@@ -207,7 +207,7 @@ MonoBehaviour:
     m_NumAlphaKeys: 2
   _showParticles: 0
   _showLines: 1
-  _minParticleVelocity: 0
+  _minParticleVelocity: 0.1
   _maxParticleVelocity: 1
 --- !u!1 &519420028
 GameObject:
