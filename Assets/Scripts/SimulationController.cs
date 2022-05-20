@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 public class SimulationController : MonoBehaviour
 {
     [Header("Objects")]
     [SerializeField] private Camera _mainCamera;
     [SerializeField] private SpriteRenderer _background;
+    [SerializeField] private GraphicMeshDrawer _drawer;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject _particlePrefab;
@@ -120,7 +120,7 @@ public class SimulationController : MonoBehaviour
     {
         if (_showLines == false) return;
 
-        for (int i = 0; i < _particles.Count; i++)
+        for (int i = 0; i < _particlesCount; i++)
         {
             Particle p = _particles[i];
             (int, int) square = GetSquare(p.transform.position);
@@ -163,16 +163,29 @@ public class SimulationController : MonoBehaviour
 		}
 
         //////////////////////////////////////
-        //return;
+        return;
+        Color cellBorderColor = new Color(1, 0, 0, 0.5f);
+        Color cellColor = new Color(1, 1, 0, 0.2f);
         for (float x = -Mathf.Floor(_xBound / _connectionDistance) * _connectionDistance; x < _xBound; x += _connectionDistance)
 		{
-            Debug.DrawLine(new Vector3(x, -_yBound), new Vector3(x, _yBound), Color.red);
+            Debug.DrawLine(new Vector3(x, -_yBound), new Vector3(x, _yBound), cellBorderColor);
 		}
-
+        
         for (float y = -Mathf.Floor(_yBound / _connectionDistance) * _connectionDistance; y < _yBound; y += _connectionDistance)
         {
-            Debug.DrawLine(new Vector3(-_xBound, y), new Vector3(_xBound, y), Color.red);
+            Debug.DrawLine(new Vector3(-_xBound, y), new Vector3(_xBound, y), cellBorderColor);
         }
+
+        return;
+        for (int i = 0; i <= _maxSquareX; i++)
+		{
+            for (int j = 0; j <= _maxSquareY; j++)
+			{
+                float x = (i - _xSquareOffset) * _connectionDistance;
+                float y = (j - _ySquareOffset) * _connectionDistance;
+                DebugFillSquare(x, y, _connectionDistance, cellColor);
+			}
+		}
     }
 
     private IEnumerator ColorChanger()
@@ -207,7 +220,6 @@ public class SimulationController : MonoBehaviour
         if (lineIndex >= _lines.Count)
         {
             Line newLine = Instantiate(_linePrefab, transform).GetComponent<Line>();
-            newLine.LineWidth = _linesWidth;
             _lines.Add(newLine);
         }
 
@@ -215,9 +227,9 @@ public class SimulationController : MonoBehaviour
         lineIndex++;
 
         float intensity = 1 - (distance - _strongDistance) / _intensityDenominator;
-        line.Color = _currentLineColor.Evaluate(intensity);
-        line.SetPositions(pos1, pos2);
+        line.ChangeState(pos1, pos2, _currentLineColor.Evaluate(intensity), _linesWidth);
         line.Enabled = true;
+        //_drawer.DrawLine(pos1, pos2, new Color(1, 0, 1, 0.3f), _linesWidth * 3);
     }
 
     private (int, int) GetSquare(Vector3 location)

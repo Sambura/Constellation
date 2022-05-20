@@ -32,8 +32,8 @@ public class Particle : MonoBehaviour
     {
         transform.position = transform.position + Velocity * Time.deltaTime;
 
-        bool xHit = Mathf.Abs(transform.position.x) >= XBound;
-        bool yHit = Mathf.Abs(transform.position.y) >= YBound;
+        bool xHit = Mathf.Abs(transform.position.x) >= XBound/* && transform.position.x * Velocity.x > 0*/;
+        bool yHit = Mathf.Abs(transform.position.y) >= YBound/* && transform.position.y * Velocity.y > 0*/;
         if (xHit || yHit)
 		{
             float magnitude = VelocityDelegate(this);
