@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GraphicMeshDrawer : MonoBehaviour
@@ -9,6 +10,7 @@ public class GraphicMeshDrawer : MonoBehaviour
     private int _colorPropertyId;
     private MaterialPropertyBlock _properties;
     private Mesh _mesh;
+    private List<LineEntry> _toDraw;
 
     private void Awake()
     {
@@ -32,6 +34,8 @@ public class GraphicMeshDrawer : MonoBehaviour
 
         _mesh.vertices = vertices;
         _mesh.triangles = triangles;
+
+        _toDraw = new List<LineEntry>();
     }
 
 	public void DrawLine(Vector3 p1, Vector3 p2, Color color, float width)
@@ -44,4 +48,42 @@ public class GraphicMeshDrawer : MonoBehaviour
 
         Graphics.DrawMesh(_mesh, matrix, _material, _layer, null, 0, _properties);
     }
+
+    private void OnRenderObject()
+	{
+        _material.SetPass(0);
+
+        GL.PushMatrix();
+        GL.Begin(GL.LINES);
+        foreach (LineEntry line in _toDraw)
+        {
+            GL.Color(line.color);
+            GL.Vertex3(line.x1, line.y1, 0);
+            GL.Vertex3(line.x2, line.y2, 0);
+        }
+        GL.End();
+        GL.PopMatrix();
+
+        _toDraw.Clear();
+    }
+
+	public void DrawLineGL(Vector3 p1, Vector3 p2, Color color)
+    {
+        _toDraw.Add(new LineEntry(p1.x, p1.y, p2.x, p2.y, color));
+    }
+
+    private struct LineEntry
+	{
+        public float x1, x2, y1, y2;
+        public Color color;
+
+        public LineEntry(float x1, float y1, float x2, float y2, Color color)
+		{
+            this.x1 = x1;
+            this.x2 = x2;
+            this.y1 = y1;
+            this.y2 = y2;
+            this.color = color;
+        }
+	}
 }

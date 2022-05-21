@@ -174,7 +174,7 @@ MonoBehaviour:
   _particlePrefab: {fileID: 7827596926780307577, guid: 843d90c62134a7f49b2281270eb61bc6, type: 3}
   _linePrefab: {fileID: 7518097828275088752, guid: 172445a5c29790f4584304bd31d03296, type: 3}
   _randomizeInitialPosition: 1
-  _particlesScale: 0.5
+  _particlesScale: 0.3
   _linesWidth: 0.02
   _particlesCount: 1000
   _connectionDistance: 0.8
@@ -209,7 +209,7 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 2
     m_NumAlphaKeys: 2
-  _showParticles: 0
+  _showParticles: 1
   _showLines: 1
   _minParticleVelocity: 0.1
   _maxParticleVelocity: 1
@@ -580,7 +580,7 @@ SpriteRenderer:
   m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
-  m_DrawMode: 2
+  m_DrawMode: 0
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
@@ -800,7 +800,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd37ed6f5e9a3954abb387128db22bd2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  counter: {fileID: 519420029}
-  label: {fileID: 1496540490}
-  updateFrequency: 20
-  outputFormat: 'FPS: {0:0.0}'
+  _counter: {fileID: 519420029}
+  _label: {fileID: 1496540490}
+  _updateFrequency: 20
+  _outputFormat: 'FPS: '
+  _decimalPlaces: 0

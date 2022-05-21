@@ -111,7 +111,7 @@ public class SimulationController : MonoBehaviour
         }
 
         _background.color = _backgroundColor;
-        _background.size = new Vector2(_xBound * 2 + 1, _yBound * 2 + 1);
+        _background.transform.localScale = new Vector3(_xBound * 2 + 1, _yBound * 2 + 1, 1);
 
         Application.targetFrameRate = _targetFps;
     }
@@ -127,7 +127,7 @@ public class SimulationController : MonoBehaviour
             _regionMap[square.Item1, square.Item2].Add(p);
         }
 
-        int lineIndex = 0;
+        //int lineIndex = 0;
         for (int ry = 0; ry <= _maxSquareY; ry++) {
             for (int rx = 0; rx <= _maxSquareX; rx++)
             {
@@ -136,7 +136,7 @@ public class SimulationController : MonoBehaviour
 
                 for (int i = 0; i < current.Count; i++)
                     for (int j = i + 1; j < current.Count; j++)
-                        HandleParticleConnection(current[i], current[j], ref lineIndex);
+                        HandleParticleConnection(current[i], current[j]/*, ref lineIndex*/);
 
                 for (int x = -1; x < 2; x++)
                 {
@@ -149,19 +149,19 @@ public class SimulationController : MonoBehaviour
 
                         for (int j = 0; j < available.Count; j++)
                             for (int i = 0; i < current.Count; i++)
-                                HandleParticleConnection(current[i], available[j], ref lineIndex);
+                                HandleParticleConnection(current[i], available[j]/*, ref lineIndex*/);
                     }
                 }
 
                 _regionMap[rx, ry].Clear();
             }
         }
-
+        /*
         for (; lineIndex < _lines.Count; lineIndex++)
 		{
             _lines[lineIndex].Enabled = false;
 		}
-
+        */
         //////////////////////////////////////
         return;
         Color cellBorderColor = new Color(1, 0, 0, 0.5f);
@@ -210,26 +210,17 @@ public class SimulationController : MonoBehaviour
 		}
 	}
 
-    private void HandleParticleConnection(Particle p1, Particle p2, ref int lineIndex)
+    private void HandleParticleConnection(Particle p1, Particle p2/*, ref int lineIndex*/)
 	{
-        Vector3 pos1 = p1.transform.position, pos2 = p2.transform.position;
+        Vector3 pos1 = p1.Position, pos2 = p2.Position;
 
-        float distance = Vector3.Distance(pos1, pos2);
+        float diffX = pos1.x - pos2.x;
+        float diffY = pos1.y - pos2.y;
+        float distance = (float)System.Math.Sqrt(diffX * diffX + diffY * diffY);
         if (distance > _connectionDistance) return;
 
-        if (lineIndex >= _lines.Count)
-        {
-            Line newLine = Instantiate(_linePrefab, transform).GetComponent<Line>();
-            _lines.Add(newLine);
-        }
-
-        Line line = _lines[lineIndex];
-        lineIndex++;
-
         float intensity = 1 - (distance - _strongDistance) / _intensityDenominator;
-        line.ChangeState(pos1, pos2, _currentLineColor.Evaluate(intensity), _linesWidth);
-        line.Enabled = true;
-        //_drawer.DrawLine(pos1, pos2, new Color(1, 0, 1, 0.3f), _linesWidth * 3);
+        _drawer.DrawLineGL(pos1, pos2, _currentLineColor.Evaluate(intensity));
     }
 
     private (int, int) GetSquare(Vector3 location)
