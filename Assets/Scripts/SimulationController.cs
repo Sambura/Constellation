@@ -6,12 +6,10 @@ public class SimulationController : MonoBehaviour
 {
     [Header("Objects")]
     [SerializeField] private Camera _mainCamera;
-    [SerializeField] private SpriteRenderer _background;
     [SerializeField] private GraphicMeshDrawer _drawer;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject _particlePrefab;
-    [SerializeField] private GameObject _linePrefab;
 
     [Header("Main parameters")]
     [SerializeField] private bool _randomizeInitialPosition = true;
@@ -42,7 +40,6 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private int _targetFps;
 
     private List<Particle> _particles;
-    private List<Line> _lines;
     private float _xBound;
     private float _yBound;
     private List<Particle>[,] _regionMap;
@@ -50,14 +47,28 @@ public class SimulationController : MonoBehaviour
     private int _ySquareOffset;
     private int _maxSquareX;
     private int _maxSquareY;
+    private int _cellsCount;
+    private int _averagePerCell;
     private float _intensityDenominator;
-    private Gradient _currentLineColor;
-    private GradientColorKey[] _currentColorKeys;
-    private GradientAlphaKey[] _currentAlphaKeys;
+    private Gradient _currentLineColorGradient;
+    private GradientColorKey[] _currentLineGradientColorKeys;
+    private GradientAlphaKey[] _currentLineGradientAlphaKeys;
 
     private float GetParticleVelocity(Particle particle)
     {
         return Random.Range(_minParticleVelocity, _maxParticleVelocity);
+    }
+
+    private void InvertGradientKeys(GradientColorKey[] keys)
+	{
+        for (int i = 0; i < keys.Length; i++)
+            keys[i].time = 1 - keys[i].time;
+    }
+
+    private void InvertGradientKeys(GradientAlphaKey[] keys)
+    {
+        for (int i = 0; i < keys.Length; i++)
+            keys[i].time = 1 - keys[i].time;
     }
 
     private void Awake()
@@ -65,12 +76,7 @@ public class SimulationController : MonoBehaviour
         _yBound = _mainCamera.orthographicSize;
         _xBound = _mainCamera.aspect * _mainCamera.orthographicSize;
 
-        _currentLineColor = _lineColor;
-        _currentColorKeys = new GradientColorKey[] { new GradientColorKey(_lineColor.Evaluate(1), 1) };
-        _currentAlphaKeys = _lineColor.alphaKeys;
-
         _particles = new List<Particle>(_particlesCount);
-        _lines = new List<Line>();
 
         for (int i = 0; i < _particlesCount; i++)
         {
@@ -95,25 +101,27 @@ public class SimulationController : MonoBehaviour
         _maxSquareX = _xSquareOffset * 2 - 1;
         _maxSquareY = _ySquareOffset * 2 - 1;
         _regionMap = new List<Particle>[_maxSquareX + 1, _maxSquareY + 1];
-        int cellsCount = (_maxSquareX + 1) * (_maxSquareY + 1);
-        int averagePerSquare = Mathf.CeilToInt((float)_particlesCount / cellsCount);
+        _cellsCount = (_maxSquareX + 1) * (_maxSquareY + 1);
+        _averagePerCell = Mathf.CeilToInt((float)_particlesCount / _cellsCount);
+
         for (int i = 0; i <= _maxSquareX; i++)
-		{
             for (int j = 0; j <= _maxSquareY; j++)
-			{
-                _regionMap[i, j] = new List<Particle>(averagePerSquare);
-			}
-		}
+                _regionMap[i, j] = new List<Particle>(_averagePerCell);
+
+        _currentLineColorGradient = new Gradient();
+        _currentLineGradientAlphaKeys = _lineColor.alphaKeys;
+        InvertGradientKeys(_currentLineGradientAlphaKeys);
 
         if (_changeLinesColor)
         {
-            _currentLineColor = new Gradient();
+            _currentLineGradientColorKeys = new GradientColorKey[] { new GradientColorKey(_lineColor.Evaluate(1), 1) };
             StartCoroutine(ColorChanger());
+        } else
+		{
+            _currentLineGradientColorKeys = _lineColor.colorKeys;
+            InvertGradientKeys(_currentLineGradientColorKeys);
+            _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
         }
-
-        _background.color = _backgroundColor;
-        _background.transform.localScale = new Vector3(_xBound * 2 + 1, _yBound * 2 + 1, 1);
-        _background.enabled = false;
 
         _drawer.SetBgPositionAndSize(0, 0, _xBound * 2 + 1, _yBound * 2 + 1);
         _drawer.DrawBackgroundGL(new Color(_backgroundColor.r, _backgroundColor.g, _backgroundColor.b));
@@ -126,26 +134,31 @@ public class SimulationController : MonoBehaviour
         _drawer.DrawBackgroundGL(_backgroundColor);
         if (_showLines == false) return;
 
-        for (int i = 0; i < _particlesCount; i++)
+        for (int i = 0; i < _particles.Count; i++)
         {
             Particle p = _particles[i];
             (int, int) square = GetSquare(p.Position);
             _regionMap[square.Item1, square.Item2].Add(p);
         }
 
-        //int lineIndex = 0;
         for (int ry = 0; ry <= _maxSquareY; ry++) {
             for (int rx = 0; rx <= _maxSquareX; rx++)
             {
                 List<Particle> current = _regionMap[rx, ry];
                 if (current.Count == 0) continue;
 
+				if (false) { // debug cells draw
+                    float x = (rx - _xSquareOffset) * _connectionDistance;
+                    float y = (ry - _ySquareOffset) * _connectionDistance;
+                    Color currentColor = new Color(1, 1, 0, 10f * _averagePerCell * current.Count / _particlesCount);
+                    DebugFillSquare(x, y, _connectionDistance, currentColor);
+                }
+
                 for (int i = 0; i < current.Count; i++)
                     for (int j = i + 1; j < current.Count; j++)
-                        HandleParticleConnection(current[i], current[j]/*, ref lineIndex*/);
+                        HandleParticleConnection(current[i], current[j]);
 
-                for (int x = -1; x < 2; x++)
-                {
+                for (int x = -1; x < 2; x++) {
                     for (int y = 0; y < 2; y++)
                     {
                         if (x == 0 && y == 0) continue;
@@ -155,20 +168,14 @@ public class SimulationController : MonoBehaviour
 
                         for (int j = 0; j < available.Count; j++)
                             for (int i = 0; i < current.Count; i++)
-                                HandleParticleConnection(current[i], available[j]/*, ref lineIndex*/);
+                                HandleParticleConnection(current[i], available[j]);
                     }
                 }
 
                 _regionMap[rx, ry].Clear();
             }
         }
-        /*
-        for (; lineIndex < _lines.Count; lineIndex++)
-		{
-            _lines[lineIndex].Enabled = false;
-		}
-        */
-        //////////////////////////////////////
+
         return;
         Color cellBorderColor = new Color(1, 0, 0, 0.5f);
         Color cellColor = new Color(1, 1, 0, 0.2f);
@@ -181,24 +188,13 @@ public class SimulationController : MonoBehaviour
         {
             Debug.DrawLine(new Vector3(-_xBound, y), new Vector3(_xBound, y), cellBorderColor);
         }
-
-        return;
-        for (int i = 0; i <= _maxSquareX; i++)
-		{
-            for (int j = 0; j <= _maxSquareY; j++)
-			{
-                float x = (i - _xSquareOffset) * _connectionDistance;
-                float y = (j - _ySquareOffset) * _connectionDistance;
-                DebugFillSquare(x, y, _connectionDistance, cellColor);
-			}
-		}
     }
 
     private IEnumerator ColorChanger()
 	{
         while (true)
 		{
-            Color oldColor = _currentColorKeys[0].color;
+            Color oldColor = _currentLineGradientColorKeys[0].color;
             Color newColor = Random.ColorHSV(_colorMinHue, _colorMaxHue, _colorMinSaturation, _colorMaxSaturation, _colorMinValue, _colorMaxValue);
             float fadeTime = Random.Range(_colorMinFadeDuration, _colorMaxFadeDuration);
             float startTime = Time.time;
@@ -208,15 +204,15 @@ public class SimulationController : MonoBehaviour
 			{
                 progress = (Time.time - startTime) / fadeTime;
                 Color currentColor = Color.Lerp(oldColor, newColor, progress);
-                _currentColorKeys[0].color = currentColor;
-                _currentLineColor.SetKeys(_currentColorKeys, _currentAlphaKeys);
+                _currentLineGradientColorKeys[0].color = currentColor;
+                _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
 
                 yield return null;
 			}
 		}
 	}
 
-    private void HandleParticleConnection(Particle p1, Particle p2/*, ref int lineIndex*/)
+    private void HandleParticleConnection(Particle p1, Particle p2)
 	{
         Vector3 pos1 = p1.Position, pos2 = p2.Position;
 
@@ -225,8 +221,8 @@ public class SimulationController : MonoBehaviour
         float distance = (float)System.Math.Sqrt(diffX * diffX + diffY * diffY);
         if (distance > _connectionDistance) return;
 
-        float intensity = 1 - (distance - _strongDistance) / _intensityDenominator;
-        Color color = _currentLineColor.Evaluate(intensity);
+        float intensity = (distance - _strongDistance) / _intensityDenominator;
+        Color color = _currentLineColorGradient.Evaluate(intensity);
 
         if (_meshLines)
             _drawer.DrawMeshLineGL(pos1, pos2, color, _linesWidth);

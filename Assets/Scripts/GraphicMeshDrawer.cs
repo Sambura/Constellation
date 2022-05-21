@@ -16,7 +16,7 @@ public class GraphicMeshDrawer : MonoBehaviour
     private Vector3[] _bgVertices;
     private Color _bgColor;
     private bool _drawBg = false;
-    private Matrix4x4 _projectionMatrix;
+    private Transform _cameraTransform;
 
     private void Awake()
     {
@@ -44,20 +44,21 @@ public class GraphicMeshDrawer : MonoBehaviour
         _linesToDraw = new List<LineEntry>();
         _meshLinesToDraw = new List<MeshLineEntry>();
         _bgVertices = new Vector3[4];
-        UpdateProjectionMatrix();
+        _cameraTransform = _camera.transform;
     }
 
-    private void UpdateProjectionMatrix()
+    private Matrix4x4 GetCameraProjectionMatrix()
 	{
         float height = _camera.orthographicSize;
         float width = height * _camera.aspect;
-        float left = _camera.transform.position.x - width;
-        float right = _camera.transform.position.x + width;
-        float top = _camera.transform.position.y + height;
-        float bottom = _camera.transform.position.y - height;
-        float zNear = _camera.transform.position.z + _camera.nearClipPlane;
-        float zFar = _camera.transform.position.z + _camera.farClipPlane;
-        _projectionMatrix = Matrix4x4.Ortho(left, right, bottom, top, zNear, zFar);
+        Vector3 position = _cameraTransform.position;
+        float left = position.x - width;
+        float right = position.x + width;
+        float top = position.y + height;
+        float bottom = position.y - height;
+        float zNear = position.z + _camera.nearClipPlane;
+        float zFar = position.z + _camera.farClipPlane;
+        return Matrix4x4.Ortho(left, right, bottom, top, zNear, zFar);
 	}
 
     public void SetBgPositionAndSize(float x, float y, float width, float height)
@@ -88,7 +89,7 @@ public class GraphicMeshDrawer : MonoBehaviour
         _material.SetPass(0);
         GL.PushMatrix();
 
-        GL.LoadProjectionMatrix(_projectionMatrix);
+        GL.LoadProjectionMatrix(GetCameraProjectionMatrix());
 
         GL.Begin(GL.QUADS);
 
