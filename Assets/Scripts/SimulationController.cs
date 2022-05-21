@@ -17,6 +17,7 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private bool _randomizeInitialPosition = true;
     [SerializeField] private float _particlesScale = 0.1f;
     [SerializeField] private float _linesWidth = 0.1f;
+    [SerializeField] private bool _meshLines = false;
 
     [Header("Simulation parameters")]
     [SerializeField] private int _particlesCount = 100;
@@ -112,18 +113,23 @@ public class SimulationController : MonoBehaviour
 
         _background.color = _backgroundColor;
         _background.transform.localScale = new Vector3(_xBound * 2 + 1, _yBound * 2 + 1, 1);
+        _background.enabled = false;
+
+        _drawer.SetBgPositionAndSize(0, 0, _xBound * 2 + 1, _yBound * 2 + 1);
+        _drawer.DrawBackgroundGL(new Color(_backgroundColor.r, _backgroundColor.g, _backgroundColor.b));
 
         Application.targetFrameRate = _targetFps;
     }
 
     private void Update()
     {
+        _drawer.DrawBackgroundGL(_backgroundColor);
         if (_showLines == false) return;
 
         for (int i = 0; i < _particlesCount; i++)
         {
             Particle p = _particles[i];
-            (int, int) square = GetSquare(p.transform.position);
+            (int, int) square = GetSquare(p.Position);
             _regionMap[square.Item1, square.Item2].Add(p);
         }
 
@@ -220,13 +226,18 @@ public class SimulationController : MonoBehaviour
         if (distance > _connectionDistance) return;
 
         float intensity = 1 - (distance - _strongDistance) / _intensityDenominator;
-        _drawer.DrawLineGL(pos1, pos2, _currentLineColor.Evaluate(intensity));
+        Color color = _currentLineColor.Evaluate(intensity);
+
+        if (_meshLines)
+            _drawer.DrawMeshLineGL(pos1, pos2, color, _linesWidth);
+        else
+            _drawer.DrawLineGL(pos1, pos2, color);
     }
 
     private (int, int) GetSquare(Vector3 location)
 	{
-        int xp = Mathf.FloorToInt(location.x / _connectionDistance) + _xSquareOffset;
-        int yp = Mathf.FloorToInt(location.y / _connectionDistance) + _ySquareOffset;
+        int xp = (int)System.Math.Floor(location.x / _connectionDistance) + _xSquareOffset;
+        int yp = (int)System.Math.Floor(location.y / _connectionDistance) + _ySquareOffset;
         return (Mathf.Clamp(xp, 0, _maxSquareX), Mathf.Clamp(yp, 0, _maxSquareY));
     }
 
