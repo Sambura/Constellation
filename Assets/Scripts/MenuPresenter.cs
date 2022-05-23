@@ -22,12 +22,18 @@ public class MenuPresenter : MonoBehaviour
 	[SerializeField] private Toggle _meshLinesToggle;
 	[SerializeField] private GameObject _meshLinesSubMenuOverlay;
 	[SerializeField] private SliderWithText _meshLineWidthSlider;
+	[SerializeField] private Toggle _showTrianglesToggle;
+	[SerializeField] private GameObject _trianglesSubMenuOverlay;
+	[SerializeField] private SliderWithText _triangleFillOpacitySlider;
+
 	[Header("Simulation parameters")]
 	[SerializeField] private SliderWithText _particlesCountSlider;
 	[SerializeField] private SliderWithText _connectionDistanceSlider;
 	[SerializeField] private SliderWithText _strongDistanceSlider;
 	[SerializeField] private TextMeshProUGUI _performanceMeasureLabel;
 	[SerializeField] private TextMeshProUGUI _estimatedFpsLabel;
+	[SerializeField] private SliderWithText _minParticleVelocitySlider;
+	[SerializeField] private SliderWithText _maxParticleVelocitySlider;
 
 	private Action<Color> _colorPicerAction;
 
@@ -61,10 +67,15 @@ public class MenuPresenter : MonoBehaviour
 		_strongDistanceSlider.Value = _controller.StrongDistance;
 		_performanceMeasureLabel.text = _controller.PerformanceMeasure.ToString();
 		_estimatedFpsLabel.text = _controller.EstimatedFps.ToString("0.0");
+		_showTrianglesToggle.isOn = _controller.ShowTriangles;
+		_triangleFillOpacitySlider.Value = _controller.TriangleFillOpacity;
+		_minParticleVelocitySlider.Value = _controller.MinParticleVelocity;
+		_maxParticleVelocitySlider.Value = _controller.MaxParticleVelocity;
 
 		_meshLinesSubMenuOverlay.SetActive(!_controller.MeshLines);
 		_showLinesSubMenuOverlay.SetActive(!_controller.ShowLines);
 		_showParticlesSubMenuOverlay.SetActive(!_controller.ShowParticles);
+		_trianglesSubMenuOverlay.SetActive(!_controller.ShowTriangles);
 
 		// Set up event listeners
 		_colorPicker.ColorChanged += OnColorPickerColorChanged;
@@ -98,6 +109,59 @@ public class MenuPresenter : MonoBehaviour
 
 		_strongDistanceSlider.ValueChanged += OnStrongDistanceChanged;
 		_controller.StrongDistanceChanged += OnStrongDistanceChangedExternal;
+
+		_showTrianglesToggle.onValueChanged.AddListener(OnShowTrianglesChanged);
+		_controller.ShowTrianglesChanged += OnShowTrianglesChangedExternal;
+
+		_triangleFillOpacitySlider.ValueChanged += OnTriangleFillOpacityChanged;
+		_controller.TriangleFillOpacityChanged += OnTriangleFillOpacityChangedExternal;
+
+		_minParticleVelocitySlider.ValueChanged += OnMinParticleVelocityChanged;
+		_controller.MinParticleVelocityChanged += OnMinParticleVelocityChangedExternal;
+
+		_maxParticleVelocitySlider.ValueChanged += OnMaxParticleVelocityChanged;
+		_controller.MaxParticleVelocityChanged += OnMaxParticleVelocityChangedExternal;
+	}
+
+	private void OnMaxParticleVelocityChanged(float value)
+	{
+		_controller.MaxParticleVelocity = value;
+	}
+
+	private void OnMaxParticleVelocityChangedExternal(float value)
+	{
+		_maxParticleVelocitySlider.SetValueWithoutNotify(value);
+	}
+
+	private void OnMinParticleVelocityChanged(float value)
+	{
+		_controller.MinParticleVelocity = value;
+	}
+
+	private void OnMinParticleVelocityChangedExternal(float value)
+	{
+		_minParticleVelocitySlider.SetValueWithoutNotify(value);
+	}
+
+	private void OnTriangleFillOpacityChanged(float value)
+	{
+		_controller.TriangleFillOpacity = value;
+	}
+
+	private void OnTriangleFillOpacityChangedExternal(float value)
+	{
+		_triangleFillOpacitySlider.SetValueWithoutNotify(value);
+	}
+
+	private void OnShowTrianglesChanged(bool value)
+	{
+		_controller.ShowTriangles = value;
+	}
+
+	private void OnShowTrianglesChangedExternal(bool value)
+	{
+		_showTrianglesToggle.SetIsOnWithoutNotify(value);
+		_trianglesSubMenuOverlay.SetActive(!_controller.ShowTriangles);
 	}
 
 	private void OnStrongDistanceChangedExternal(float value)

@@ -13,6 +13,7 @@ public class GraphicMeshDrawer : MonoBehaviour
     private Mesh _mesh;
     private List<LineEntry> _linesToDraw;
     private List<MeshLineEntry> _meshLinesToDraw;
+    private List<TriangleEntry> _trianglesToDraw;
     private Vector3[] _bgVertices;
     private Color _bgColor;
     private bool _drawBg = false;
@@ -43,6 +44,7 @@ public class GraphicMeshDrawer : MonoBehaviour
 
         _linesToDraw = new List<LineEntry>();
         _meshLinesToDraw = new List<MeshLineEntry>();
+        _trianglesToDraw = new List<TriangleEntry>();
         _bgVertices = new Vector3[4];
         _cameraTransform = _camera.transform;
     }
@@ -123,9 +125,20 @@ public class GraphicMeshDrawer : MonoBehaviour
         }
         GL.End();
 
+        GL.Begin(GL.TRIANGLES);
+        foreach (TriangleEntry triangle in _trianglesToDraw)
+        {
+            GL.Color(triangle.color);
+            GL.Vertex3(triangle.x1, triangle.y1, 0);
+            GL.Vertex3(triangle.x2, triangle.y2, 0);
+            GL.Vertex3(triangle.x3, triangle.y3, 0);
+        }
+        GL.End();
+
         GL.PopMatrix();
         _linesToDraw.Clear();
         _meshLinesToDraw.Clear();
+        _trianglesToDraw.Clear();
     }
 
 	public void DrawLineGL(Vector3 p1, Vector3 p2, Color color)
@@ -136,6 +149,11 @@ public class GraphicMeshDrawer : MonoBehaviour
     public void DrawMeshLineGL(Vector3 p1, Vector3 p2, Color color, float width)
     {
         _meshLinesToDraw.Add(new MeshLineEntry(p1.x, p1.y, p2.x, p2.y, width, color));
+    }
+
+    public void DrawTriangleGL(Vector3 p1, Vector3 p2, Vector3 p3, Color color)
+    {
+        _trianglesToDraw.Add(new TriangleEntry(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, color));
     }
 
     public void DrawBackgroundGL(Color color)
@@ -171,6 +189,23 @@ public class GraphicMeshDrawer : MonoBehaviour
             this.y1 = y1;
             this.y2 = y2;
             this.width = width;
+            this.color = color;
+        }
+    }
+
+    private struct TriangleEntry
+    {
+        public float x1, x2, x3, y1, y2, y3;
+        public Color color;
+
+        public TriangleEntry(float x1, float y1, float x2, float y2, float x3, float y3, Color color)
+        {
+            this.x1 = x1;
+            this.x2 = x2;
+            this.y1 = y1;
+            this.y2 = y2;
+            this.x3 = x3;
+            this.y3 = y3;
             this.color = color;
         }
     }
