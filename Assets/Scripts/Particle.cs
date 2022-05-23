@@ -28,23 +28,27 @@ public class Particle : MonoBehaviour
         get => _position;
         set => _position = value;
     }
+    public float Size
+	{
+        get => _transform.localScale.x;
+        set => _transform.localScale = new Vector3(value, value, value);
+	}
 
     private Transform _transform;
     private Vector3 _position;
     private Vector3 _velocity;
 
-    public void SetRandomVelocity(float minAngle, float maxAngle)
+    public void SetRandomVelocity(float minAngle = Angle0, float maxAngle = Angle360)
 	{
         float angle = Random.Range(minAngle, maxAngle);
         float magnitude = VelocityDelegate(this);
         _velocity.Set((float)Cos(angle) * magnitude, (float)Sin(angle) * magnitude, 0);
     }
 
-    private void Start()
+    private void Awake()
     {
         _transform = transform;
         _position = _transform.localPosition;
-        SetRandomVelocity(Angle0, Angle360);
     }
 
     private void Update()

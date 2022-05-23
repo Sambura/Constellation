@@ -47,12 +47,170 @@ public class SimulationController : MonoBehaviour
     private int _ySquareOffset;
     private int _maxSquareX;
     private int _maxSquareY;
-    private int _cellsCount;
-    private int _averagePerCell;
     private float _intensityDenominator;
     private Gradient _currentLineColorGradient;
     private GradientColorKey[] _currentLineGradientColorKeys;
     private GradientAlphaKey[] _currentLineGradientAlphaKeys;
+
+    public bool ShowParticles
+	{
+        get => _showParticles;
+        set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
+	}
+    public float ParticleSize
+	{
+        get => _particlesScale;
+        set { if (_particlesScale != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
+    }
+    public Color ParticleColor
+    {
+        get => _particlesColor;
+        set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
+    }
+    public bool ShowLines
+	{
+        get => _showLines;
+        set { if (_showLines != value) { _showLines = value; ShowLinesChanged?.Invoke(value); }; }
+	}
+    public bool MeshLines
+	{
+        get => _meshLines;
+        set { if (_meshLines != value) { _meshLines = value; MeshLinesChanged?.Invoke(value); }; }
+    }
+    public Color LineColorTemp
+	{
+        get => _currentLineGradientColorKeys[0].color;
+        set { if (_currentLineGradientColorKeys[0].color != value) { SetLineColorTemp(value); LineColorTempChanged?.Invoke(value); } }
+    }
+    public float LineWidth
+	{
+        get => _linesWidth;
+        set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
+    }
+    public int ParticleCount
+	{
+        get => _particlesCount;
+        set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
+    }
+    public float ConnectionDistance
+    {
+        get => _connectionDistance;
+        set { if (_connectionDistance != value) { SetConnectionDistance(value); ConnectionDistanceChanged?.Invoke(value); }; }
+    }
+    public float StrongDistance
+    {
+        get => _strongDistance;
+        set { if (_strongDistance != value) { SetStrongDistance(value); StrongDistanceChanged?.Invoke(value); }; }
+    }
+
+    public float PerformanceMeasure =>
+        CellCount * (AveragePerCell - 1) * AveragePerCell / 2 + // for each cell
+        (_maxSquareX - 1) * _maxSquareY * AveragePerCell * AveragePerCell * 4 + // for most cells: 4 directions
+        _maxSquareY * AveragePerCell * AveragePerCell * 3 +
+        _maxSquareY * AveragePerCell * AveragePerCell * 2 +
+        _maxSquareX * AveragePerCell * AveragePerCell
+        ;
+
+    private float k => (38 - 220) / (1 / 106921.9f - 1 / 524.4f);
+    private float b => 220 - k * (1 / 524.4f);
+    public float EstimatedFps => b + k / PerformanceMeasure; 
+    // 524.4 => 220
+    // 106921.9 => 38
+
+    public event System.Action<bool> ShowParticlesChanged;
+    public event System.Action<float> ParticleSizeChanged;
+    public event System.Action<Color> ParticleColorChanged;
+    public event System.Action<bool> ShowLinesChanged;
+    public event System.Action<bool> MeshLinesChanged;
+    public event System.Action<Color> LineColorTempChanged;
+    public event System.Action<float> LineWidthChanged;
+    public event System.Action<int> ParticleCountChanged;
+    public event System.Action<float> ConnectionDistanceChanged;
+    public event System.Action<float> StrongDistanceChanged;
+
+    public int CellCount => (_maxSquareX + 1) * (_maxSquareY + 1);
+    private float AveragePerCell =>(float)_particlesCount / CellCount;
+
+    private void SetShowParticles(bool value)
+	{
+        _showParticles = value;
+        foreach (Particle p in _particles)
+            p.Visible = value;
+	}
+    private void SetParticleSize(float value)
+    {
+        _particlesScale = value;
+        foreach (Particle p in _particles)
+            p.Size = value;
+    }
+    private void SetParticleColor(Color value)
+    {
+        _particlesColor = value;
+        foreach (Particle p in _particles)
+            p.Color = value;
+    }
+
+    private void SetLineColorTemp(Color value)
+	{
+        for (int i = 0; i < _currentLineGradientColorKeys.Length; i++)
+            _currentLineGradientColorKeys[i].color = value;
+
+        _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
+	}
+
+    private void SetParticlesCount(int value)
+    {
+        _particlesCount = value;
+
+        while (_particles.Count > value)
+        {
+            int index = _particles.Count - 1;
+            Destroy(_particles[index].gameObject);
+            _particles.RemoveAt(index);
+        }
+
+        while (_particles.Count < value)
+        {
+            Particle particle = Instantiate(_particlePrefab).GetComponent<Particle>();
+            particle.VelocityDelegate = GetParticleVelocity;
+            particle.XBound = _xBound;
+            particle.YBound = _yBound;
+            particle.Color = ParticleColor;
+            particle.Visible = ShowParticles;
+            particle.Size = ParticleSize;
+            particle.SetRandomVelocity();
+            if (_randomizeInitialPosition)
+            {
+                particle.Position = new Vector3(Random.Range(-_xBound, _xBound), Random.Range(-_yBound, _yBound));
+            }
+
+            _particles.Add(particle);
+        }
+    }
+    private void SetConnectionDistance(float value)
+	{
+        _connectionDistance = value;
+        _intensityDenominator = _connectionDistance - _strongDistance;
+
+        int xSquareOffset = Mathf.FloorToInt(_xBound / _connectionDistance) + 1;
+        int ySquareOffset = Mathf.FloorToInt(_yBound / _connectionDistance) + 1;
+        if (_xSquareOffset == xSquareOffset && _ySquareOffset == ySquareOffset) return;
+
+        _xSquareOffset = xSquareOffset;
+        _ySquareOffset = ySquareOffset;
+        _maxSquareX = _xSquareOffset * 2 - 1;
+        _maxSquareY = _ySquareOffset * 2 - 1;
+        _regionMap = new List<Particle>[_maxSquareX + 1, _maxSquareY + 1];
+
+        for (int i = 0; i <= _maxSquareX; i++)
+            for (int j = 0; j <= _maxSquareY; j++)
+                _regionMap[i, j] = new List<Particle>(Mathf.CeilToInt(2 * AveragePerCell));
+    }
+    private void SetStrongDistance(float value)
+    {
+        _strongDistance = value;
+        _intensityDenominator = _connectionDistance - _strongDistance;
+    }
 
     private float GetParticleVelocity(Particle particle)
     {
@@ -75,38 +233,11 @@ public class SimulationController : MonoBehaviour
     {
         _yBound = _mainCamera.orthographicSize;
         _xBound = _mainCamera.aspect * _mainCamera.orthographicSize;
-
         _particles = new List<Particle>(_particlesCount);
 
-        for (int i = 0; i < _particlesCount; i++)
-        {
-            Particle particle = Instantiate(_particlePrefab, transform).GetComponent<Particle>();
-            particle.VelocityDelegate = GetParticleVelocity;
-            particle.XBound = _xBound;
-            particle.YBound = _yBound;
-            particle.Visible = _showParticles;
-            particle.Color = _particlesColor;
-            particle.transform.localScale = Vector3.one * _particlesScale;
-            if (_randomizeInitialPosition)
-            {
-                particle.transform.position = new Vector3(Random.Range(-_xBound, _xBound), Random.Range(-_yBound, _yBound));
-            }
-
-            _particles.Add(particle);
-        }
-
-        _intensityDenominator = _connectionDistance - _strongDistance;
-        _xSquareOffset = Mathf.FloorToInt(_xBound / _connectionDistance) + 1;
-        _ySquareOffset = Mathf.FloorToInt(_yBound / _connectionDistance) + 1;
-        _maxSquareX = _xSquareOffset * 2 - 1;
-        _maxSquareY = _ySquareOffset * 2 - 1;
-        _regionMap = new List<Particle>[_maxSquareX + 1, _maxSquareY + 1];
-        _cellsCount = (_maxSquareX + 1) * (_maxSquareY + 1);
-        _averagePerCell = Mathf.CeilToInt((float)_particlesCount / _cellsCount);
-
-        for (int i = 0; i <= _maxSquareX; i++)
-            for (int j = 0; j <= _maxSquareY; j++)
-                _regionMap[i, j] = new List<Particle>(_averagePerCell);
+        SetConnectionDistance(_connectionDistance);
+        SetStrongDistance(_strongDistance);
+        SetParticlesCount(_particlesCount);
 
         _currentLineColorGradient = new Gradient();
         _currentLineGradientAlphaKeys = _lineColor.alphaKeys;
@@ -147,10 +278,10 @@ public class SimulationController : MonoBehaviour
                 List<Particle> current = _regionMap[rx, ry];
                 if (current.Count == 0) continue;
 
-				if (false) { // debug cells draw
+				if (false || true) { // debug cells draw
                     float x = (rx - _xSquareOffset) * _connectionDistance;
                     float y = (ry - _ySquareOffset) * _connectionDistance;
-                    Color currentColor = new Color(1, 1, 0, 10f * _averagePerCell * current.Count / _particlesCount);
+                    Color currentColor = new Color(1, 1, 0, 10f * AveragePerCell * current.Count / _particlesCount);
                     DebugFillSquare(x, y, _connectionDistance, currentColor);
                 }
 
@@ -176,7 +307,7 @@ public class SimulationController : MonoBehaviour
             }
         }
 
-        return;
+        //return;
         Color cellBorderColor = new Color(1, 0, 0, 0.5f);
         Color cellColor = new Color(1, 1, 0, 0.2f);
         for (float x = -Mathf.Floor(_xBound / _connectionDistance) * _connectionDistance; x < _xBound; x += _connectionDistance)
