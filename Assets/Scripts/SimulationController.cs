@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Assets.Scripts;
 
 public class SimulationController : MonoBehaviour
 {
@@ -40,22 +41,9 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private Color _backgroundColor = Color.black;
     [SerializeField] private int _targetFps;
     [SerializeField] [Range(0,1)] private float _triangleFillOpacity;
-
-    private List<Particle> _particles;
-    private float _xBound;
-    private float _yBound;
-    private List<Particle>[,] _regionMap;
-    private int _xSquareOffset;
-    private int _ySquareOffset;
-    private int _maxSquareX;
-    private int _maxSquareY;
-    private float _lineIntensityDenominator;
-    private float _triangleColorOffset;
-    private float _triangleColorCoefficient;
-    private Gradient _currentLineColorGradient;
-    private GradientColorKey[] _currentLineGradientColorKeys;
-    private GradientAlphaKey[] _currentLineGradientAlphaKeys;
-    private float _connectionDistanceSquared;
+    [SerializeField] [Range(0,0.000001f)] private float _linesPerformanceImpact;
+    [SerializeField] [Range(0,0.01f)] private float _performaceBias;
+    [SerializeField] [Range(0,0.000001f)] private float _particlesPerformanceImpact;
 
     public bool ShowParticles
 	{
@@ -128,19 +116,14 @@ public class SimulationController : MonoBehaviour
         set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }
     }
 
-    public float PerformanceMeasure =>
-        CellCount * (AveragePerCell - 1) * AveragePerCell / 2 + // for each cell
-        (_maxSquareX - 1) * _maxSquareY * AveragePerCell * AveragePerCell * 4 + // for most cells: 4 directions
+    public float LineIterationsEstimated => (
+        CellCount * (AveragePerCell - 1 + 1) * AveragePerCell / 2 +
+        (_maxSquareX - 1) * _maxSquareY * AveragePerCell * AveragePerCell * 4 +
         _maxSquareY * AveragePerCell * AveragePerCell * 3 +
         _maxSquareY * AveragePerCell * AveragePerCell * 2 +
-        _maxSquareX * AveragePerCell * AveragePerCell
-        ;
+        _maxSquareX * AveragePerCell * AveragePerCell) * 1.15f;
 
-    private float k => (38 - 220) / (1 / 106921.9f - 1 / 524.4f);
-    private float b => 220 - k * (1 / 524.4f);
-    public float EstimatedFps => b + k / PerformanceMeasure; 
-    // 524.4 => 220
-    // 106921.9 => 38
+    public float EstimatedFps => 1 / (_performaceBias + LineIterationsEstimated * _linesPerformanceImpact + _particlesPerformanceImpact * _particlesCount); 
 
     public event System.Action<bool> ShowParticlesChanged;
     public event System.Action<float> ParticleSizeChanged;
@@ -221,6 +204,7 @@ public class SimulationController : MonoBehaviour
         _connectionDistance = value;
         _connectionDistanceSquared = _connectionDistance * _connectionDistance;
         _lineIntensityDenominator = _connectionDistance - _strongDistance;
+        _triangleColorCoefficient = _triangleFillOpacity / _lineIntensityDenominator;
 
         if (_connectionDistance <= 0) return;
         int xSquareOffset = Mathf.FloorToInt(_xBound / _connectionDistance) + 1;
@@ -231,11 +215,11 @@ public class SimulationController : MonoBehaviour
         _ySquareOffset = ySquareOffset;
         _maxSquareX = _xSquareOffset * 2 - 1;
         _maxSquareY = _ySquareOffset * 2 - 1;
-        _regionMap = new List<Particle>[_maxSquareX + 1, _maxSquareY + 1];
+        _regionMap = new FastList<Particle>[_maxSquareX + 1, _maxSquareY + 1];
 
         for (int i = 0; i <= _maxSquareX; i++)
             for (int j = 0; j <= _maxSquareY; j++)
-                _regionMap[i, j] = new List<Particle>(Mathf.CeilToInt(2 * AveragePerCell));
+                _regionMap[i, j] = new FastList<Particle>(Mathf.CeilToInt(2 * AveragePerCell));
     }
     private void SetStrongDistance(float value)
     {
@@ -276,6 +260,22 @@ public class SimulationController : MonoBehaviour
             p.Velocity = Vector3.ClampMagnitude(p.Velocity, _maxParticleVelocity);
         }
     }
+
+    private List<Particle> _particles;
+    private float _xBound;
+    private float _yBound;
+    private FastList<Particle>[,] _regionMap;
+    private int _xSquareOffset;
+    private int _ySquareOffset;
+    private int _maxSquareX;
+    private int _maxSquareY;
+    private float _lineIntensityDenominator;
+    private float _triangleColorOffset;
+    private float _triangleColorCoefficient;
+    private Gradient _currentLineColorGradient;
+    private GradientColorKey[] _currentLineGradientColorKeys;
+    private GradientAlphaKey[] _currentLineGradientAlphaKeys;
+    private float _connectionDistanceSquared;
 
     private float GetParticleVelocity(Particle particle)
     {
@@ -340,7 +340,7 @@ public class SimulationController : MonoBehaviour
         for (int ry = 0; ry <= _maxSquareY; ry++) {
             for (int rx = 0; rx <= _maxSquareX; rx++)
             {
-                List<Particle> current = _regionMap[rx, ry];
+                FastList<Particle> current = _regionMap[rx, ry];
                 if (current.Count == 0) continue;
 
 				if (false) { // debug cells draw
@@ -372,7 +372,7 @@ public class SimulationController : MonoBehaviour
                         for (int y = yFrom; y <= yTo; y++)
                         {
                             if (x <= rx && y == ry) continue;
-                            List<Particle> available = _regionMap[x, y];
+                            FastList<Particle> available = _regionMap[x, y];
 
                             for (int j = 0; j < available.Count; j++)
                                 for (int i = 0; i < current.Count; i++)
@@ -383,7 +383,7 @@ public class SimulationController : MonoBehaviour
 
                 if (_showTriangles)
                 {
-                    List<Particle> surrounding = new List<Particle>();
+                    FastList<Particle> surrounding = new FastList<Particle>();
                     for (int x = xFrom; x <= xTo; x++) {
                         for (int y = yFrom; y <= yTo; y++)
                         {
@@ -410,11 +410,11 @@ public class SimulationController : MonoBehaviour
                     }
                 }
 
-                _regionMap[rx, ry].Clear();
+                _regionMap[rx, ry].Count = 0;
             }
         }
 
-        //return;
+        return;
         Color cellBorderColor = new Color(1, 0, 0, 0.5f);
         Color cellColor = new Color(1, 1, 0, 0.2f);
         for (float x = -Mathf.Floor(_xBound / _connectionDistance) * _connectionDistance; x < _xBound; x += _connectionDistance)
@@ -473,13 +473,18 @@ public class SimulationController : MonoBehaviour
     {
         Vector3 pos1 = p1.Position, pos2 = p2.Position, pos3 = p3.Position;
 
-        float side1 = Vector3.Distance(pos1, pos2);
-        if (side1 > _connectionDistance) return;
-        float side2 = Vector3.Distance(pos1, pos3);
-        if (side2 > _connectionDistance) return;
-        float side3 = Vector3.Distance(pos2, pos3);
-        if (side3 > _connectionDistance) return;
-        float maxSide = Mathf.Max(side1, side2, side3);
+        float diffX1 = pos1.x - pos2.x, diffY1 = pos1.y - pos2.y;
+        float side1Sqr = diffX1 * diffX1 + diffY1 * diffY1;
+        if (side1Sqr > _connectionDistanceSquared) return;
+        float diffX2 = pos1.x - pos3.x, diffY2 = pos1.y - pos3.y;
+        float side2Sqr = diffX2 * diffX2 + diffY2 * diffY2;
+        if (side2Sqr > _connectionDistanceSquared) return;
+        float diffX3 = pos2.x - pos3.x, diffY3 = pos2.y - pos3.y;
+        float side3Sqr = diffX3 * diffX3 + diffY3 * diffY3;
+        if (side3Sqr > _connectionDistanceSquared) return;
+
+        float maxSideSqr = Mathf.Max(side1Sqr, side2Sqr, side3Sqr);
+        float maxSide = (float)System.Math.Sqrt(maxSideSqr);
 
         float intensity = _triangleColorOffset + _triangleColorCoefficient * (maxSide - _strongDistance);
 

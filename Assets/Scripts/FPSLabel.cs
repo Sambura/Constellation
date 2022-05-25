@@ -4,7 +4,7 @@ using TMPro;
 
 public class FPSLabel : MonoBehaviour
 {
-    [SerializeField] private FPSCounter _counter;
+    [SerializeField] private StaticTimeFPSCounter _counter;
     [SerializeField] private TextMeshProUGUI _label;
     [SerializeField] private float _updateFrequency = 30;
     [SerializeField] private string _outputFormat = "FPS: ";
@@ -28,7 +28,6 @@ public class FPSLabel : MonoBehaviour
             float fps = (float)System.Math.Round(_counter.CurrentFps, _decimalPlaces);
             if (fps != lastFps)
                 _label.text = _outputFormat + fps.ToString(_floatFormat);
-            _label.color = _counter.IsValid ? Color.white : Color.red;
             yield return wait;
 		}
 	}

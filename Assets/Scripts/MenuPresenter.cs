@@ -30,11 +30,11 @@ public class MenuPresenter : MonoBehaviour
 	[SerializeField] private SliderWithText _particlesCountSlider;
 	[SerializeField] private SliderWithText _connectionDistanceSlider;
 	[SerializeField] private SliderWithText _strongDistanceSlider;
-	[SerializeField] private TextMeshProUGUI _performanceMeasureLabel;
-	[SerializeField] private TextMeshProUGUI _estimatedFpsLabel;
 	[SerializeField] private SliderWithText _minParticleVelocitySlider;
 	[SerializeField] private SliderWithText _maxParticleVelocitySlider;
 
+	[Header("Debug/stat")]
+	[SerializeField] private TextMeshProUGUI _estimatedFpsLabel;
 	private Action<Color> _colorPicerAction;
 
 	public void OnMenuOpenButtonClick()
@@ -47,6 +47,11 @@ public class MenuPresenter : MonoBehaviour
 	{
 		_menuPanel.SetActive(false);
 		_menuOpenButton.SetActive(true);
+	}
+
+	private void UpdatePerformanceLabels()
+	{
+		_estimatedFpsLabel.text = _controller.EstimatedFps.ToString("0.0");
 	}
 
 	private void Start()
@@ -65,8 +70,6 @@ public class MenuPresenter : MonoBehaviour
 		_particlesCountSlider.Value = _controller.ParticleCount;
 		_connectionDistanceSlider.Value = _controller.ConnectionDistance;
 		_strongDistanceSlider.Value = _controller.StrongDistance;
-		_performanceMeasureLabel.text = _controller.PerformanceMeasure.ToString();
-		_estimatedFpsLabel.text = _controller.EstimatedFps.ToString("0.0");
 		_showTrianglesToggle.isOn = _controller.ShowTriangles;
 		_triangleFillOpacitySlider.Value = _controller.TriangleFillOpacity;
 		_minParticleVelocitySlider.Value = _controller.MinParticleVelocity;
@@ -76,6 +79,8 @@ public class MenuPresenter : MonoBehaviour
 		_showLinesSubMenuOverlay.SetActive(!_controller.ShowLines);
 		_showParticlesSubMenuOverlay.SetActive(!_controller.ShowParticles);
 		_trianglesSubMenuOverlay.SetActive(!_controller.ShowTriangles);
+
+		UpdatePerformanceLabels();
 
 		// Set up event listeners
 		_colorPicker.ColorChanged += OnColorPickerColorChanged;
@@ -177,8 +182,7 @@ public class MenuPresenter : MonoBehaviour
 	private void OnConnectionDistanceChangedExternal(float value)
 	{
 		_connectionDistanceSlider.SetValueWithoutNotify(value);
-		_performanceMeasureLabel.text = _controller.PerformanceMeasure.ToString();
-		_estimatedFpsLabel.text = _controller.EstimatedFps.ToString("0.0");
+		UpdatePerformanceLabels();
 	}
 
 	private void OnConnectionDistanceChanged(float value)
@@ -189,8 +193,7 @@ public class MenuPresenter : MonoBehaviour
 	private void OnParticleCountChangedExternal(int value)
 	{
 		_particlesCountSlider.Value = value;
-		_performanceMeasureLabel.text = _controller.PerformanceMeasure.ToString();
-		_estimatedFpsLabel.text = _controller.EstimatedFps.ToString("0.0");
+		UpdatePerformanceLabels();
 	}
 
 	private void OnParticleCountChanged(float value)
