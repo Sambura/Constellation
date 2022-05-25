@@ -41,9 +41,15 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private Color _backgroundColor = Color.black;
     [SerializeField] private int _targetFps;
     [SerializeField] [Range(0,1)] private float _triangleFillOpacity;
-    [SerializeField] [Range(0,0.000001f)] private float _linesPerformanceImpact;
-    [SerializeField] [Range(0,0.01f)] private float _performaceBias;
-    [SerializeField] [Range(0,0.000001f)] private float _particlesPerformanceImpact;
+
+    [Header("Debug")]
+    [SerializeField] private bool _showCellBorders = false;
+    [SerializeField] private Color _cellBorderColor = Color.red;
+    [SerializeField] private bool _showCells = false;
+    [SerializeField] private Color _cellColor = Color.yellow;
+    [SerializeField] [Range(0, 0.000001f)] private float _linesPerformanceImpact;
+    [SerializeField] [Range(0, 0.01f)] private float _performaceBias;
+    [SerializeField] [Range(0, 0.000001f)] private float _particlesPerformanceImpact;
 
     public bool ShowParticles
 	{
@@ -343,10 +349,11 @@ public class SimulationController : MonoBehaviour
                 FastList<Particle> current = _regionMap[rx, ry];
                 if (current.Count == 0) continue;
 
-				if (false) { // debug cells draw
+				if (_showCells) { // debug cells draw
                     float x = (rx - _xSquareOffset) * _connectionDistance;
                     float y = (ry - _ySquareOffset) * _connectionDistance;
-                    Color currentColor = new Color(1, 1, 0, 10f * AveragePerCell * current.Count / _particlesCount);
+                    Color currentColor = _cellColor;
+                    currentColor.a *= current.Count / AveragePerCell;
                     DebugFillSquare(x, y, _connectionDistance, currentColor);
                 }
 
@@ -414,17 +421,17 @@ public class SimulationController : MonoBehaviour
             }
         }
 
-        return;
-        Color cellBorderColor = new Color(1, 0, 0, 0.5f);
-        Color cellColor = new Color(1, 1, 0, 0.2f);
-        for (float x = -Mathf.Floor(_xBound / _connectionDistance) * _connectionDistance; x < _xBound; x += _connectionDistance)
-		{
-            Debug.DrawLine(new Vector3(x, -_yBound), new Vector3(x, _yBound), cellBorderColor);
-		}
-        
-        for (float y = -Mathf.Floor(_yBound / _connectionDistance) * _connectionDistance; y < _yBound; y += _connectionDistance)
+        if (_showCellBorders)
         {
-            Debug.DrawLine(new Vector3(-_xBound, y), new Vector3(_xBound, y), cellBorderColor);
+            for (float x = -Mathf.Floor(_xBound / _connectionDistance) * _connectionDistance; x < _xBound; x += _connectionDistance)
+            {
+                Debug.DrawLine(new Vector3(x, -_yBound), new Vector3(x, _yBound), _cellBorderColor);
+            }
+
+            for (float y = -Mathf.Floor(_yBound / _connectionDistance) * _connectionDistance; y < _yBound; y += _connectionDistance)
+            {
+                Debug.DrawLine(new Vector3(-_xBound, y), new Vector3(_xBound, y), _cellBorderColor);
+            }
         }
     }
 
