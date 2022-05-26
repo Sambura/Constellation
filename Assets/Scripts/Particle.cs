@@ -1,6 +1,6 @@
 using UnityEngine;
 using static System.Math;
-using static Assets.Scripts.MathUtility;
+using static Core.MathUtility;
 
 public class Particle : MonoBehaviour
 {

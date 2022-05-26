@@ -1,4 +1,5 @@
-namespace Assets.Scripts
+using System;
+namespace Core
 {
     /// <summary>
     /// Replacement for System.Collections.Generic.List
@@ -6,15 +7,14 @@ namespace Assets.Scripts
     /// </summary>
     public class FastList<T>
     {
-        private T[] _buffer;
-        
+        public T[] _buffer;
+
         /// <summary>
         /// Changing this property does not clear/expand the list
         /// </summary>
-        public int Count { get => _count; set => _count = value; }
         public int Capacity => _buffer.Length;
 
-        private int _count;
+        public int _count;
         private int _capacity;
 
         /// <summary>
@@ -22,28 +22,28 @@ namespace Assets.Scripts
         /// You are allowed to index any item from the internal buffer.
         /// </summary>
 		public T this[int index]
-		{
+        {
             get => _buffer[index];
             set => _buffer[index] = value;
-		}
+        }
 
         private void DoubleCapacity()
-		{
+        {
             _capacity *= 2;
             T[] newBuffer = new T[_capacity];
             _buffer.CopyTo(newBuffer, 0);
             _buffer = newBuffer;
-		}
+        }
 
         public void Add(T item)
-		{
+        {
             if (_count == _capacity) DoubleCapacity();
             _buffer[_count] = item;
             _count++;
-		}
+        }
 
         public void AddRange(FastList<T> list)
-		{
+        {
             int combined = _count + list._count;
             if (combined > _capacity)
             {
@@ -52,9 +52,11 @@ namespace Assets.Scripts
                 _buffer.CopyTo(newBuffer, 0);
                 _buffer = newBuffer;
             }
-            System.Array.Copy(list._buffer, 0, _buffer, _count, list._count);
+            Array.Copy(list._buffer, 0, _buffer, _count, list._count);
             _count = combined;
-		}
+        }
+
+        public void PseudoClear() => _count = 0;
 
         public FastList(int capacity = 8)
         {
