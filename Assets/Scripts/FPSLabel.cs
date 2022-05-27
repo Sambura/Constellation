@@ -15,10 +15,19 @@ public class FPSLabel : MonoBehaviour
     private void Start()
     {
         _floatFormat = "0." + new string('0', _decimalPlaces);
+    }
+
+	private void OnEnable()
+	{
         StartCoroutine(Updater());
     }
 
-    private IEnumerator Updater()
+	private void OnDisable()
+	{
+        StopAllCoroutines();
+	}
+
+	private IEnumerator Updater()
 	{
         WaitForSeconds wait = new WaitForSeconds(1 / _updateFrequency);
 

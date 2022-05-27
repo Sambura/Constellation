@@ -1,42 +1,55 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System;
 
 public class MiscTabPresenter : MonoBehaviour
 {
-	[Header("General")]
-	[SerializeField] private SimulationController _controller;
-	//[SerializeField] private ColorPicker _colorPicker;
-	//[SerializeField] private Vector2 _colorPickerOffset;
-	[Header("Stuff")]
-	[SerializeField] private Button _exitButton;
+	[Header("Components")]
+	[SerializeField] private ApplicationController _application;
+	[SerializeField] private StaticTimeFPSCounter _fpsCounter;
+	[SerializeField] private GameObject _fpsCounterObject;
 
-	//private Action<Color> _colorPicerAction;
+	[Header("FPS")]
+	[SerializeField] private SliderWithText _fpsLimitSlider;
+	[SerializeField] private Toggle _showFpsToggle;
+	[SerializeField] private SliderWithText _timeWindowSlider;
+
+	[Header("Other")]
+	[SerializeField] private Button _exitButton;
 
 	private void Start()
 	{
 		// UI initialization
+		_fpsLimitSlider.Value = _application.TargetFrameRate;
+		_showFpsToggle.isOn = _fpsCounterObject.activeSelf;
+		_timeWindowSlider.Value = _fpsCounter.TimeWindow;
 
-
-		// Set up event listeners
-		//_colorPicker.ColorChanged += OnColorPickerColorChanged;
-
+		// Set up listeners
 		_exitButton.onClick.AddListener(OnExitButtonClick);
+
+		_fpsLimitSlider.IntValueChanged += OnTargetFrameRateChanged;
+		_application.TargetFrameRateChanged += OnTargetFrameRateChanged;
+
+		_showFpsToggle.onValueChanged.AddListener(OnShowFpsValueChanged);
+
+		_timeWindowSlider.ValueChanged += OnTimeWindowValueChanged;
 	}
 
-	private void OnExitButtonClick()
+	private void OnTimeWindowValueChanged(float value)
 	{
-		Application.Quit();
+		_fpsCounter.TimeWindow = value;
 	}
 
-	//private void OnColorPickerColorChanged(Color color) => _colorPicerAction(color);
+	private void OnShowFpsValueChanged(bool value)
+	{
+		_fpsCounterObject.SetActive(value);
+	}
 
-	//private void OpenColorPicker(Transform button, Action<Color> colorPickAction, Color initialColor)
-	//{
-	//	_colorPicker.transform.position = button.position + (Vector3)_colorPickerOffset;
-	//	_colorPicker.gameObject.SetActive(true);
-	//	_colorPicerAction = colorPickAction;
-	//	_colorPicker.Color = initialColor;
-	//}
+	private void OnTargetFrameRateChanged(int value)
+	{
+		_application.TargetFrameRate = value;
+		_fpsLimitSlider.SetValueWithoutNotify(value);
+	}
+
+	private void OnExitButtonClick() => _application.Quit();
 }
 

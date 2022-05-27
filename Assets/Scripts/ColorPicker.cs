@@ -23,6 +23,7 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
             ColorChanged?.Invoke(value);
 		}
 	}
+    public Action<Color> OnColorChanged { get; set; }
     public event Action<Color> ColorChanged;
 
     private void SetColor(Color color)
@@ -34,6 +35,8 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
         PlaceColorWindowKnob();
         _alphaSlider.Value = Mathf.Round(255 * _color.a);
 	}
+
+    private void CallOnColorChanged(Color color) => OnColorChanged?.Invoke(color);
 
     private Color _color;
     private Material _palleteMaterial;
@@ -57,6 +60,7 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
 
     private void Awake()
     {
+        ColorChanged += CallOnColorChanged;
         _palleteMaterial = _colorWindowImage.material;
         SetColor(_color);
 

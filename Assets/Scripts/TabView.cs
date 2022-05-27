@@ -23,14 +23,16 @@ public class TabView : MonoBehaviour
             _scrollRect.horizontalNormalizedPosition = 0;
 		}
 
-        if (_resizeScrollRectContent)
-		{
-            RectTransform content = _scrollRect.content;
-            Rect targetRect = _tabContents[index].rect;
-            content.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, targetRect.width);
-            content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, targetRect.height);
-		}
+        if (_resizeScrollRectContent) ResizeScrollRectContent();
 	}
+
+    private void ResizeScrollRectContent()
+	{
+        RectTransform content = _scrollRect.content;
+        Rect targetRect = _tabContents[_selectedIndex].rect;
+        content.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, targetRect.width);
+        content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, targetRect.height);
+    }
 
     private void SetTabActive(int index, bool isActive)
 	{
@@ -38,13 +40,30 @@ public class TabView : MonoBehaviour
         _tabContents[index].gameObject.SetActive(isActive);
 	}
 
-	private void Start()
+    private void OnTabRectTransformChange()
+    {
+        if (_resizeScrollRectContent) ResizeScrollRectContent();
+    }
+
+    private void Start()
 	{
 		for (int i = 0; i < _tabContents.Length; i++)
 		{
             SetTabActive(i, false);
+            MonoEvents events = _tabContents[i].gameObject.AddComponent<MonoEvents>();
+			events.OnRectTransformChange += OnTabRectTransformChange;
 		}
 
         SetTabActive(_selectedIndex, true);
 	}
+
+	private void OnDestroy()
+	{
+        for (int i = 0; i < _tabContents.Length; i++)
+        {
+            MonoEvents events = _tabContents[i].gameObject.GetComponent<MonoEvents>();
+            if (events == null) return;
+            Destroy(events);
+        }
+    }
 }

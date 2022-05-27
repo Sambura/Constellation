@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using System.Text.RegularExpressions;
 
 public class SliderWithText : MonoBehaviour
 {
@@ -12,6 +13,8 @@ public class SliderWithText : MonoBehaviour
 	[SerializeField] private float _maxValue;
 	[SerializeField] private float _value;
 	[SerializeField] private string _inputFormatting = "0.000";
+	[SerializeField] private string _inputRegex = @"([-+]?[0-9]*\.?[0-9]+)";
+	[SerializeField] private int _regexGroupIndex = 1;
 
 	public float Value
 	{
@@ -19,11 +22,19 @@ public class SliderWithText : MonoBehaviour
 		set
 		{
 			if (value == _value) return;
+			int intValue = IntValue;
 			SetValueWithoutNotify(value);
 			ValueChanged?.Invoke(_value);
+			int newIntValue = IntValue;
+			if (intValue != newIntValue) IntValueChanged?.Invoke(newIntValue);
 		}
 	}
+	public int IntValue => Mathf.RoundToInt(_value);
+
 	public event Action<float> ValueChanged;
+	public event Action<int> IntValueChanged;
+
+	private Regex _regex;
 
 	public void SetValueWithoutNotify(float value)
 	{
@@ -47,7 +58,9 @@ public class SliderWithText : MonoBehaviour
 
 	private void OnInputFieldValueChanged(string text)
 	{
-		if (float.TryParse(text, out float value))
+		Match match = _regex.Match(text);
+		if (match.Success == false) return;
+		if (float.TryParse(match.Groups[_regexGroupIndex].Value, out float value))
 			Value = value;
 	}
 
@@ -60,6 +73,7 @@ public class SliderWithText : MonoBehaviour
 			_slider.minValue = _minValue;
 			_slider.maxValue = _maxValue;
 		}
+		_regex = new Regex(_inputRegex, RegexOptions.Compiled);
 
 		SetValueWithoutNotify(_value);
 

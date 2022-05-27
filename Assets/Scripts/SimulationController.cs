@@ -38,8 +38,7 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private float _colorMaxValue = 1;
     [SerializeField] private float _colorMinFadeDuration = 2;
     [SerializeField] private float _colorMaxFadeDuration = 4;
-    [SerializeField] private Color _backgroundColor = Color.black;
-    [SerializeField] private int _targetFps;
+    [SerializeField] private Color _clearColor = Color.black;
     [SerializeField] [Range(0,1)] private float _triangleFillOpacity;
 
     [Header("Debug")]
@@ -121,6 +120,11 @@ public class SimulationController : MonoBehaviour
         get => _maxParticleVelocity;
         set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }
     }
+    public Color ClearColor
+    {
+        get => _clearColor;
+        set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
+    }
 
     public bool ShowCellBorders
 	{
@@ -158,6 +162,7 @@ public class SimulationController : MonoBehaviour
     public event System.Action<float> MaxParticleVelocityChanged;
     public event System.Action<bool> ShowCellBordersChanged;
     public event System.Action<bool> ShowCellsChanged;
+    public event System.Action<Color> ClearColorChanged;
 
     public int CellCount => (_maxSquareX + 1) * (_maxSquareY + 1);
     private float AveragePerCell =>(float)_particlesCount / CellCount;
@@ -279,6 +284,11 @@ public class SimulationController : MonoBehaviour
             p.Velocity = Vector3.ClampMagnitude(p.Velocity, _maxParticleVelocity);
         }
     }
+    private void SetClearColor(Color value)
+	{
+        _clearColor = value;
+        _backgroundBatch.quads[0].color = value;
+	}
 
     private List<Particle> _particles;
     private float _xBound;
@@ -346,7 +356,7 @@ public class SimulationController : MonoBehaviour
         float bgWidth = _xBound * 2 + 1;
         float bgHeight = _yBound * 2 + 1;
         SimpleGraphics.QuadEntry backgroundQuad = new SimpleGraphics.QuadEntry(
-            -bgWidth/2, -bgHeight/2, -bgWidth/2, bgHeight/2, bgWidth/2, bgHeight/2, bgWidth/2, -bgHeight/2, _backgroundColor
+            -bgWidth/2, -bgHeight/2, -bgWidth/2, bgHeight/2, bgWidth/2, bgHeight/2, bgWidth/2, -bgHeight/2, _clearColor
             );
 
         _backgroundBatch = new SimpleGraphics.SimpleDrawBatch();
@@ -361,8 +371,6 @@ public class SimulationController : MonoBehaviour
         _overlayBatch = new SimpleGraphics.SimpleDrawBatch();
         _overlayBatch.lines = new FastList<SimpleGraphics.LineEntry>();
         _overlayBatch.quads = new FastList<SimpleGraphics.QuadEntry>();
-
-        Application.targetFrameRate = _targetFps;
     }
 
     private void Update()
@@ -556,21 +564,5 @@ public class SimulationController : MonoBehaviour
         int xp = (int)System.Math.Floor(location.x / _connectionDistance) + _xSquareOffset;
         int yp = (int)System.Math.Floor(location.y / _connectionDistance) + _ySquareOffset;
         return (Mathf.Clamp(xp, 0, _maxSquareX), Mathf.Clamp(yp, 0, _maxSquareY));
-    }
-
-    private void DebugFillSquare(float x, float y, float size, Color color)
-	{
-        float density = 10;
-        float step = 1 / density;
-
-        for (float i = 0; i < size; i += step)
-		{
-            Debug.DrawLine(new Vector3(x + i, y), new Vector3(x, y + i), color);
-		}
-
-        for (float i = 0; i < size; i += step)
-        {
-            Debug.DrawLine(new Vector3(x + _connectionDistance, y + i), new Vector3(x + i, y +_connectionDistance), color);
-        }
     }
 }

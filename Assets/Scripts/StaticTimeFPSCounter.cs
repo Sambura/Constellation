@@ -9,9 +9,10 @@ public class StaticTimeFPSCounter : MonoBehaviour
     private Queue<(float, float)> _frameTimings;
     private float _currentTime;
 
-	public float CurrentFps => _frameTimings.Count / _currentTime; //  ==  1 / (_currentTime / _frameBufferCapacity)
+    public float TimeWindow { get => _timeWindow; set => _timeWindow = value; }
+	public float CurrentFps => _frameTimings.Count / _currentTime;
 
-	void Start()
+	void Awake()
     {
         _frameTimings = new Queue<(float, float)>(_initialBufferCapacity);
     }
@@ -24,7 +25,6 @@ public class StaticTimeFPSCounter : MonoBehaviour
 
         while (_frameTimings.Count > 0 && _frameTimings.Peek().Item1 < oldestAllowed)
             _currentTime -= _frameTimings.Dequeue().Item2;
-
 
         _currentTime += currentDelta;
         _frameTimings.Enqueue((currentTime, currentDelta));

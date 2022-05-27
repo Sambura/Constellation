@@ -21,10 +21,9 @@ namespace Core
         /// List indexer.
         /// You are allowed to index any item from the internal buffer.
         /// </summary>
-		public T this[int index]
+		public ref T this[int index]
         {
-            get => _buffer[index];
-            set => _buffer[index] = value;
+            get { return ref _buffer[index]; }
         }
 
         private void DoubleCapacity()
