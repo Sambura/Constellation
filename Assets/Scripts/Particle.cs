@@ -11,9 +11,23 @@ public class Particle : MonoBehaviour
         get => _velocity;
         set => _velocity = value;
 	}
-    public float XBound { get; set; }
-    public float YBound { get; set; }
+
     public System.Func<Particle, float> VelocityDelegate { get; set; }
+    public Viewport Viewport
+	{
+        get => _viewport;
+        set
+		{
+            if (_viewport == value) return;
+
+            if (_viewport != null)
+                _viewport.CameraDimensionsChanged -= OnViewportChanged;
+
+            _viewport = value;
+            _viewport.CameraDimensionsChanged += OnViewportChanged;
+            OnViewportChanged();
+		}
+	}
     public bool Visible {
         get => _spriteRenderer.enabled;
         set => _spriteRenderer.enabled = value;
@@ -34,9 +48,22 @@ public class Particle : MonoBehaviour
         set => _transform.localScale = new Vector3(value, value, value);
 	}
 
+    private Viewport _viewport;
     private Transform _transform;
     private Vector3 _position;
     private Vector3 _velocity;
+    private float _left;
+    private float _right;
+    private float _top;
+    private float _bottom;
+
+    private void OnViewportChanged()
+	{
+        _left = -_viewport.MaxX;
+        _right = _viewport.MaxX;
+        _bottom = -_viewport.MaxY;
+        _top = _viewport.MaxY;
+	}
 
     public void SetRandomVelocity(float minAngle = Angle0, float maxAngle = Angle360)
 	{
@@ -51,15 +78,20 @@ public class Particle : MonoBehaviour
         _position = _transform.localPosition;
     }
 
-    private void Update()
+	private void Start()
+	{
+        _transform.localPosition = _position;
+    }
+
+	private void Update()
     {
         _position += _velocity * Time.deltaTime;
         _transform.localPosition = _position;
 
-        bool leftHit = _position.x < -XBound;
-        bool rightHit = _position.x > XBound;
-        bool bottomHit = _position.y < -YBound;
-        bool topHit = _position.y > YBound;
+        bool leftHit = _position.x < _left;
+        bool rightHit = _position.x > _right;
+        bool bottomHit = _position.y < _bottom;
+        bool topHit = _position.y > _top;
 
         if ((leftHit || rightHit) && _position.x * _velocity.x > 0)
 		{

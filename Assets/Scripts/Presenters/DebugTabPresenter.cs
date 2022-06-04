@@ -4,7 +4,8 @@ using UnityEngine.UI;
 public class DebugTabPresenter : MonoBehaviour
 {
 	[Header("General")]
-	[SerializeField] private SimulationController _controller;
+	[SerializeField] private FragmentationVisualization _fragmentation;
+
 	[Header("Fragmentation visualisation")]
 	[SerializeField] private Toggle _showCellBordersToggle;
 	[SerializeField] private ColorPickerButton _cellBordersColorButton;
@@ -14,26 +15,46 @@ public class DebugTabPresenter : MonoBehaviour
 	private void Start()
 	{
 		// UI initialization
-		_showCellBordersToggle.isOn = _controller.ShowCellBorders;
-		_showCellsToggle.isOn = _controller.ShowCells;
+		_showCellBordersToggle.isOn = _fragmentation.ShowCellBorders;
+		_showCellsToggle.isOn = _fragmentation.ShowCells;
+		_cellBordersColorButton.Color = _fragmentation.CellBorderColor;
+		_cellsColorButton.Color = _fragmentation.CellColor;
 
 		// Set up event listeners
 		_showCellBordersToggle.onValueChanged.AddListener(OnShowCellBordersChanged);
-		_controller.ShowCellBordersChanged += OnShowCellBordersChanged;
+		_fragmentation.ShowCellBordersChanged += OnShowCellBordersChanged;
 
 		_showCellsToggle.onValueChanged.AddListener(OnShowCellsChanged);
-		_controller.ShowCellsChanged += OnShowCellsChanged;
+		_fragmentation.ShowCellsChanged += OnShowCellsChanged;
+
+		_cellBordersColorButton.ColorChanged += OnCellBorderColorChanged;
+		_fragmentation.CellBorderColorChanged += OnCellBorderColorChanged;
+
+		_cellsColorButton.ColorChanged += OnCellColorChanged;
+		_fragmentation.CellColorChanged += OnCellColorChanged;
+	}
+
+	private void OnCellColorChanged(Color value)
+	{
+		_fragmentation.CellColor = value;
+		_cellsColorButton.Color = value;
+	}
+
+	private void OnCellBorderColorChanged(Color value)
+	{
+		_fragmentation.CellBorderColor = value;
+		_cellBordersColorButton.Color = value;
 	}
 
 	private void OnShowCellBordersChanged(bool value)
 	{
-		_controller.ShowCellBorders = value;
+		_fragmentation.ShowCellBorders = value;
 		_showCellBordersToggle.SetIsOnWithoutNotify(value);
 	}
 
 	private void OnShowCellsChanged(bool value)
 	{
-		_controller.ShowCells = value;
+		_fragmentation.ShowCells = value;
 		_showCellsToggle.SetIsOnWithoutNotify(value);
 	}
 }

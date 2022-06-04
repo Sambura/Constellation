@@ -9,9 +9,34 @@ public class ApplicationController : MonoBehaviour
 		set { if (Application.targetFrameRate != value) { Application.targetFrameRate = value; TargetFrameRateChanged?.Invoke(value); } }
 	}
 
-	public event Action<int> TargetFrameRateChanged;
+	private FullScreenMode _pendingMode;
+	public FullScreenMode FullScreen
+	{
+		get => Screen.fullScreenMode;
+		set
+		{
+			if (_pendingMode != value) {
+				_pendingMode = value;
+				if (value == FullScreenMode.ExclusiveFullScreen || value == FullScreenMode.FullScreenWindow)
+				{
+					Resolution max = Screen.resolutions[Screen.resolutions.Length - 1];
+					Screen.SetResolution(max.width, max.height, value);
+				}
+				else Screen.fullScreenMode = value;
+				FullScreenModeChanged?.Invoke(value);
+			}
+		}
+	}
 
-    public void Quit()
+	public event Action<int> TargetFrameRateChanged;
+	public event Action<FullScreenMode> FullScreenModeChanged;
+
+	private void Awake()
+	{
+		_pendingMode = Screen.fullScreenMode;
+	}
+
+	public void Quit()
 	{
 #if DEBUG
 		Debug.Break();

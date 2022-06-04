@@ -2,23 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Core;
+using SimpleGraphics;
 
 public class SimulationController : MonoBehaviour
 {
     [Header("Objects")]
-    [SerializeField] private Camera _mainCamera;
-    [SerializeField] private SimpleGraphics _drawer;
+    [SerializeField] private BatchRenderer _drawer;
+    [SerializeField] private Viewport _viewport;
+    [SerializeField] private Fragmentator _fragmentator;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject _particlePrefab;
 
-    [Header("Main parameters")]
+    [Header("Initialization parameters")]
     [SerializeField] private bool _randomizeInitialPosition = true;
+
+    [Header("Simulation parameters")]
     [SerializeField] private float _particlesScale = 0.1f;
     [SerializeField] private float _linesWidth = 0.1f;
     [SerializeField] private bool _meshLines = false;
-
-    [Header("Simulation parameters")]
     [SerializeField] private int _particlesCount = 100;
     [SerializeField] private float _connectionDistance = 60f;
     [SerializeField] private float _strongDistance = 10f;
@@ -41,14 +43,8 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private Color _clearColor = Color.black;
     [SerializeField] [Range(0,1)] private float _triangleFillOpacity;
 
-    [Header("Debug")]
-    [SerializeField] private bool _showCellBorders = false;
-    [SerializeField] private Color _cellBorderColor = Color.red;
-    [SerializeField] private bool _showCells = false;
-    [SerializeField] private Color _cellColor = Color.yellow;
-    [SerializeField] [Range(0, 0.000001f)] private float _linesPerformanceImpact;
-    [SerializeField] [Range(0, 0.01f)] private float _performaceBias;
-    [SerializeField] [Range(0, 0.000001f)] private float _particlesPerformanceImpact;
+    [Header("Rendering")]
+    [SerializeField] private int _renderQueueIndex = 0;
 
     public bool ShowParticles
 	{
@@ -126,26 +122,6 @@ public class SimulationController : MonoBehaviour
         set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
     }
 
-    public bool ShowCellBorders
-	{
-        get => _showCellBorders;
-        set { if (_showCellBorders != value) { _showCellBorders = value; ShowCellBordersChanged?.Invoke(value); }; }
-	}
-    public bool ShowCells
-    {
-        get => _showCells;
-        set { if (_showCells != value) { _showCells = value; ShowCellsChanged?.Invoke(value); }; }
-    }
-
-    public float LineIterationsEstimated => (
-        CellCount * (AveragePerCell - 1 + 1) * AveragePerCell / 2 +
-        (_maxSquareX - 1) * _maxSquareY * AveragePerCell * AveragePerCell * 4 +
-        _maxSquareY * AveragePerCell * AveragePerCell * 3 +
-        _maxSquareY * AveragePerCell * AveragePerCell * 2 +
-        _maxSquareX * AveragePerCell * AveragePerCell) * 1.15f;
-
-    public float EstimatedFps => 1 / (_performaceBias + LineIterationsEstimated * _linesPerformanceImpact + _particlesPerformanceImpact * _particlesCount); 
-
     public event System.Action<bool> ShowParticlesChanged;
     public event System.Action<float> ParticleSizeChanged;
     public event System.Action<Color> ParticleColorChanged;
@@ -160,12 +136,7 @@ public class SimulationController : MonoBehaviour
     public event System.Action<float> TriangleFillOpacityChanged;
     public event System.Action<float> MinParticleVelocityChanged;
     public event System.Action<float> MaxParticleVelocityChanged;
-    public event System.Action<bool> ShowCellBordersChanged;
-    public event System.Action<bool> ShowCellsChanged;
     public event System.Action<Color> ClearColorChanged;
-
-    public int CellCount => (_maxSquareX + 1) * (_maxSquareY + 1);
-    private float AveragePerCell =>(float)_particlesCount / CellCount;
 
     private void SetShowParticles(bool value)
 	{
@@ -209,15 +180,15 @@ public class SimulationController : MonoBehaviour
         {
             Particle particle = Instantiate(_particlePrefab).GetComponent<Particle>();
             particle.VelocityDelegate = GetParticleVelocity;
-            particle.XBound = _xBound;
-            particle.YBound = _yBound;
+            particle.Viewport = _viewport;
             particle.Color = ParticleColor;
             particle.Visible = ShowParticles;
             particle.Size = ParticleSize;
             particle.SetRandomVelocity();
             if (_randomizeInitialPosition)
             {
-                particle.Position = new Vector3(Random.Range(-_xBound, _xBound), Random.Range(-_yBound, _yBound));
+                particle.Position = new Vector3(Random.Range(-_viewport.MaxX, _viewport.MaxX), 
+                    Random.Range(-_viewport.MaxY, _viewport.MaxY));
             }
 
             _particles.Add(particle);
@@ -230,20 +201,7 @@ public class SimulationController : MonoBehaviour
         _lineIntensityDenominator = _connectionDistance - _strongDistance;
         _triangleColorCoefficient = _triangleFillOpacity / _lineIntensityDenominator;
 
-        if (_connectionDistance <= 0) return;
-        int xSquareOffset = Mathf.FloorToInt(_xBound / _connectionDistance) + 1;
-        int ySquareOffset = Mathf.FloorToInt(_yBound / _connectionDistance) + 1;
-        if (_xSquareOffset == xSquareOffset && _ySquareOffset == ySquareOffset) return;
-
-        _xSquareOffset = xSquareOffset;
-        _ySquareOffset = ySquareOffset;
-        _maxSquareX = _xSquareOffset * 2 - 1;
-        _maxSquareY = _ySquareOffset * 2 - 1;
-        _regionMap = new FastList<Particle>[_maxSquareX + 1, _maxSquareY + 1];
-
-        for (int i = 0; i <= _maxSquareX; i++)
-            for (int j = 0; j <= _maxSquareY; j++)
-                _regionMap[i, j] = new FastList<Particle>(Mathf.CeilToInt(2 * AveragePerCell));
+        _fragmentator.SetConnectionDistance(value);
     }
     private void SetStrongDistance(float value)
     {
@@ -291,24 +249,16 @@ public class SimulationController : MonoBehaviour
 	}
 
     private List<Particle> _particles;
-    private float _xBound;
-    private float _yBound;
-    private FastList<Particle>[,] _regionMap;
-    private int _xSquareOffset;
-    private int _ySquareOffset;
-    private int _maxSquareX;
-    private int _maxSquareY;
+    private float _connectionDistanceSquared;
     private float _lineIntensityDenominator;
     private float _triangleColorOffset;
     private float _triangleColorCoefficient;
     private Gradient _currentLineColorGradient;
     private GradientColorKey[] _currentLineGradientColorKeys;
     private GradientAlphaKey[] _currentLineGradientAlphaKeys;
-    private float _connectionDistanceSquared;
     // rendering stuff
-    private SimpleGraphics.SimpleDrawBatch _backgroundBatch;
-    private SimpleGraphics.SimpleDrawBatch _mainBatch;
-    private SimpleGraphics.SimpleDrawBatch _overlayBatch;
+    private SimpleDrawBatch _backgroundBatch;
+    private SimpleDrawBatch _mainBatch;
 
     private float GetParticleVelocity(Particle particle)
     {
@@ -327,12 +277,20 @@ public class SimulationController : MonoBehaviour
             keys[i].time = 1 - keys[i].time;
     }
 
+    private void UpdateBackgroundQuad()
+	{
+        float extents = 0.1f;
+        float width = _viewport.MaxX + extents;
+        float height = _viewport.MaxY + extents;
+        _backgroundBatch.quads[0].SetCoords(-width, -height, -width, height, width, height, width, -height);
+    }
+
     private void Awake()
     {
-        _yBound = _mainCamera.orthographicSize;
-        _xBound = _mainCamera.aspect * _mainCamera.orthographicSize;
         _particles = new List<Particle>(_particlesCount);
 
+        _fragmentator.Viewport = _viewport;
+        _fragmentator.Particles = _particles;
 		SetConnectionDistance(_connectionDistance);
         SetStrongDistance(_strongDistance);
         SetTriangleFillOpacity(_triangleFillOpacity);
@@ -353,68 +311,44 @@ public class SimulationController : MonoBehaviour
             _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
         }
 
-        float bgWidth = _xBound * 2 + 1;
-        float bgHeight = _yBound * 2 + 1;
-        SimpleGraphics.QuadEntry backgroundQuad = new SimpleGraphics.QuadEntry(
-            -bgWidth/2, -bgHeight/2, -bgWidth/2, bgHeight/2, bgWidth/2, bgHeight/2, bgWidth/2, -bgHeight/2, _clearColor
-            );
+        _backgroundBatch = new SimpleDrawBatch();
+        _backgroundBatch.quads = new FastList<QuadEntry>();
+        _backgroundBatch.quads.Add(new QuadEntry());
 
-        _backgroundBatch = new SimpleGraphics.SimpleDrawBatch();
-        _backgroundBatch.quads = new FastList<SimpleGraphics.QuadEntry>();
-        _backgroundBatch.quads.Add(backgroundQuad);
+        _viewport.CameraDimensionsChanged += UpdateBackgroundQuad;
+        UpdateBackgroundQuad();
+        SetClearColor(_clearColor);
 
-        _mainBatch = new SimpleGraphics.SimpleDrawBatch();
-        _mainBatch.lines = new FastList<SimpleGraphics.LineEntry>();
-        _mainBatch.meshLines = new FastList<SimpleGraphics.MeshLineEntry>();
-        _mainBatch.triangles = new FastList<SimpleGraphics.TriangleEntry>();
+        _mainBatch = new SimpleDrawBatch();
+        _mainBatch.lines = new FastList<LineEntry>();
+        _mainBatch.meshLines = new FastList<MeshLineEntry>();
+        _mainBatch.triangles = new FastList<TriangleEntry>();
 
-        _overlayBatch = new SimpleGraphics.SimpleDrawBatch();
-        _overlayBatch.lines = new FastList<SimpleGraphics.LineEntry>();
-        _overlayBatch.quads = new FastList<SimpleGraphics.QuadEntry>();
+        _drawer.AddBatch(_renderQueueIndex, _backgroundBatch);
+        _drawer.AddBatch(_renderQueueIndex + 1, _mainBatch);
     }
 
     private void Update()
     {
-        _drawer.AddBatch(_backgroundBatch);
-        if (_showLines || _showTriangles)
-        {
-            _mainBatch.lines.PseudoClear();
-            _mainBatch.triangles.PseudoClear();
-            _mainBatch.meshLines.PseudoClear();
-            _drawer.AddBatch(_mainBatch);
-        }
-        if (_showCellBorders || _showCells)
-        {
-            _overlayBatch.lines.PseudoClear();
-            _overlayBatch.quads.PseudoClear();
-            _drawer.AddBatch(_overlayBatch);
-        }
+        _mainBatch.lines.PseudoClear();
+        _mainBatch.triangles.PseudoClear();
+        _mainBatch.meshLines.PseudoClear();
 
-        for (int i = 0; i < _particles.Count; i++)
-        {
-            Particle p = _particles[i];
-            (int, int) square = GetSquare(p.Position);
-            _regionMap[square.Item1, square.Item2].Add(p);
-        }
+        if (_showLines == false && _showTriangles == false) return;
 
-        for (int ry = 0; ry <= _maxSquareY; ry++) {
-            for (int rx = 0; rx <= _maxSquareX; rx++)
+        var regionMap = _fragmentator.RegionMap;
+        int maxSquareX = _fragmentator.MaxSquareX;
+        int maxSquareY = _fragmentator.MaxSquareY;
+
+        for (int ry = 0; ry <= maxSquareY; ry++)
+        {
+            for (int rx = 0; rx <= maxSquareX; rx++)
             {
-                FastList<Particle> current = _regionMap[rx, ry];
+                FastList<Particle> current = regionMap[rx, ry];
                 if (current._count == 0) continue;
 
-				if (_showCells) { // debug cells draw
-                    float x = (rx - _xSquareOffset) * _connectionDistance;
-                    float y = (ry - _ySquareOffset) * _connectionDistance;
-                    Color currentColor = _cellColor;
-                    currentColor.a *= current._count / AveragePerCell;
-                    _overlayBatch.quads.Add(new SimpleGraphics.QuadEntry(
-                        x, y, x + _connectionDistance, y, x + _connectionDistance, y + _connectionDistance, x, y + _connectionDistance, currentColor
-                        ));
-                }
-
-                int xFrom = rx == 0 ? 0 : rx - 1, xTo = rx == _maxSquareX ? rx : rx + 1;
-                int yFrom = ry, yTo = ry == _maxSquareY ? ry : ry + 1;
+                int xFrom = rx == 0 ? 0 : rx - 1, xTo = rx == maxSquareX ? rx : rx + 1;
+                int yFrom = ry, yTo = ry == maxSquareY ? ry : ry + 1;
 
                 if (_showLines)
                 {
@@ -435,7 +369,7 @@ public class SimulationController : MonoBehaviour
                         for (int y = yFrom; y <= yTo; y++)
                         {
                             if (x <= rx && y == ry) continue;
-                            FastList<Particle> available = _regionMap[x, y];
+                            FastList<Particle> available = regionMap[x, y];
 
                             for (int j = 0; j < available._count; j++)
                                 for (int i = 0; i < current._count; i++)
@@ -447,11 +381,12 @@ public class SimulationController : MonoBehaviour
                 if (_showTriangles)
                 {
                     FastList<Particle> surrounding = new FastList<Particle>();
-                    for (int x = xFrom; x <= xTo; x++) {
+                    for (int x = xFrom; x <= xTo; x++)
+                    {
                         for (int y = yFrom; y <= yTo; y++)
                         {
                             if (x <= rx && y == ry) continue;
-                            surrounding.AddRange(_regionMap[x, y]);
+                            surrounding.AddRange(regionMap[x, y]);
                         }
                     }
 
@@ -474,21 +409,6 @@ public class SimulationController : MonoBehaviour
                                 DrawTriangle(current[i], surrounding[j], surrounding[k]);
                     }
                 }
-
-                _regionMap[rx, ry].PseudoClear();
-            }
-        }
-
-        if (_showCellBorders)
-        {
-            for (float x = -Mathf.Floor(_xBound / _connectionDistance) * _connectionDistance; x < _xBound; x += _connectionDistance)
-            {
-                _overlayBatch.lines.Add(new SimpleGraphics.LineEntry(x, -_yBound, x, _yBound, _cellBorderColor));
-            }
-
-            for (float y = -Mathf.Floor(_yBound / _connectionDistance) * _connectionDistance; y < _yBound; y += _connectionDistance)
-            {
-                _overlayBatch.lines.Add(new SimpleGraphics.LineEntry(-_xBound, y, _xBound, y, _cellBorderColor));
             }
         }
     }
@@ -529,9 +449,9 @@ public class SimulationController : MonoBehaviour
         Color color = _currentLineColorGradient.Evaluate(intensity);
 
         if (_meshLines)
-            _mainBatch.meshLines.Add(new SimpleGraphics.MeshLineEntry(pos1.x, pos1.y, pos2.x, pos2.y, _linesWidth, color));
+            _mainBatch.meshLines.Add(new MeshLineEntry(pos1.x, pos1.y, pos2.x, pos2.y, _linesWidth, color));
         else
-            _mainBatch.lines.Add(new SimpleGraphics.LineEntry(pos1.x, pos1.y, pos2.x, pos2.y, color));
+            _mainBatch.lines.Add(new LineEntry(pos1.x, pos1.y, pos2.x, pos2.y, color));
     }
 
     private void DrawTriangle(Particle p1, Particle p2, Particle p3)
@@ -554,15 +474,8 @@ public class SimulationController : MonoBehaviour
         float intensity = _triangleColorOffset + _triangleColorCoefficient * (maxSide - _strongDistance);
 
         Color color = _currentLineColorGradient.Evaluate(intensity);
-        _mainBatch.triangles.Add(new SimpleGraphics.TriangleEntry(
+        _mainBatch.triangles.Add(new TriangleEntry(
             pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y, color
             ));
-    }
-
-    private (int, int) GetSquare(Vector3 location)
-	{
-        int xp = (int)System.Math.Floor(location.x / _connectionDistance) + _xSquareOffset;
-        int yp = (int)System.Math.Floor(location.y / _connectionDistance) + _ySquareOffset;
-        return (Mathf.Clamp(xp, 0, _maxSquareX), Mathf.Clamp(yp, 0, _maxSquareY));
     }
 }

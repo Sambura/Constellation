@@ -26,14 +26,6 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private SliderWithText _minParticleVelocitySlider;
 	[SerializeField] private SliderWithText _maxParticleVelocitySlider;
 
-	[Header("Debug/stat")]
-	[SerializeField] private TextMeshProUGUI _estimatedFpsLabel;
-
-	private void UpdatePerformanceLabels()
-	{
-		_estimatedFpsLabel.text = _controller.EstimatedFps.ToString("0.0");
-	}
-
 	private void Start()
 	{
 		// UI initialization
@@ -52,8 +44,6 @@ public class SimulationTabPresenter : MonoBehaviour
 		_minParticleVelocitySlider.Value = _controller.MinParticleVelocity;
 		_maxParticleVelocitySlider.Value = _controller.MaxParticleVelocity;
 		_clearColorButton.Color = _controller.ClearColor;
-
-		UpdatePerformanceLabels();
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
@@ -142,14 +132,12 @@ public class SimulationTabPresenter : MonoBehaviour
 	{
 		_controller.ConnectionDistance = value;
 		_connectionDistanceSlider.SetValueWithoutNotify(value);
-		UpdatePerformanceLabels();
 	}
 
 	private void OnParticleCountChanged(int value)
 	{
 		_controller.ParticleCount = value;
 		_particlesCountSlider.SetValueWithoutNotify(value);
-		UpdatePerformanceLabels();
 	}
 
 	private void OnLineTempColorChanged(Color color)
