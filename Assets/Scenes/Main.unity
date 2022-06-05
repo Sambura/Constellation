@@ -1316,16 +1316,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _drawer: {fileID: 519420030}
   _viewport: {fileID: 519420034}
-  _fragmentator: {fileID: 144636867}
-  _particlePrefab: {fileID: 7827596926780307577, guid: 843d90c62134a7f49b2281270eb61bc6, type: 3}
-  _randomizeInitialPosition: 1
-  _particlesScale: 0.3
+  _particleController: {fileID: 144636867}
   _linesWidth: 0.02
   _meshLines: 0
-  _particlesCount: 400
   _connectionDistance: 1
   _strongDistance: 0
-  _particlesColor: {r: 1, g: 1, b: 1, a: 0.7294118}
   _lineColor:
     serializedVersion: 2
     key0: {r: 0, g: 0.6792453, b: 0.22375138, a: 0}
@@ -1355,11 +1350,8 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 2
     m_NumAlphaKeys: 2
-  _showParticles: 1
   _showLines: 1
   _showTriangles: 1
-  _minParticleVelocity: 0.1
-  _maxParticleVelocity: 1
   _changeLinesColor: 0
   _colorMinHue: 0
   _colorMaxHue: 1
@@ -1388,9 +1380,9 @@ MonoBehaviour:
   _fragmentator: {fileID: 144636867}
   _renderQueueIndex: 1000
   _showCellBorders: 0
-  _cellBorderColor: {r: 1, g: 0, b: 0, a: 0.6392157}
+  _cellBorderColor: {r: 1, g: 0, b: 0, a: 0.4627451}
   _showCells: 0
-  _cellColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 0.2627451}
+  _cellColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 0.18431373}
 --- !u!114 &144636867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1403,6 +1395,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4e291364a55f2d49807b8c1fa9f58f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _viewport: {fileID: 519420034}
+  _particlePrefab: {fileID: 7827596926780307577, guid: 843d90c62134a7f49b2281270eb61bc6, type: 3}
+  _randomizeInitialPosition: 1
+  _particlesScale: 0.3
+  _particlesCount: 400
+  _particlesColor: {r: 1, g: 1, b: 1, a: 0.8}
+  _showParticles: 1
+  _minParticleVelocity: 0.1
+  _maxParticleVelocity: 1
 --- !u!1001 &188546398
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2103,6 +2104,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _controller: {fileID: 144636865}
+  _particles: {fileID: 144636867}
   _showParticlesToggle: {fileID: 431836424}
   _particleSizeSlider: {fileID: 1894342942}
   _particleColorButton: {fileID: 364166650}
@@ -5986,7 +5988,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 19.999939, y: 0}
+  m_AnchoredPosition: {x: 19.999817, y: 0}
   m_SizeDelta: {x: 700, y: -40}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1278842188

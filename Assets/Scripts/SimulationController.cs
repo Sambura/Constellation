@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Core;
 using SimpleGraphics;
@@ -9,28 +8,16 @@ public class SimulationController : MonoBehaviour
     [Header("Objects")]
     [SerializeField] private BatchRenderer _drawer;
     [SerializeField] private Viewport _viewport;
-    [SerializeField] private Fragmentator _fragmentator;
-
-    [Header("Prefabs")]
-    [SerializeField] private GameObject _particlePrefab;
-
-    [Header("Initialization parameters")]
-    [SerializeField] private bool _randomizeInitialPosition = true;
+    [SerializeField] private ParticleController _particleController;
 
     [Header("Simulation parameters")]
-    [SerializeField] private float _particlesScale = 0.1f;
     [SerializeField] private float _linesWidth = 0.1f;
     [SerializeField] private bool _meshLines = false;
-    [SerializeField] private int _particlesCount = 100;
     [SerializeField] private float _connectionDistance = 60f;
     [SerializeField] private float _strongDistance = 10f;
-    [SerializeField] private Color _particlesColor = Color.white;
     [SerializeField] private Gradient _lineColor;
-    [SerializeField] private bool _showParticles = true;
     [SerializeField] private bool _showLines = true;
     [SerializeField] private bool _showTriangles = true;
-    [SerializeField] private float _minParticleVelocity = 0;
-    [SerializeField] private float _maxParticleVelocity = 1;
     [SerializeField] private bool _changeLinesColor = true;
     [SerializeField] private float _colorMinHue = 0;
     [SerializeField] private float _colorMaxHue = 1;
@@ -46,21 +33,6 @@ public class SimulationController : MonoBehaviour
     [Header("Rendering")]
     [SerializeField] private int _renderQueueIndex = 0;
 
-    public bool ShowParticles
-	{
-        get => _showParticles;
-        set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
-	}
-    public float ParticleSize
-	{
-        get => _particlesScale;
-        set { if (_particlesScale != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
-    }
-    public Color ParticleColor
-    {
-        get => _particlesColor;
-        set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
-    }
     public bool ShowLines
 	{
         get => _showLines;
@@ -80,11 +52,6 @@ public class SimulationController : MonoBehaviour
 	{
         get => _linesWidth;
         set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
-    }
-    public int ParticleCount
-	{
-        get => _particlesCount;
-        set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
     }
     public float ConnectionDistance
     {
@@ -106,56 +73,21 @@ public class SimulationController : MonoBehaviour
         get => _triangleFillOpacity;
         set { if (_triangleFillOpacity != value) { SetTriangleFillOpacity(value); TriangleFillOpacityChanged?.Invoke(value); }; }
     }
-    public float MinParticleVelocity
-	{
-        get => _minParticleVelocity;
-        set { if (_minParticleVelocity != value) { SetMinParticleVelocity(value); MinParticleVelocityChanged?.Invoke(value); }; }
-    }
-    public float MaxParticleVelocity
-	{
-        get => _maxParticleVelocity;
-        set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }
-    }
     public Color ClearColor
     {
         get => _clearColor;
         set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
     }
 
-    public event System.Action<bool> ShowParticlesChanged;
-    public event System.Action<float> ParticleSizeChanged;
-    public event System.Action<Color> ParticleColorChanged;
     public event System.Action<bool> ShowLinesChanged;
     public event System.Action<bool> MeshLinesChanged;
     public event System.Action<Color> LineColorTempChanged;
     public event System.Action<float> LineWidthChanged;
-    public event System.Action<int> ParticleCountChanged;
     public event System.Action<float> ConnectionDistanceChanged;
     public event System.Action<float> StrongDistanceChanged;
     public event System.Action<bool> ShowTrianglesChanged;
     public event System.Action<float> TriangleFillOpacityChanged;
-    public event System.Action<float> MinParticleVelocityChanged;
-    public event System.Action<float> MaxParticleVelocityChanged;
     public event System.Action<Color> ClearColorChanged;
-
-    private void SetShowParticles(bool value)
-	{
-        _showParticles = value;
-        foreach (Particle p in _particles)
-            p.Visible = value;
-	}
-    private void SetParticleSize(float value)
-    {
-        _particlesScale = value;
-        foreach (Particle p in _particles)
-            p.Size = value;
-    }
-    private void SetParticleColor(Color value)
-    {
-        _particlesColor = value;
-        foreach (Particle p in _particles)
-            p.Color = value;
-    }
 
     private void SetLineColorTemp(Color value)
 	{
@@ -165,35 +97,6 @@ public class SimulationController : MonoBehaviour
         _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
 	}
 
-    private void SetParticlesCount(int value)
-    {
-        _particlesCount = value;
-
-        while (_particles.Count > value)
-        {
-            int index = _particles.Count - 1;
-            Destroy(_particles[index].gameObject);
-            _particles.RemoveAt(index);
-        }
-
-        while (_particles.Count < value)
-        {
-            Particle particle = Instantiate(_particlePrefab).GetComponent<Particle>();
-            particle.VelocityDelegate = GetParticleVelocity;
-            particle.Viewport = _viewport;
-            particle.Color = ParticleColor;
-            particle.Visible = ShowParticles;
-            particle.Size = ParticleSize;
-            particle.SetRandomVelocity();
-            if (_randomizeInitialPosition)
-            {
-                particle.Position = new Vector3(Random.Range(-_viewport.MaxX, _viewport.MaxX), 
-                    Random.Range(-_viewport.MaxY, _viewport.MaxY));
-            }
-
-            _particles.Add(particle);
-        }
-    }
     private void SetConnectionDistance(float value)
 	{
         _connectionDistance = value;
@@ -201,7 +104,7 @@ public class SimulationController : MonoBehaviour
         _lineIntensityDenominator = _connectionDistance - _strongDistance;
         _triangleColorCoefficient = _triangleFillOpacity / _lineIntensityDenominator;
 
-        _fragmentator.SetConnectionDistance(value);
+        _particleController.SetConnectionDistance(value);
     }
     private void SetStrongDistance(float value)
     {
@@ -216,39 +119,12 @@ public class SimulationController : MonoBehaviour
         _triangleColorCoefficient = _triangleFillOpacity / _lineIntensityDenominator;
     }
     
-    private void SetMinParticleVelocity(float value)
-	{
-        _minParticleVelocity = value;
-
-        foreach (Particle p in _particles) {
-            float magnitude = p.Velocity.magnitude;
-            if (magnitude >= _minParticleVelocity) continue;
-            if (magnitude == 0) {
-                p.SetRandomVelocity();
-                continue;
-            }
-            p.Velocity = p.Velocity / magnitude * _minParticleVelocity;
-        }
-	}
-    private void SetMaxParticleVelocity(float value)
-    {
-        _maxParticleVelocity = value;
-
-        foreach (Particle p in _particles)
-        {
-            float magnitude = p.Velocity.magnitude;
-            if (magnitude <= _maxParticleVelocity) continue;
-
-            p.Velocity = Vector3.ClampMagnitude(p.Velocity, _maxParticleVelocity);
-        }
-    }
     private void SetClearColor(Color value)
 	{
         _clearColor = value;
         _backgroundBatch.quads[0].color = value;
 	}
 
-    private List<Particle> _particles;
     private float _connectionDistanceSquared;
     private float _lineIntensityDenominator;
     private float _triangleColorOffset;
@@ -256,14 +132,10 @@ public class SimulationController : MonoBehaviour
     private Gradient _currentLineColorGradient;
     private GradientColorKey[] _currentLineGradientColorKeys;
     private GradientAlphaKey[] _currentLineGradientAlphaKeys;
+    private FastList<Particle>[] _neighbours;
     // rendering stuff
     private SimpleDrawBatch _backgroundBatch;
     private SimpleDrawBatch _mainBatch;
-
-    private float GetParticleVelocity(Particle particle)
-    {
-        return Random.Range(_minParticleVelocity, _maxParticleVelocity);
-    }
 
     private void InvertGradientKeys(GradientColorKey[] keys)
 	{
@@ -287,14 +159,17 @@ public class SimulationController : MonoBehaviour
 
     private void Awake()
     {
-        _particles = new List<Particle>(_particlesCount);
+        _neighbours = new FastList<Particle>[4];
+        _backgroundBatch = new SimpleDrawBatch();
+        _backgroundBatch.quads = new FastList<QuadEntry>();
+        _mainBatch = new SimpleDrawBatch();
+        _mainBatch.lines = new FastList<LineEntry>();
+        _mainBatch.meshLines = new FastList<MeshLineEntry>();
+        _mainBatch.triangles = new FastList<TriangleEntry>();
 
-        _fragmentator.Viewport = _viewport;
-        _fragmentator.Particles = _particles;
 		SetConnectionDistance(_connectionDistance);
         SetStrongDistance(_strongDistance);
         SetTriangleFillOpacity(_triangleFillOpacity);
-        SetParticlesCount(_particlesCount);
 
         _currentLineColorGradient = new Gradient();
         _currentLineGradientAlphaKeys = _lineColor.alphaKeys;
@@ -311,18 +186,11 @@ public class SimulationController : MonoBehaviour
             _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
         }
 
-        _backgroundBatch = new SimpleDrawBatch();
-        _backgroundBatch.quads = new FastList<QuadEntry>();
         _backgroundBatch.quads.Add(new QuadEntry());
 
         _viewport.CameraDimensionsChanged += UpdateBackgroundQuad;
         UpdateBackgroundQuad();
         SetClearColor(_clearColor);
-
-        _mainBatch = new SimpleDrawBatch();
-        _mainBatch.lines = new FastList<LineEntry>();
-        _mainBatch.meshLines = new FastList<MeshLineEntry>();
-        _mainBatch.triangles = new FastList<TriangleEntry>();
 
         _drawer.AddBatch(_renderQueueIndex, _backgroundBatch);
         _drawer.AddBatch(_renderQueueIndex + 1, _mainBatch);
@@ -336,9 +204,9 @@ public class SimulationController : MonoBehaviour
 
         if (_showLines == false && _showTriangles == false) return;
 
-        var regionMap = _fragmentator.RegionMap;
-        int maxSquareX = _fragmentator.MaxSquareX;
-        int maxSquareY = _fragmentator.MaxSquareY;
+        var regionMap = _particleController.RegionMap;
+        int maxSquareX = _particleController.MaxSquareX;
+        int maxSquareY = _particleController.MaxSquareY;
 
         for (int ry = 0; ry <= maxSquareY; ry++)
         {
@@ -350,6 +218,22 @@ public class SimulationController : MonoBehaviour
                 int xFrom = rx == 0 ? 0 : rx - 1, xTo = rx == maxSquareX ? rx : rx + 1;
                 int yFrom = ry, yTo = ry == maxSquareY ? ry : ry + 1;
 
+                // Draw lines between a point in the current cell and the point in one of the 4 neighbour cells
+                // . - skipped, C - current cell, # - *neighbour* cell
+                //
+                // ......
+                // ..CC##
+                // ######
+                //
+                int neighbourCount = 0;
+                for (int x = xFrom; x <= xTo; x++) {
+                    for (int y = yFrom; y <= yTo; y++) {
+                        if (x <= rx && y == ry) continue;
+                        _neighbours[neighbourCount] = regionMap[x, y];
+                        neighbourCount++;
+                    }
+                }
+
                 if (_showLines)
                 {
                     // Draw lines between two points in the current cell
@@ -357,38 +241,19 @@ public class SimulationController : MonoBehaviour
                         for (int j = i + 1; j < current._count; j++)
                             DrawLine(current[i], current[j]);
 
-                    // Draw lines between a point in the current cell and the point in one of the 4 surrounding cells
-                    // . - skipped, C - current cell, # - not skipped
-                    //
-                    // ......
-                    // ..CC##
-                    // ######
-                    //
-                    for (int x = xFrom; x <= xTo; x++)
+                    for (int neighbourIndex = 0; neighbourIndex < neighbourCount; neighbourIndex++)
                     {
-                        for (int y = yFrom; y <= yTo; y++)
-                        {
-                            if (x <= rx && y == ry) continue;
-                            FastList<Particle> available = regionMap[x, y];
+                        FastList<Particle> neighbour = _neighbours[neighbourIndex];
 
-                            for (int j = 0; j < available._count; j++)
-                                for (int i = 0; i < current._count; i++)
-                                    DrawLine(current[i], available[j]);
-                        }
+                        for (int j = 0; j < neighbour._count; j++)
+                            for (int i = 0; i < current._count; i++)
+                                DrawLine(current[i], neighbour[j]);
                     }
                 }
 
                 if (_showTriangles)
                 {
-                    FastList<Particle> surrounding = new FastList<Particle>();
-                    for (int x = xFrom; x <= xTo; x++)
-                    {
-                        for (int y = yFrom; y <= yTo; y++)
-                        {
-                            if (x <= rx && y == ry) continue;
-                            surrounding.AddRange(regionMap[x, y]);
-                        }
-                    }
+                    bool zerosNeighbour = neighbourCount == 4;
 
                     for (int i = 0; i < current._count; i++)
                     {
@@ -400,13 +265,44 @@ public class SimulationController : MonoBehaviour
                                 DrawTriangle(current[i], current[j], current[k]);
                             // Triangles with 2 points inside the current cell
                             // no heuristics available
-                            for (int k = 0; k < surrounding._count; k++)
-                                DrawTriangle(current[i], current[j], surrounding[k]);
+                            for (int neighbourIndex = 0; neighbourIndex < neighbourCount; neighbourIndex++)
+                            {
+                                FastList<Particle> neighbour = _neighbours[neighbourIndex];
+
+                                for (int k = 0; k < neighbour._count; k++)
+                                    DrawTriangle(current[i], current[j], neighbour[k]);
+                            }
                         }
                         // Triangles with 1 point inside the current cell
-                        for (int j = 0; j < surrounding._count; j++)
-                            for (int k = j + 1; k < surrounding._count; k++)
-                                DrawTriangle(current[i], surrounding[j], surrounding[k]);
+
+                        // Triangles with 2 points in the same neighbour cell
+                        for (int nIndex1 = 0; nIndex1 < neighbourCount; nIndex1++)
+                        {
+                            FastList<Particle> neighbour1 = _neighbours[nIndex1];
+
+                            for (int j = 0; j < neighbour1._count; j++)
+                                for (int k = j + 1; k < neighbour1._count; k++)
+                                    DrawTriangle(current[i], neighbour1[j], neighbour1[k]);
+                        }
+
+                        // Triangles with 2 points in 2 different neighbour cells
+                        for (int nIndex1 = 0; nIndex1 < neighbourCount; nIndex1++)
+                        {
+                            FastList<Particle> neighbour1 = _neighbours[nIndex1];
+                            
+                            for (int nIndex2 = nIndex1 + 1; nIndex2 < neighbourCount; nIndex2++)
+                            {
+                                // Cells that are 1 unit apart cannot connect
+                                if (zerosNeighbour && nIndex2 > 1) continue;
+                                FastList<Particle> neighbour2 = _neighbours[nIndex2];
+
+                                for (int j = 0; j < neighbour1._count; j++)
+                                    for (int k = 0; k < neighbour2._count; k++)
+                                        DrawTriangle(current[i], neighbour1[j], neighbour2[k]);
+                            }
+
+                            zerosNeighbour = false;
+                        }
                     }
                 }
             }

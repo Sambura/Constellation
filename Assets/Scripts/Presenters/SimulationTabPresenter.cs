@@ -6,6 +6,7 @@ public class SimulationTabPresenter : MonoBehaviour
 {
 	[Header("General")]
 	[SerializeField] private SimulationController _controller;
+	[SerializeField] private ParticleController _particles;
 
 	[Header("General appearance")]
 	[SerializeField] private Toggle _showParticlesToggle;
@@ -29,31 +30,31 @@ public class SimulationTabPresenter : MonoBehaviour
 	private void Start()
 	{
 		// UI initialization
-		_showParticlesToggle.isOn = _controller.ShowParticles;
-		_particleSizeSlider.Value = _controller.ParticleSize;
-		_particleColorButton.Color = _controller.ParticleColor;
+		_showParticlesToggle.isOn = _particles.ShowParticles;
+		_particleSizeSlider.Value = _particles.ParticleSize;
+		_particleColorButton.Color = _particles.ParticleColor;
 		_showLinesToggle.isOn = _controller.ShowLines;
 		_lineTempColorButton.Color = _controller.LineColorTemp;
 		_meshLinesToggle.isOn = _controller.MeshLines;
 		_meshLineWidthSlider.Value = _controller.LineWidth;
-		_particlesCountSlider.Value = _controller.ParticleCount;
+		_particlesCountSlider.Value = _particles.ParticleCount;
 		_connectionDistanceSlider.Value = _controller.ConnectionDistance;
 		_strongDistanceSlider.Value = _controller.StrongDistance;
 		_showTrianglesToggle.isOn = _controller.ShowTriangles;
 		_triangleFillOpacitySlider.Value = _controller.TriangleFillOpacity;
-		_minParticleVelocitySlider.Value = _controller.MinParticleVelocity;
-		_maxParticleVelocitySlider.Value = _controller.MaxParticleVelocity;
+		_minParticleVelocitySlider.Value = _particles.MinParticleVelocity;
+		_maxParticleVelocitySlider.Value = _particles.MaxParticleVelocity;
 		_clearColorButton.Color = _controller.ClearColor;
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
-		_controller.ShowParticlesChanged += OnShowParticlesChanged;
+		_particles.ShowParticlesChanged += OnShowParticlesChanged;
 
 		_particleSizeSlider.ValueChanged += OnParticleSizeChanged;
-		_controller.ParticleSizeChanged += OnParticleSizeChanged;
+		_particles.ParticleSizeChanged += OnParticleSizeChanged;
 
 		_particleColorButton.ColorChanged += OnParticleColorChanged;
-		_controller.ParticleColorChanged += OnParticleColorChanged;
+		_particles.ParticleColorChanged += OnParticleColorChanged;
 
 		_showLinesToggle.onValueChanged.AddListener(OnShowLinesChanged);
 		_controller.ShowLinesChanged += OnShowLinesChanged;
@@ -68,7 +69,7 @@ public class SimulationTabPresenter : MonoBehaviour
 		_controller.LineColorTempChanged += OnLineTempColorChanged;
 
 		_particlesCountSlider.IntValueChanged += OnParticleCountChanged;
-		_controller.ParticleCountChanged += OnParticleCountChanged;
+		_particles.ParticleCountChanged += OnParticleCountChanged;
 
 		_connectionDistanceSlider.ValueChanged += OnConnectionDistanceChanged;
 		_controller.ConnectionDistanceChanged += OnConnectionDistanceChanged;
@@ -83,10 +84,10 @@ public class SimulationTabPresenter : MonoBehaviour
 		_controller.TriangleFillOpacityChanged += OnTriangleFillOpacityChanged;
 
 		_minParticleVelocitySlider.ValueChanged += OnMinParticleVelocityChanged;
-		_controller.MinParticleVelocityChanged += OnMinParticleVelocityChanged;
+		_particles.MinParticleVelocityChanged += OnMinParticleVelocityChanged;
 
 		_maxParticleVelocitySlider.ValueChanged += OnMaxParticleVelocityChanged;
-		_controller.MaxParticleVelocityChanged += OnMaxParticleVelocityChanged;
+		_particles.MaxParticleVelocityChanged += OnMaxParticleVelocityChanged;
 
 		_clearColorButton.ColorChanged += OnClearColorChanged;
 		_controller.ClearColorChanged += OnClearColorChanged;
@@ -100,13 +101,13 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnMaxParticleVelocityChanged(float value)
 	{
-		_controller.MaxParticleVelocity = value;
+		_particles.MaxParticleVelocity = value;
 		_maxParticleVelocitySlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnMinParticleVelocityChanged(float value)
 	{
-		_controller.MinParticleVelocity = value;
+		_particles.MinParticleVelocity = value;
 		_minParticleVelocitySlider.SetValueWithoutNotify(value);
 	}
 
@@ -136,7 +137,7 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnParticleCountChanged(int value)
 	{
-		_controller.ParticleCount = value;
+		_particles.ParticleCount = value;
 		_particlesCountSlider.SetValueWithoutNotify(value);
 	}
 
@@ -166,19 +167,19 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnParticleColorChanged(Color color)
 	{
-		_controller.ParticleColor = color;
+		_particles.ParticleColor = color;
 		_particleColorButton.Color = color;
 	}
 
 	private void OnParticleSizeChanged(float value)
 	{
-		_controller.ParticleSize = value;
+		_particles.ParticleSize = value;
 		_particleSizeSlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnShowParticlesChanged(bool value)
 	{
-		_controller.ShowParticles = value;
+		_particles.ShowParticles = value;
 		_showParticlesToggle.SetIsOnWithoutNotify(value);
 	}
 

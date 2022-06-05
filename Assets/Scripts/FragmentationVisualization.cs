@@ -7,7 +7,7 @@ public class FragmentationVisualization : MonoBehaviour
 {
     [Header("Objects")]
     [SerializeField] private BatchRenderer _drawer;
-    [SerializeField] private Fragmentator _fragmentator;
+    [SerializeField] private ParticleController _fragmentator;
     [SerializeField] private int _renderQueueIndex = 1000;
 
     [Header("Debug")]

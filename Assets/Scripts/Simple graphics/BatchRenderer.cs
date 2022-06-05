@@ -9,12 +9,15 @@ namespace SimpleGraphics
         [SerializeField] private Camera _camera;
 
         private Transform _cameraTransform;
-        private SortedDictionary<int, SimpleDrawBatch> _batches;
+        private SortedList<int, SimpleDrawBatch> _batches;
+        private IList<SimpleDrawBatch> _batchList;
+        private int _batchesCount;
 
         private void Awake()
         {
             _cameraTransform = _camera.transform;
-            _batches = new SortedDictionary<int, SimpleDrawBatch>();
+            _batches = new SortedList<int, SimpleDrawBatch>();
+            _batchList = _batches.Values;
         }
 
         private Matrix4x4 GetCameraProjectionMatrix()
@@ -37,8 +40,10 @@ namespace SimpleGraphics
             GL.PushMatrix();
             GL.LoadProjectionMatrix(GetCameraProjectionMatrix());
 
-            foreach (SimpleDrawBatch batch in _batches.Values)
+            for (int batchIndex = 0; batchIndex < _batchesCount; batchIndex++)
             {
+                SimpleDrawBatch batch = _batchList[batchIndex];
+
                 if (batch.triangles != null)
                 {
                     GL.Begin(GL.TRIANGLES);
@@ -118,13 +123,18 @@ namespace SimpleGraphics
         public void AddBatch(int renderQueueIndex, SimpleDrawBatch batch)
         {
             _batches.Add(renderQueueIndex, batch);
+            _batchesCount = _batches.Count;
         }
 
         public void RemoveBatch(int renderQueueIndex, SimpleDrawBatch batch)
         {
             if (_batches.TryGetValue(renderQueueIndex, out SimpleDrawBatch existing))
             {
-                if (existing == batch) _batches.Remove(renderQueueIndex);
+                if (existing == batch)
+                {
+                    _batches.Remove(renderQueueIndex);
+                    _batchesCount = _batches.Count;
+                }
             }
         }
     }
