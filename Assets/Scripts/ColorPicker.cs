@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System;
-using UnityEngine.EventSystems;
 
-public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
+public class ColorPicker : MonoDialog
 {
     [SerializeField] private UIPositionHelper _colorWindow;
     [SerializeField] private UIPositionHelper _hueBar;
@@ -11,7 +10,6 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
     [SerializeField] private Image _colorWindowImage;
     [SerializeField] private RectTransform _hueBarKnob;
     [SerializeField] private RectTransform _colorWindowKnob;
-    [SerializeField] private Button _okButton;
 
     public Color Color
 	{
@@ -43,7 +41,6 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
     private float _h;
     private float _s;
     private float _v;
-    private Vector2 _clickPosition;
 
     private static readonly int HuePropertyId = Shader.PropertyToID("_Hue");
 
@@ -58,8 +55,9 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
         _colorWindowKnob.position = _colorWindow.NormalizedToWorldPosition(new Vector2(_s, _v));
     }
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         ColorChanged += CallOnColorChanged;
         _palleteMaterial = _colorWindowImage.material;
         SetColor(_color);
@@ -67,21 +65,15 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
         _colorWindow.PointerPositionChanged += OnColorWindowPointerPositionChanged;
 		_hueBar.PointerPositionChanged += OnHueBarPointerPositionChanged;
 		_alphaSlider.ValueChanged += OnAlphaSliderValueChanged;
-        _okButton?.onClick.AddListener(OnOkButtonPressed);
     }
 
-	private void OnDestroy()
+	protected override void OnDestroy()
 	{
+        base.OnDestroy();
         _colorWindow.PointerPositionChanged -= OnColorWindowPointerPositionChanged;
         _hueBar.PointerPositionChanged -= OnHueBarPointerPositionChanged;
         _alphaSlider.ValueChanged -= OnAlphaSliderValueChanged;
-        _okButton?.onClick.RemoveListener(OnOkButtonPressed);
     }
-
-    private void OnOkButtonPressed()
-	{
-        gameObject.SetActive(false);
-	}
 
 	private void OnAlphaSliderValueChanged(float value) => CalculateNewColor();
 
@@ -110,15 +102,5 @@ public class ColorPicker : MonoBehaviour, IDragHandler, IPointerDownHandler
         PlaceHueBarKnob();
         PlaceColorWindowKnob();
         _palleteMaterial.SetFloat(HuePropertyId, _h);
-    }
-
-	public void OnDrag(PointerEventData eventData)
-	{
-        transform.position = _clickPosition + eventData.position - eventData.pressPosition;
-	}
-
-	public void OnPointerDown(PointerEventData eventData)
-	{
-        _clickPosition = transform.position;
     }
 }

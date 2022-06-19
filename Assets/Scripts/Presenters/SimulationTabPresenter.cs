@@ -19,6 +19,7 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private Toggle _showTrianglesToggle;
 	[SerializeField] private SliderWithText _triangleFillOpacitySlider;
 	[SerializeField] private ColorPickerButton _clearColorButton;
+	[SerializeField] private CurvePickerButton _alphaCurveButton;
 
 	[Header("Simulation parameters")]
 	[SerializeField] private SliderWithText _particlesCountSlider;
@@ -45,6 +46,7 @@ public class SimulationTabPresenter : MonoBehaviour
 		_minParticleVelocitySlider.Value = _particles.MinParticleVelocity;
 		_maxParticleVelocitySlider.Value = _particles.MaxParticleVelocity;
 		_clearColorButton.Color = _controller.ClearColor;
+		_alphaCurveButton.Curve = _controller.AlphaCurve;
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
@@ -91,6 +93,15 @@ public class SimulationTabPresenter : MonoBehaviour
 
 		_clearColorButton.ColorChanged += OnClearColorChanged;
 		_controller.ClearColorChanged += OnClearColorChanged;
+
+		_alphaCurveButton.CurveChanged += OnAlphaCurveChanged;
+		_controller.AlphaCurveChanged += OnAlphaCurveChanged;
+	}
+
+	private void OnAlphaCurveChanged(AnimationCurve value)
+	{
+		_controller.AlphaCurve = value;
+		_alphaCurveButton.Curve = value;
 	}
 
 	private void OnClearColorChanged(Color value)

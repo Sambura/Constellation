@@ -34,14 +34,26 @@ public class UIPositionHelper : MonoBehaviour, IPointerDownHandler, IDragHandler
         PointerPosition = NormalizedToWorldPosition(preNormalized);
     }
 
-    public void OnPointerDown(PointerEventData eventData) => OnDrag(eventData);
-
-    public Vector2 NormalizedToWorldPosition(Vector2 normalized)
+    public static Vector2 LocalToNormalizedPosition(RectTransform rectTransform, Vector2 local)
 	{
-        return _rectTransform.localToWorldMatrix.MultiplyPoint3x4((normalized - _rectTransform.pivot) * _rectTransform.rect.size);
+        return local / rectTransform.rect.size + rectTransform.pivot;
     }
 
-	private void Awake()
+    public void OnPointerDown(PointerEventData eventData) => OnDrag(eventData);
+
+    public static Vector2 NormalizedToLocalPosition(RectTransform rectTransform, Vector2 normalized)
+    {
+        return (normalized - rectTransform.pivot) * rectTransform.rect.size;
+    }
+
+    public static Vector2 NormalizedToWorldPosition(RectTransform rectTransform, Vector2 normalized)
+	{
+        return rectTransform.localToWorldMatrix.MultiplyPoint3x4(NormalizedToLocalPosition(rectTransform, normalized));
+    }
+
+    public Vector2 NormalizedToWorldPosition(Vector2 normalized) => NormalizedToWorldPosition(_rectTransform, normalized);
+
+    private void Awake()
 	{
         _rectTransform = GetComponent<RectTransform>();
     }

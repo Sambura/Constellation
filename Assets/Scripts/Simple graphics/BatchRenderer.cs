@@ -9,14 +9,13 @@ namespace SimpleGraphics
         [SerializeField] private Camera _camera;
 
         private Transform _cameraTransform;
-        private SortedList<int, SimpleDrawBatch> _batches;
+        private SortedList<int, SimpleDrawBatch> _batches = new SortedList<int, SimpleDrawBatch>();
         private IList<SimpleDrawBatch> _batchList;
         private int _batchesCount;
 
         private void Awake()
         {
             _cameraTransform = _camera.transform;
-            _batches = new SortedList<int, SimpleDrawBatch>();
             _batchList = _batches.Values;
         }
 
@@ -33,6 +32,19 @@ namespace SimpleGraphics
             float zFar = position.z + _camera.farClipPlane;
             return Matrix4x4.Ortho(left, right, bottom, top, zNear, zFar);
         }
+
+        public void FromScreenToWorld(ref float x, ref float y)
+		{
+            Vector3 world = _camera.ScreenToWorldPoint(new Vector3(x, y));
+            x = world.x;
+            y = world.y;
+		}
+
+        public void FromScreenToWorld(ref LineEntry line)
+		{
+            FromScreenToWorld(ref line.x1, ref line.y1);
+            FromScreenToWorld(ref line.x2, ref line.y2);
+		}
 
         private void OnPreRender()
         {
@@ -110,6 +122,33 @@ namespace SimpleGraphics
                     }
                     GL.End();
                 }
+            }
+
+            GL.PopMatrix();
+        }
+
+        private void OnPostRender()
+        {
+            if (_batches.ContainsKey(3000) == false) return;
+
+            _material.SetPass(0);
+            GL.PushMatrix();
+
+            SimpleDrawBatch batch = _batches[3000];
+
+            if (batch.lines != null)
+            {
+                GL.Begin(GL.LINES);
+                LineEntry[] buffer = batch.lines._buffer;
+                int count = batch.lines._count;
+                for (int i = 0; i < count; i++)
+                {
+                    LineEntry line = buffer[i];
+                    GL.Color(line.color);
+                    GL.Vertex3(line.x1, line.y1, 0);
+                    GL.Vertex3(line.x2, line.y2, 0);
+                }
+                GL.End();
             }
 
             GL.PopMatrix();

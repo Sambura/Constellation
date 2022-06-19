@@ -16,6 +16,24 @@ namespace SimpleGraphics
             this.y2 = y2;
             this.color = color;
         }
+
+        public LineEntry(Vector2 p1, Vector2 p2, Color color)
+        {
+            this.x1 = p1.x;
+            this.x2 = p2.x;
+            this.y1 = p1.y;
+            this.y2 = p2.y;
+            this.color = color;
+        }
+
+        public LineEntry(Vector3 p1, Vector3 p2, Color color)
+        {
+            this.x1 = p1.x;
+            this.x2 = p2.x;
+            this.y1 = p1.y;
+            this.y2 = p2.y;
+            this.color = color;
+        }
     }
 
     public struct MeshLineEntry

@@ -53,7 +53,6 @@ public class VerticalUIStack : MonoBehaviour
 
 	private void CalculateExtents(RectTransform obj, out float topExtent, out float bottomExtent)
 	{
-		float y = 0;
 		float top = obj.rect.height * (1 - obj.pivot.y);
 		float bottom = -obj.rect.height * obj.pivot.y;
 
