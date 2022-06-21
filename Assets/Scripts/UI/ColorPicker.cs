@@ -59,6 +59,7 @@ public class ColorPicker : MonoDialog
     {
         base.Awake();
         ColorChanged += CallOnColorChanged;
+        _colorWindowImage.material = new Material(_colorWindowImage.material);
         _palleteMaterial = _colorWindowImage.material;
         SetColor(_color);
 

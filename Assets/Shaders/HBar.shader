@@ -50,6 +50,7 @@ Shader "Unlit/HBar"
             {
                 fixed4 color;
                 color.rgb = HUEtoRGB(i.uv.x * _Direction.x + i.uv.y * _Direction.y);
+                color.a = 1;
                 return color;
             }
             ENDCG

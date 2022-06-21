@@ -1,13 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
-public class MonoDialog : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+public class MonoDialog : MonoDraggable
 {
     [SerializeField] protected Button _okButton;
-
-    private Vector2 _dragOffset;
-    private bool _isDragging;
 
     protected virtual void Awake()
     {
@@ -21,24 +17,11 @@ public class MonoDialog : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     protected virtual void OnOkButtonPressed()
     {
+        CloseDialog();
+    }
+
+    public virtual void CloseDialog()
+	{
         gameObject.SetActive(false);
-    }
-
-    public virtual void OnPointerDown(PointerEventData eventData)
-    {
-        _dragOffset = transform.position - (Vector3)eventData.position;
-        _isDragging = true;
-    }
-
-	public virtual void OnPointerUp(PointerEventData eventData)
-	{
-        _isDragging = false;
-    }
-
-    protected virtual void Update()
-	{
-        if (_isDragging == false) return;
-
-        transform.position = (Vector2)Input.mousePosition + _dragOffset;
-    }
+	}
 }

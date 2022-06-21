@@ -34,6 +34,11 @@ public class UIPositionHelper : MonoBehaviour, IPointerDownHandler, IDragHandler
         PointerPosition = NormalizedToWorldPosition(preNormalized);
     }
 
+    public static Vector2 WorldToNormalizedPosition(RectTransform rectTransform, Vector2 world)
+	{
+        return LocalToNormalizedPosition(rectTransform, rectTransform.InverseTransformPoint(world));
+	}
+
     public static Vector2 LocalToNormalizedPosition(RectTransform rectTransform, Vector2 local)
 	{
         return local / rectTransform.rect.size + rectTransform.pivot;

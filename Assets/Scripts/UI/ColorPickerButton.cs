@@ -18,12 +18,23 @@ public class ColorPickerButton : MonoBehaviour, IPointerClickHandler
 	public event Action ButtonClick;
 	public event Action<Color> ColorChanged;
 
+	public bool Interactable { get; set; } = true;
+
 	private RectTransform _transform;
 
 	public void OnPointerClick(PointerEventData eventData)
 	{
+		if (Interactable == false) return;
+
 		ButtonClick?.Invoke();
 		OpenColorPicker();
+	}
+
+	public void CloseColorPicker()
+	{
+		if (_colorPicker.OnColorChanged != OnColorPickerColorChange) return;
+
+		_colorPicker.CloseDialog();
 	}
 
 	private void OnColorPickerColorChange(Color color) => Color = color;
@@ -42,13 +53,4 @@ public class ColorPickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		_transform = GetComponent<RectTransform>();
 	}
-
-#if UNITY_EDITOR
-
-	private void OnDrawGizmosSelected()
-	{
-		//Gizmos.
-	}
-
-#endif
 }

@@ -106,9 +106,9 @@ public class CurvePicker : MonoDialog
 		return newNode;
 	}
 
-	private void NodeSelectedChanged(CurvePickerNode node, bool value)
+	private void NodeSelectedChanged(MonoSelectable node, bool value)
 	{
-		if (value) SelectedNode = node;
+		if (value) SelectedNode = (CurvePickerNode)node;
 	}
 
 	private void OnNodePositionChanged(Vector3 position)
@@ -200,7 +200,7 @@ public class CurvePicker : MonoDialog
 		UpdateNodes();
 	}
 
-	private void KnotSelectedChanged(CurvePickerKnot knot, bool value)
+	private void KnotSelectedChanged(MonoSelectable knot, bool value)
 	{
 		if (value == false) return;
 		(knot == _leftKnot ? _rightKnot : _leftKnot).Selected = false;

@@ -13,13 +13,13 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private SliderWithText _particleSizeSlider;
 	[SerializeField] private ColorPickerButton _particleColorButton;
 	[SerializeField] private Toggle _showLinesToggle;
-	[SerializeField] private ColorPickerButton _lineTempColorButton;
 	[SerializeField] private Toggle _meshLinesToggle;
 	[SerializeField] private SliderWithText _meshLineWidthSlider;
 	[SerializeField] private Toggle _showTrianglesToggle;
 	[SerializeField] private SliderWithText _triangleFillOpacitySlider;
-	[SerializeField] private ColorPickerButton _clearColorButton;
 	[SerializeField] private CurvePickerButton _alphaCurveButton;
+	[SerializeField] private GradientPickerButton _lineColorGradientButton;
+	[SerializeField] private ColorPickerButton _clearColorButton;
 
 	[Header("Simulation parameters")]
 	[SerializeField] private SliderWithText _particlesCountSlider;
@@ -35,7 +35,6 @@ public class SimulationTabPresenter : MonoBehaviour
 		_particleSizeSlider.Value = _particles.ParticleSize;
 		_particleColorButton.Color = _particles.ParticleColor;
 		_showLinesToggle.isOn = _controller.ShowLines;
-		_lineTempColorButton.Color = _controller.LineColorTemp;
 		_meshLinesToggle.isOn = _controller.MeshLines;
 		_meshLineWidthSlider.Value = _controller.LineWidth;
 		_particlesCountSlider.Value = _particles.ParticleCount;
@@ -47,6 +46,7 @@ public class SimulationTabPresenter : MonoBehaviour
 		_maxParticleVelocitySlider.Value = _particles.MaxParticleVelocity;
 		_clearColorButton.Color = _controller.ClearColor;
 		_alphaCurveButton.Curve = _controller.AlphaCurve;
+		_lineColorGradientButton.Gradient = _controller.LineColor;
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
@@ -66,9 +66,6 @@ public class SimulationTabPresenter : MonoBehaviour
 
 		_meshLineWidthSlider.ValueChanged += OnLineWidthChanged;
 		_controller.LineWidthChanged += OnLineWidthChanged;
-
-		_lineTempColorButton.ColorChanged += OnLineTempColorChanged;
-		_controller.LineColorTempChanged += OnLineTempColorChanged;
 
 		_particlesCountSlider.IntValueChanged += OnParticleCountChanged;
 		_particles.ParticleCountChanged += OnParticleCountChanged;
@@ -96,6 +93,15 @@ public class SimulationTabPresenter : MonoBehaviour
 
 		_alphaCurveButton.CurveChanged += OnAlphaCurveChanged;
 		_controller.AlphaCurveChanged += OnAlphaCurveChanged;
+
+		_lineColorGradientButton.GradientChanged += OnLineColorChanged;
+		_controller.LineColorChanged += OnLineColorChanged;
+	}
+
+	private void OnLineColorChanged(Gradient gradient)
+	{
+		_controller.LineColor = gradient;
+		_lineColorGradientButton.Gradient = gradient;
 	}
 
 	private void OnAlphaCurveChanged(AnimationCurve value)
@@ -150,12 +156,6 @@ public class SimulationTabPresenter : MonoBehaviour
 	{
 		_particles.ParticleCount = value;
 		_particlesCountSlider.SetValueWithoutNotify(value);
-	}
-
-	private void OnLineTempColorChanged(Color color)
-	{
-		_controller.LineColorTemp = color;
-		_lineTempColorButton.Color = color;
 	}
 
 	private void OnLineWidthChanged(float value)

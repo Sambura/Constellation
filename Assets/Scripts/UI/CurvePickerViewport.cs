@@ -1,9 +1,7 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using Core;
-using System;
 
-public class CurvePickerViewport : MonoBehaviour, IPointerUpHandler, IPointerDownHandler
+public class CurvePickerViewport : UIEvents
 {
 	[SerializeField] private float _curveQuality = 1;
 	[SerializeField] private UILineRenderer _lineRenderer;
@@ -23,11 +21,6 @@ public class CurvePickerViewport : MonoBehaviour, IPointerUpHandler, IPointerDow
 		}
 	}
 
-	public event Action<PointerEventData> PointerDown;
-	public event Action<PointerEventData> PointerUp;
-
-	public void OnPointerDown(PointerEventData eventData) { PointerDown?.Invoke(eventData); }
-	public void OnPointerUp(PointerEventData eventData) { PointerUp?.Invoke(eventData); }
 	private void Awake() { RectTransform = GetComponent<RectTransform>(); }
 
 	private void RedrawCurve()

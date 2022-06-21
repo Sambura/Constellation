@@ -44,10 +44,10 @@ public class SimulationController : MonoBehaviour
         get => _meshLines;
         set { if (_meshLines != value) { _meshLines = value; MeshLinesChanged?.Invoke(value); }; }
     }
-    public Color LineColorTemp
+    public Gradient LineColor
 	{
-        get => _currentLineGradientColorKeys[0].color;
-        set { if (_currentLineGradientColorKeys[0].color != value) { SetLineColorTemp(value); LineColorTempChanged?.Invoke(value); } }
+        get => _lineColor;
+        set { if (_lineColor != value) { SetLineColor(value); LineColorChanged?.Invoke(value); } }
     }
     public float LineWidth
 	{
@@ -87,7 +87,7 @@ public class SimulationController : MonoBehaviour
 
     public event System.Action<bool> ShowLinesChanged;
     public event System.Action<bool> MeshLinesChanged;
-    public event System.Action<Color> LineColorTempChanged;
+    public event System.Action<Gradient> LineColorChanged;
     public event System.Action<float> LineWidthChanged;
     public event System.Action<float> ConnectionDistanceChanged;
     public event System.Action<float> StrongDistanceChanged;
@@ -106,13 +106,23 @@ public class SimulationController : MonoBehaviour
         _alphaCurveInternal.keys = alphaKeys;
     }
 
-    private void SetLineColorTemp(Color value)
+    private void SetLineColor(Gradient value)
 	{
-        for (int i = 0; i < _currentLineGradientColorKeys.Length; i++)
-            _currentLineGradientColorKeys[i].color = value;
+        _lineColor = value;
 
-        _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
-	}
+        _currentLineColorGradient = new Gradient();
+        if (_changeLinesColor)
+        {
+            _currentLineGradientColorKeys = new GradientColorKey[] { new GradientColorKey(_lineColor.Evaluate(1), 1) };
+            StartCoroutine(ColorChanger());
+        }
+        else
+        {
+            _currentLineGradientColorKeys = _lineColor.colorKeys;
+            InvertGradientKeys(_currentLineGradientColorKeys);
+            _currentLineColorGradient.colorKeys = _currentLineGradientColorKeys;
+        }
+    }
 
     private void SetConnectionDistance(float value)
 	{
@@ -148,7 +158,6 @@ public class SimulationController : MonoBehaviour
     private float _triangleColorCoefficient;
     private Gradient _currentLineColorGradient;
     private GradientColorKey[] _currentLineGradientColorKeys;
-    private GradientAlphaKey[] _currentLineGradientAlphaKeys;
     private FastList<Particle>[] _neighbours;
     private AnimationCurve _alphaCurveInternal;
     // rendering stuff
@@ -209,21 +218,8 @@ public class SimulationController : MonoBehaviour
         SetStrongDistance(_strongDistance);
         SetTriangleFillOpacity(_triangleFillOpacity);
 
-        _currentLineColorGradient = new Gradient();
-        _currentLineGradientAlphaKeys = _lineColor.alphaKeys;
-        InvertGradientKeys(_currentLineGradientAlphaKeys);
         SetAlphaCurve(_alphaCurve);
-
-        if (_changeLinesColor)
-        {
-            _currentLineGradientColorKeys = new GradientColorKey[] { new GradientColorKey(_lineColor.Evaluate(1), 1) };
-            StartCoroutine(ColorChanger());
-        } else
-		{
-            _currentLineGradientColorKeys = _lineColor.colorKeys;
-            InvertGradientKeys(_currentLineGradientColorKeys);
-            _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
-        }
+        SetLineColor(_lineColor);
 
         _backgroundBatch.quads.Add(new QuadEntry());
 
@@ -363,7 +359,7 @@ public class SimulationController : MonoBehaviour
                 progress = (Time.time - startTime) / fadeTime;
                 Color currentColor = Color.Lerp(oldColor, newColor, progress);
                 _currentLineGradientColorKeys[0].color = currentColor;
-                _currentLineColorGradient.SetKeys(_currentLineGradientColorKeys, _currentLineGradientAlphaKeys);
+                _currentLineColorGradient.colorKeys = _currentLineGradientColorKeys;
 
                 yield return null;
 			}
