@@ -3,7 +3,7 @@ using UnityEngine;
 using Core;
 using SimpleGraphics;
 
-public class SimulationController : MonoBehaviour
+public class MainVisualizator : MonoBehaviour
 {
     [Header("Objects")]
     [SerializeField] private BatchRenderer _drawer;

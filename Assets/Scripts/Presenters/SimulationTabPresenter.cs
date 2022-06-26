@@ -5,7 +5,7 @@ using TMPro;
 public class SimulationTabPresenter : MonoBehaviour
 {
 	[Header("General")]
-	[SerializeField] private SimulationController _controller;
+	[SerializeField] private MainVisualizator _vizualizator;
 	[SerializeField] private ParticleController _particles;
 
 	[Header("General appearance")]
@@ -18,10 +18,10 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private Toggle _showTrianglesToggle;
 	[SerializeField] private SliderWithText _triangleFillOpacitySlider;
 	[SerializeField] private CurvePickerButton _alphaCurveButton;
-	[SerializeField] private GradientPickerButton _lineColorGradientButton;
-	[SerializeField] private ColorPickerButton _clearColorButton;
 	[SerializeField] private Toggle _alternateColorToggle;
+	[SerializeField] private GradientPickerButton _lineColorGradientButton;
 	[SerializeField] private MinMaxSliderWithInput _colorFadeDurationSlider;
+	[SerializeField] private ColorPickerButton _clearColorButton;
 
 	[Header("Simulation parameters")]
 	[SerializeField] private SliderWithText _particlesCountSlider;
@@ -36,22 +36,22 @@ public class SimulationTabPresenter : MonoBehaviour
 		_showParticlesToggle.isOn = _particles.ShowParticles;
 		_particleSizeSlider.Value = _particles.ParticleSize;
 		_particleColorButton.Color = _particles.ParticleColor;
-		_showLinesToggle.isOn = _controller.ShowLines;
-		_meshLinesToggle.isOn = _controller.MeshLines;
-		_meshLineWidthSlider.Value = _controller.LineWidth;
+		_showLinesToggle.isOn = _vizualizator.ShowLines;
+		_meshLinesToggle.isOn = _vizualizator.MeshLines;
+		_meshLineWidthSlider.Value = _vizualizator.LineWidth;
 		_particlesCountSlider.Value = _particles.ParticleCount;
-		_connectionDistanceSlider.Value = _controller.ConnectionDistance;
-		_strongDistanceSlider.Value = _controller.StrongDistance;
-		_showTrianglesToggle.isOn = _controller.ShowTriangles;
-		_triangleFillOpacitySlider.Value = _controller.TriangleFillOpacity;
+		_connectionDistanceSlider.Value = _vizualizator.ConnectionDistance;
+		_strongDistanceSlider.Value = _vizualizator.StrongDistance;
+		_showTrianglesToggle.isOn = _vizualizator.ShowTriangles;
+		_triangleFillOpacitySlider.Value = _vizualizator.TriangleFillOpacity;
 		_minParticleVelocitySlider.Value = _particles.MinParticleVelocity;
 		_maxParticleVelocitySlider.Value = _particles.MaxParticleVelocity;
-		_clearColorButton.Color = _controller.ClearColor;
-		_alphaCurveButton.Curve = _controller.AlphaCurve;
-		_lineColorGradientButton.Gradient = _controller.LineColor;
-		_alternateColorToggle.isOn = _controller.AlternateLineColor;
-		_colorFadeDurationSlider.MinValue = _controller.MinColorFadeDuration;
-		_colorFadeDurationSlider.MaxValue = _controller.MaxColorFadeDuration;
+		_clearColorButton.Color = _vizualizator.ClearColor;
+		_alphaCurveButton.Curve = _vizualizator.AlphaCurve;
+		_lineColorGradientButton.Gradient = _vizualizator.LineColor;
+		_alternateColorToggle.isOn = _vizualizator.AlternateLineColor;
+		_colorFadeDurationSlider.MinValue = _vizualizator.MinColorFadeDuration;
+		_colorFadeDurationSlider.MaxValue = _vizualizator.MaxColorFadeDuration;
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
@@ -64,28 +64,28 @@ public class SimulationTabPresenter : MonoBehaviour
 		_particles.ParticleColorChanged += OnParticleColorChanged;
 
 		_showLinesToggle.onValueChanged.AddListener(OnShowLinesChanged);
-		_controller.ShowLinesChanged += OnShowLinesChanged;
+		_vizualizator.ShowLinesChanged += OnShowLinesChanged;
 
 		_meshLinesToggle.onValueChanged.AddListener(OnMeshLinesChanged);
-		_controller.MeshLinesChanged += OnMeshLinesChanged;
+		_vizualizator.MeshLinesChanged += OnMeshLinesChanged;
 
 		_meshLineWidthSlider.ValueChanged += OnLineWidthChanged;
-		_controller.LineWidthChanged += OnLineWidthChanged;
+		_vizualizator.LineWidthChanged += OnLineWidthChanged;
 
 		_particlesCountSlider.IntValueChanged += OnParticleCountChanged;
 		_particles.ParticleCountChanged += OnParticleCountChanged;
 
 		_connectionDistanceSlider.ValueChanged += OnConnectionDistanceChanged;
-		_controller.ConnectionDistanceChanged += OnConnectionDistanceChanged;
+		_vizualizator.ConnectionDistanceChanged += OnConnectionDistanceChanged;
 
 		_strongDistanceSlider.ValueChanged += OnStrongDistanceChanged;
-		_controller.StrongDistanceChanged += OnStrongDistanceChanged;
+		_vizualizator.StrongDistanceChanged += OnStrongDistanceChanged;
 
 		_showTrianglesToggle.onValueChanged.AddListener(OnShowTrianglesChanged);
-		_controller.ShowTrianglesChanged += OnShowTrianglesChanged;
+		_vizualizator.ShowTrianglesChanged += OnShowTrianglesChanged;
 
 		_triangleFillOpacitySlider.ValueChanged += OnTriangleFillOpacityChanged;
-		_controller.TriangleFillOpacityChanged += OnTriangleFillOpacityChanged;
+		_vizualizator.TriangleFillOpacityChanged += OnTriangleFillOpacityChanged;
 
 		_minParticleVelocitySlider.ValueChanged += OnMinParticleVelocityChanged;
 		_particles.MinParticleVelocityChanged += OnMinParticleVelocityChanged;
@@ -94,57 +94,57 @@ public class SimulationTabPresenter : MonoBehaviour
 		_particles.MaxParticleVelocityChanged += OnMaxParticleVelocityChanged;
 
 		_clearColorButton.ColorChanged += OnClearColorChanged;
-		_controller.ClearColorChanged += OnClearColorChanged;
+		_vizualizator.ClearColorChanged += OnClearColorChanged;
 
 		_alphaCurveButton.CurveChanged += OnAlphaCurveChanged;
-		_controller.AlphaCurveChanged += OnAlphaCurveChanged;
+		_vizualizator.AlphaCurveChanged += OnAlphaCurveChanged;
 
 		_lineColorGradientButton.GradientChanged += OnLineColorChanged;
-		_controller.LineColorChanged += OnLineColorChanged;
+		_vizualizator.LineColorChanged += OnLineColorChanged;
 
 		_alternateColorToggle.onValueChanged.AddListener(OnAlternateColorChanged);
-		_controller.AlternateLineColorChanged += OnAlternateColorChanged;
+		_vizualizator.AlternateLineColorChanged += OnAlternateColorChanged;
 
 		_colorFadeDurationSlider.MinValueChanged += OnMinColorFadeDurationChanged;
-		_controller.MinColorFadeDurationChanged += OnMinColorFadeDurationChanged;
+		_vizualizator.MinColorFadeDurationChanged += OnMinColorFadeDurationChanged;
 
 		_colorFadeDurationSlider.MaxValueChanged += OnMaxColorFadeDurationChanged;
-		_controller.MaxColorFadeDurationChanged += OnMaxColorFadeDurationChanged;
+		_vizualizator.MaxColorFadeDurationChanged += OnMaxColorFadeDurationChanged;
 	}
 
 	private void OnMaxColorFadeDurationChanged(float value)
 	{
-		_controller.MaxColorFadeDuration = value;
+		_vizualizator.MaxColorFadeDuration = value;
 		_colorFadeDurationSlider.SetMaxValueWithoutNotify(value);
 	}
 
 	private void OnMinColorFadeDurationChanged(float value)
 	{
-		_controller.MinColorFadeDuration = value;
+		_vizualizator.MinColorFadeDuration = value;
 		_colorFadeDurationSlider.SetMinValueWithoutNotify(value);
 	}
 
 	private void OnAlternateColorChanged(bool value)
 	{
-		_controller.AlternateLineColor = value;
+		_vizualizator.AlternateLineColor = value;
 		_alternateColorToggle.SetIsOnWithoutNotify(value);
 	}
 
 	private void OnLineColorChanged(Gradient gradient)
 	{
-		_controller.LineColor = gradient;
+		_vizualizator.LineColor = gradient;
 		_lineColorGradientButton.Gradient = gradient;
 	}
 
 	private void OnAlphaCurveChanged(AnimationCurve value)
 	{
-		_controller.AlphaCurve = value;
+		_vizualizator.AlphaCurve = value;
 		_alphaCurveButton.Curve = value;
 	}
 
 	private void OnClearColorChanged(Color value)
 	{
-		_controller.ClearColor = value;
+		_vizualizator.ClearColor = value;
 		_clearColorButton.Color = value;
 	}
 
@@ -164,27 +164,27 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnTriangleFillOpacityChanged(float value)
 	{
-		_controller.TriangleFillOpacity = value;
+		_vizualizator.TriangleFillOpacity = value;
 		_triangleFillOpacitySlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnShowTrianglesChanged(bool value)
 	{
-		_controller.ShowTriangles = value;
+		_vizualizator.ShowTriangles = value;
 		_showTrianglesToggle.SetIsOnWithoutNotify(value);
 	}
 
 	private void OnStrongDistanceChanged(float value)
 	{
-		value = Mathf.Min(value, _controller.ConnectionDistance * 0.9999f);
-		_controller.StrongDistance = value;
+		value = Mathf.Min(value, _vizualizator.ConnectionDistance * 0.9999f);
+		_vizualizator.StrongDistance = value;
 		_strongDistanceSlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnConnectionDistanceChanged(float value)
 	{
-		value = Mathf.Max(value, _controller.StrongDistance / 0.9999f);
-		_controller.ConnectionDistance = value;
+		value = Mathf.Max(value, _vizualizator.StrongDistance / 0.9999f);
+		_vizualizator.ConnectionDistance = value;
 		_connectionDistanceSlider.SetValueWithoutNotify(value);
 	}
 
@@ -196,19 +196,19 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnLineWidthChanged(float value)
 	{
-		_controller.LineWidth = value;
+		_vizualizator.LineWidth = value;
 		_meshLineWidthSlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnMeshLinesChanged(bool value)
 	{
-		_controller.MeshLines = value;
+		_vizualizator.MeshLines = value;
 		_meshLinesToggle.SetIsOnWithoutNotify(value);
 	}
 
 	private void OnShowLinesChanged(bool value)
 	{
-		_controller.ShowLines = value;
+		_vizualizator.ShowLines = value;
 		_showLinesToggle.SetIsOnWithoutNotify(value);
 	}
 

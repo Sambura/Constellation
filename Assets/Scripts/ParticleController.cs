@@ -168,7 +168,7 @@ public class ParticleController : MonoBehaviour
 	{
         _connectionDistance = value;
 
-        DoFragmentation();
+        if (_particles != null) DoFragmentation();
     }
 
 	private void Awake()
@@ -176,6 +176,7 @@ public class ParticleController : MonoBehaviour
         _particles = new List<Particle>(_particlesCount);
 
         SetParticlesCount(_particlesCount);
+        DoFragmentation();
     }
 
 	private void DoFragmentation()
