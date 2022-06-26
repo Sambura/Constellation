@@ -19,7 +19,7 @@ public class SimulationController : MonoBehaviour
     [SerializeField] private Gradient _lineColor;
     [SerializeField] private bool _showLines = true;
     [SerializeField] private bool _showTriangles = true;
-    [SerializeField] private bool _changeLinesColor = true;
+    [SerializeField] private bool _alternateLineColor = true;
     [SerializeField] private float _colorMinHue = 0;
     [SerializeField] private float _colorMaxHue = 1;
     [SerializeField] private float _colorMinSaturation = 0;
@@ -84,6 +84,21 @@ public class SimulationController : MonoBehaviour
         get => _alphaCurve;
         set { if (_alphaCurve != value) { SetAlphaCurve(value); AlphaCurveChanged?.Invoke(value); } }
 	}
+    public bool AlternateLineColor
+	{
+        get => _alternateLineColor;
+        set { if (_alternateLineColor != value) { SetAlternateLineColor(value); AlternateLineColorChanged?.Invoke(value); } }
+	}
+    public float MinColorFadeDuration
+	{
+        get => _colorMinFadeDuration;
+        set { if (_colorMinFadeDuration != value) { _colorMinFadeDuration = value; RestartColorChanger(); MinColorFadeDurationChanged?.Invoke(MinColorFadeDuration); } }
+	}
+    public float MaxColorFadeDuration
+    {
+        get => _colorMaxFadeDuration;
+        set { if (_colorMaxFadeDuration != value) { _colorMaxFadeDuration = value; RestartColorChanger(); MaxColorFadeDurationChanged?.Invoke(MaxColorFadeDuration); } }
+    }
 
     public event System.Action<bool> ShowLinesChanged;
     public event System.Action<bool> MeshLinesChanged;
@@ -95,6 +110,18 @@ public class SimulationController : MonoBehaviour
     public event System.Action<float> TriangleFillOpacityChanged;
     public event System.Action<Color> ClearColorChanged;
     public event System.Action<AnimationCurve> AlphaCurveChanged;
+    public event System.Action<bool> AlternateLineColorChanged;
+    public event System.Action<float> MinColorFadeDurationChanged;
+    public event System.Action<float> MaxColorFadeDurationChanged;
+
+    private void RestartColorChanger()
+	{
+        if (_colorChanger != null)
+		{
+            StopCoroutine(_colorChanger);
+            _colorChanger = StartCoroutine(ColorChanger());
+		}
+	}
 
     private void SetAlphaCurve(AnimationCurve value)
 	{
@@ -107,21 +134,32 @@ public class SimulationController : MonoBehaviour
     }
 
     private void SetLineColor(Gradient value)
-	{
+    {
         _lineColor = value;
+        if (_alternateLineColor) return;
 
-        _currentLineColorGradient = new Gradient();
-        if (_changeLinesColor)
+        _currentLineGradientColorKeys = value.colorKeys;
+        InvertGradientKeys(_currentLineGradientColorKeys);
+        _currentLineColorGradient.colorKeys = _currentLineGradientColorKeys;
+    }
+
+    private void SetAlternateLineColor(bool value)
+    {
+        _alternateLineColor = value;
+
+        if (value == false)
         {
-            _currentLineGradientColorKeys = new GradientColorKey[] { new GradientColorKey(_lineColor.Evaluate(1), 1) };
-            StartCoroutine(ColorChanger());
+            if (_colorChanger != null)
+            {
+                StopCoroutine(_colorChanger);
+                _colorChanger = null;
+            }
+            SetLineColor(_lineColor);
+            return;
         }
-        else
-        {
-            _currentLineGradientColorKeys = _lineColor.colorKeys;
-            InvertGradientKeys(_currentLineGradientColorKeys);
-            _currentLineColorGradient.colorKeys = _currentLineGradientColorKeys;
-        }
+
+        _currentLineGradientColorKeys = new GradientColorKey[] { new GradientColorKey(_lineColor.Evaluate(1), 1) };
+        _colorChanger = StartCoroutine(ColorChanger());
     }
 
     private void SetConnectionDistance(float value)
@@ -137,6 +175,7 @@ public class SimulationController : MonoBehaviour
     {
         _strongDistance = value;
         _lineIntensityDenominator = _connectionDistance - _strongDistance;
+        _triangleColorCoefficient = _triangleFillOpacity / _lineIntensityDenominator;
     }
 
     private void SetTriangleFillOpacity(float value)
@@ -160,9 +199,22 @@ public class SimulationController : MonoBehaviour
     private GradientColorKey[] _currentLineGradientColorKeys;
     private FastList<Particle>[] _neighbours;
     private AnimationCurve _alphaCurveInternal;
+    private Coroutine _colorChanger;
     // rendering stuff
     private SimpleDrawBatch _backgroundBatch;
     private SimpleDrawBatch _mainBatch;
+    // stats
+    private int _lineDrawCalls;
+    private int _actualLineDrawCalls;
+    private int _triangleDrawCalls;
+    private int _actualTriangleDrawCalls;
+    private bool _colorChangerIterationFlag;
+
+    public int LineDrawCalls => _lineDrawCalls;
+    public int ActualLineDrawCalls => _actualLineDrawCalls;
+    public int TriangleDrawCalls => _triangleDrawCalls;
+    public int ActualTriangleDrawCalls => _actualTriangleDrawCalls;
+    public bool ColorChangerIterationFlag => _colorChangerIterationFlag;
 
     private void InvertGradientKeys(GradientColorKey[] keys)
 	{
@@ -213,6 +265,7 @@ public class SimulationController : MonoBehaviour
         _mainBatch.meshLines = new FastList<MeshLineEntry>();
         _mainBatch.triangles = new FastList<TriangleEntry>();
         _alphaCurveInternal = new AnimationCurve();
+        _currentLineColorGradient = new Gradient();
 
         SetConnectionDistance(_connectionDistance);
         SetStrongDistance(_strongDistance);
@@ -220,6 +273,7 @@ public class SimulationController : MonoBehaviour
 
         SetAlphaCurve(_alphaCurve);
         SetLineColor(_lineColor);
+        SetAlternateLineColor(_alternateLineColor);
 
         _backgroundBatch.quads.Add(new QuadEntry());
 
@@ -236,6 +290,11 @@ public class SimulationController : MonoBehaviour
         _mainBatch.lines.PseudoClear();
         _mainBatch.triangles.PseudoClear();
         _mainBatch.meshLines.PseudoClear();
+
+        _lineDrawCalls = 0;
+        _actualLineDrawCalls = 0;
+        _triangleDrawCalls = 0;
+        _actualTriangleDrawCalls = 0;
 
         if (_showLines == false && _showTriangles == false) return;
 
@@ -353,9 +412,15 @@ public class SimulationController : MonoBehaviour
             float fadeTime = Random.Range(_colorMinFadeDuration, _colorMaxFadeDuration);
             float startTime = Time.time;
             float progress = 0;
+            if (fadeTime == 0)
+			{
+                fadeTime = 0.01f;
+                startTime -= 1;
+			}
 
             while (progress < 1)
 			{
+                _colorChangerIterationFlag = false;
                 progress = (Time.time - startTime) / fadeTime;
                 Color currentColor = Color.Lerp(oldColor, newColor, progress);
                 _currentLineGradientColorKeys[0].color = currentColor;

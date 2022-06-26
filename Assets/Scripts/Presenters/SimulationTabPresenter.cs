@@ -20,6 +20,8 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private CurvePickerButton _alphaCurveButton;
 	[SerializeField] private GradientPickerButton _lineColorGradientButton;
 	[SerializeField] private ColorPickerButton _clearColorButton;
+	[SerializeField] private Toggle _alternateColorToggle;
+	[SerializeField] private MinMaxSliderWithInput _colorFadeDurationSlider;
 
 	[Header("Simulation parameters")]
 	[SerializeField] private SliderWithText _particlesCountSlider;
@@ -47,6 +49,9 @@ public class SimulationTabPresenter : MonoBehaviour
 		_clearColorButton.Color = _controller.ClearColor;
 		_alphaCurveButton.Curve = _controller.AlphaCurve;
 		_lineColorGradientButton.Gradient = _controller.LineColor;
+		_alternateColorToggle.isOn = _controller.AlternateLineColor;
+		_colorFadeDurationSlider.MinValue = _controller.MinColorFadeDuration;
+		_colorFadeDurationSlider.MaxValue = _controller.MaxColorFadeDuration;
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
@@ -96,6 +101,33 @@ public class SimulationTabPresenter : MonoBehaviour
 
 		_lineColorGradientButton.GradientChanged += OnLineColorChanged;
 		_controller.LineColorChanged += OnLineColorChanged;
+
+		_alternateColorToggle.onValueChanged.AddListener(OnAlternateColorChanged);
+		_controller.AlternateLineColorChanged += OnAlternateColorChanged;
+
+		_colorFadeDurationSlider.MinValueChanged += OnMinColorFadeDurationChanged;
+		_controller.MinColorFadeDurationChanged += OnMinColorFadeDurationChanged;
+
+		_colorFadeDurationSlider.MaxValueChanged += OnMaxColorFadeDurationChanged;
+		_controller.MaxColorFadeDurationChanged += OnMaxColorFadeDurationChanged;
+	}
+
+	private void OnMaxColorFadeDurationChanged(float value)
+	{
+		_controller.MaxColorFadeDuration = value;
+		_colorFadeDurationSlider.SetMaxValueWithoutNotify(value);
+	}
+
+	private void OnMinColorFadeDurationChanged(float value)
+	{
+		_controller.MinColorFadeDuration = value;
+		_colorFadeDurationSlider.SetMinValueWithoutNotify(value);
+	}
+
+	private void OnAlternateColorChanged(bool value)
+	{
+		_controller.AlternateLineColor = value;
+		_alternateColorToggle.SetIsOnWithoutNotify(value);
 	}
 
 	private void OnLineColorChanged(Gradient gradient)
@@ -118,12 +150,14 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnMaxParticleVelocityChanged(float value)
 	{
+		value = Mathf.Max(value, _particles.MinParticleVelocity);
 		_particles.MaxParticleVelocity = value;
 		_maxParticleVelocitySlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnMinParticleVelocityChanged(float value)
 	{
+		value = Mathf.Min(value, _particles.MaxParticleVelocity);
 		_particles.MinParticleVelocity = value;
 		_minParticleVelocitySlider.SetValueWithoutNotify(value);
 	}
@@ -142,12 +176,14 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnStrongDistanceChanged(float value)
 	{
+		value = Mathf.Min(value, _controller.ConnectionDistance * 0.9999f);
 		_controller.StrongDistance = value;
 		_strongDistanceSlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnConnectionDistanceChanged(float value)
 	{
+		value = Mathf.Max(value, _controller.StrongDistance / 0.9999f);
 		_controller.ConnectionDistance = value;
 		_connectionDistanceSlider.SetValueWithoutNotify(value);
 	}
