@@ -18,6 +18,7 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private Toggle _showTrianglesToggle;
 	[SerializeField] private SliderWithText _triangleFillOpacitySlider;
 	[SerializeField] private CurvePickerButton _alphaCurveButton;
+	[SerializeField] private Toggle _gradientColorToggle;
 	[SerializeField] private Toggle _alternateColorToggle;
 	[SerializeField] private GradientPickerButton _lineColorGradientButton;
 	[SerializeField] private MinMaxSliderWithInput _colorFadeDurationSlider;
@@ -127,7 +128,8 @@ public class SimulationTabPresenter : MonoBehaviour
 	private void OnAlternateColorChanged(bool value)
 	{
 		_vizualizator.AlternateLineColor = value;
-		_alternateColorToggle.SetIsOnWithoutNotify(value);
+		_alternateColorToggle.isOn = value;
+		_gradientColorToggle.isOn = !value;
 	}
 
 	private void OnLineColorChanged(Gradient gradient)
@@ -171,7 +173,7 @@ public class SimulationTabPresenter : MonoBehaviour
 	private void OnShowTrianglesChanged(bool value)
 	{
 		_vizualizator.ShowTriangles = value;
-		_showTrianglesToggle.SetIsOnWithoutNotify(value);
+		_showTrianglesToggle.isOn = value;
 	}
 
 	private void OnStrongDistanceChanged(float value)
@@ -203,13 +205,13 @@ public class SimulationTabPresenter : MonoBehaviour
 	private void OnMeshLinesChanged(bool value)
 	{
 		_vizualizator.MeshLines = value;
-		_meshLinesToggle.SetIsOnWithoutNotify(value);
+		_meshLinesToggle.isOn = value;
 	}
 
 	private void OnShowLinesChanged(bool value)
 	{
 		_vizualizator.ShowLines = value;
-		_showLinesToggle.SetIsOnWithoutNotify(value);
+		_showLinesToggle.isOn = value;
 	}
 
 	private void OnParticleColorChanged(Color color)
@@ -227,7 +229,7 @@ public class SimulationTabPresenter : MonoBehaviour
 	private void OnShowParticlesChanged(bool value)
 	{
 		_particles.ShowParticles = value;
-		_showParticlesToggle.SetIsOnWithoutNotify(value);
+		_showParticlesToggle.isOn = value;
 	}
 
 	private void OnDestroy()

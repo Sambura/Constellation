@@ -8,10 +8,13 @@ public class VerticalUIStack : MonoBehaviour
 
 	private RectTransform _transform;
 
-	private void Start()
+	private void Awake()
 	{
 		_transform = GetComponent<RectTransform>();
+	}
 
+	private void Start()
+	{
 		foreach (RectTransform child in _transform)
 		{
 			MonoEvents events = child.gameObject.AddComponent<MonoEvents>();
@@ -20,6 +23,11 @@ public class VerticalUIStack : MonoBehaviour
 			events.OnRectTransformChange += RebuildLayout;
 		}
 
+		RebuildLayout();
+	}
+
+	private void OnTransformChildrenChanged()
+	{
 		RebuildLayout();
 	}
 

@@ -29,72 +29,85 @@ public class MainVisualizator : MonoBehaviour
     [SerializeField] private float _colorMinFadeDuration = 2;
     [SerializeField] private float _colorMaxFadeDuration = 4;
     [SerializeField] private Color _clearColor = Color.black;
-    [SerializeField] [Range(0,1)] private float _triangleFillOpacity;
+    [SerializeField][Range(0, 1)] private float _triangleFillOpacity;
 
     [Header("Rendering")]
     [SerializeField] private int _renderQueueIndex = 0;
 
+    [ConfigProperty]
     public bool ShowLines
-	{
+    {
         get => _showLines;
         set { if (_showLines != value) { _showLines = value; ShowLinesChanged?.Invoke(value); }; }
-	}
+    }
+    [ConfigProperty]
     public bool MeshLines
-	{
+    {
         get => _meshLines;
         set { if (_meshLines != value) { _meshLines = value; MeshLinesChanged?.Invoke(value); }; }
     }
+    [ConfigProperty]
     public Gradient LineColor
 	{
         get => _lineColor;
         set { if (_lineColor != value) { SetLineColor(value); LineColorChanged?.Invoke(value); } }
     }
+    [ConfigProperty]
     public float LineWidth
 	{
         get => _linesWidth;
         set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
     }
+    [ConfigProperty]
     public float ConnectionDistance
     {
         get => _connectionDistance;
         set { if (_connectionDistance != value) { SetConnectionDistance(value); ConnectionDistanceChanged?.Invoke(value); }; }
     }
+    [ConfigProperty]
     public float StrongDistance
     {
         get => _strongDistance;
         set { if (_strongDistance != value) { SetStrongDistance(value); StrongDistanceChanged?.Invoke(value); }; }
     }
+    [ConfigProperty]
     public bool ShowTriangles
 	{
         get => _showTriangles;
         set { if (_showTriangles != value) { _showTriangles = value; ShowTrianglesChanged?.Invoke(value); }; }
     }
-    public float TriangleFillOpacity
+    [ConfigProperty]
+	public float TriangleFillOpacity
 	{
         get => _triangleFillOpacity;
         set { if (_triangleFillOpacity != value) { SetTriangleFillOpacity(value); TriangleFillOpacityChanged?.Invoke(value); }; }
     }
-    public Color ClearColor
+    [ConfigProperty]
+	public Color ClearColor
     {
         get => _clearColor;
         set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
     }
-    public AnimationCurve AlphaCurve
+    [ConfigProperty]
+	public AnimationCurve AlphaCurve
 	{
         get => _alphaCurve;
         set { if (_alphaCurve != value) { SetAlphaCurve(value); AlphaCurveChanged?.Invoke(value); } }
 	}
-    public bool AlternateLineColor
+    [ConfigProperty]
+	public bool AlternateLineColor
 	{
         get => _alternateLineColor;
         set { if (_alternateLineColor != value) { SetAlternateLineColor(value); AlternateLineColorChanged?.Invoke(value); } }
 	}
+    [ConfigProperty]
     public float MinColorFadeDuration
 	{
         get => _colorMinFadeDuration;
         set { if (_colorMinFadeDuration != value) { _colorMinFadeDuration = value; RestartColorChanger(); MinColorFadeDurationChanged?.Invoke(MinColorFadeDuration); } }
 	}
-    public float MaxColorFadeDuration
+    [ConfigProperty]
+	public float MaxColorFadeDuration
     {
         get => _colorMaxFadeDuration;
         set { if (_colorMaxFadeDuration != value) { _colorMaxFadeDuration = value; RestartColorChanger(); MaxColorFadeDurationChanged?.Invoke(MaxColorFadeDuration); } }

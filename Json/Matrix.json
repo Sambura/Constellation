@@ -1,0 +1,106 @@
+{
+    "Particles": {
+    "ShowParticles": true,
+    "ParticleSize": 4,
+    "ParticleColor": {
+    "r": 0.0,
+    "g": 0.0,
+    "b": 0.0,
+    "a": 0.0117647061124444
+    },
+    "ParticleCount": 1491,
+    "MinParticleVelocity": 1.3522948,
+    "MaxParticleVelocity": 5
+    },
+    "Visualizer": {
+    "ShowLines": false,
+    "MeshLines": false,
+    "LineColor": {
+    "mode": {
+    "value__": 0
+    },
+    "colorKeys": [{
+    "color": {
+    "r": 0.0,
+    "g": 0.0,
+    "b": 0.0,
+    "a": 1.0
+    },
+    "time": 0.0
+    },
+    {
+    "color": {
+    "r": 0.0,
+    "g": 0.0,
+    "b": 0.0,
+    "a": 1.0
+    },
+    "time": 1.0
+    }],
+    "alphaKeys": [{
+    "alpha": 1.0,
+    "time": 0.0
+    },
+    {
+    "alpha": 1.0,
+    "time": 1.0
+    }]
+    },
+    "LineWidth": 0.0199999996,
+    "ConnectionDistance": 0.383316696,
+    "StrongDistance": 0,
+    "ShowTriangles": true,
+    "TriangleFillOpacity": 0.391811788,
+    "ClearColor": {
+    "r": 0.34192851185798647,
+    "g": 0.8856655955314636,
+    "b": 0.3430226445198059,
+    "a": 1.0
+    },
+    "AlphaCurve": {
+    "keys": [{
+    "time": 0.175605536,
+    "value": 0,
+    "inTangent": 0,
+    "outTangent": 0,
+    "inWeight": 0.100000001,
+    "outWeight": 0.100000001
+    },
+    {
+    "time": 0.374248147,
+    "value": 1,
+    "inTangent": 0,
+    "outTangent": 0,
+    "inWeight": 0.100000001,
+    "outWeight": 0.100000001
+    },
+    {
+    "time": 1,
+    "value": 1,
+    "inTangent": 0,
+    "outTangent": 0,
+    "inWeight": 0.100000001,
+    "outWeight": 0.100000001
+    }]
+    },
+    "AlternateLineColor": false,
+    "MinColorFadeDuration": 3,
+    "MaxColorFadeDuration": 7
+    },
+    "Fragmentation": {
+    "ShowCellBorders": true,
+    "CellBorderColor": {
+    "r": 0.0,
+    "g": 0.0,
+    "b": 0.0,
+    "a": 0.10263301432132721
+    },
+    "ShowCells": true,
+    "CellColor": {
+    "r": 0.0,
+    "g": 0.5526774525642395,
+    "b": 0.06935177743434906,
+    "a": 0.05241461843252182
+    }
+    }
+    }

@@ -21,32 +21,38 @@ public class ParticleController : MonoBehaviour
     [SerializeField] private float _minParticleVelocity = 0;
     [SerializeField] private float _maxParticleVelocity = 1;
 
+    [ConfigProperty] 
     public bool ShowParticles
     {
         get => _showParticles;
         set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
     }
+    [ConfigProperty] 
     public float ParticleSize
     {
         get => _particlesScale;
         set { if (_particlesScale != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
     }
+    [ConfigProperty]
     public Color ParticleColor
     {
         get => _particlesColor;
         set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
     }
+    [ConfigProperty]
     public int ParticleCount
     {
         get => _particlesCount;
         set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
     }
+    [ConfigProperty]
     public float MinParticleVelocity
     {
         get => _minParticleVelocity;
         set { if (_minParticleVelocity != value) { SetMinParticleVelocity(value); MinParticleVelocityChanged?.Invoke(value); }; }
     }
-    public float MaxParticleVelocity
+    [ConfigProperty]
+	public float MaxParticleVelocity
     {
         get => _maxParticleVelocity;
         set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }

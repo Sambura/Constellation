@@ -19,22 +19,26 @@ public class FragmentationVisualization : MonoBehaviour
     private SimpleDrawBatch _renderBatch;
     private bool _isRendered = false;
 
+    [ConfigProperty]
     public bool ShowCellBorders
     {
         get => _showCellBorders;
         set { if (_showCellBorders != value) { SetShowCellBorders(value); ShowCellBordersChanged?.Invoke(value); }; }
     }
-    public Color CellBorderColor
+    [ConfigProperty]
+	public Color CellBorderColor
     {
         get => _cellBorderColor;
         set { if (_cellBorderColor != value) { _cellBorderColor = value; CellBorderColorChanged?.Invoke(value); }; }
     }
-    public bool ShowCells
+    [ConfigProperty]
+	public bool ShowCells
     {
         get => _showCells;
         set { if (_showCells != value) { SetShowCells(value); ShowCellsChanged?.Invoke(value); }; }
     }
-    public Color CellColor
+    [ConfigProperty]
+	public Color CellColor
     {
         get => _cellColor;
         set { if (_cellColor != value) { _cellColor = value; CellColorChanged?.Invoke(value); }; }
