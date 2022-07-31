@@ -7,7 +7,6 @@ using UnityEngine.UI;
 public class FileDialog : MonoDialog
 {
 	[SerializeField] private TMP_InputField _pathInputField;
-	[SerializeField] private TextMeshProUGUI _titleLabel;
 	[SerializeField] private GameObject _filePrefab;
 	[SerializeField] private GameObject _folderPrefab;
 	[SerializeField] private RectTransform _filesView;
@@ -27,21 +26,18 @@ public class FileDialog : MonoDialog
 		set => _fileNameInputField.text = value;
 	}
 
-	public bool DialogOpened => gameObject.activeInHierarchy;
-
-	public System.Action<string> OnOkClicked;
+	public bool DialogActive => gameObject.activeInHierarchy;
 
 	protected override void Awake()
 	{
 		base.Awake();
 
-		_currentDirectory = new DirectoryInfo(Application.persistentDataPath);
+		_currentDirectory = new DirectoryInfo("Json/");
 		_errorScreen.SetActive(false);
 		_parentFolderButton.onClick.AddListener(GoToParentDirectory);
 		_fileFilterDropdown.onValueChanged.AddListener(OnFileFilterChanged);
 		_fileFilterDropdown.value = 0;
 		OnFileFilterChanged(_fileFilterDropdown.value);
-		//ShowDialog("Test this shit :)");
 	}
 
 	private void OnFileFilterChanged(int value)
@@ -51,7 +47,7 @@ public class FileDialog : MonoDialog
 		else
 			_fileFilter = "*";
 
-		if (DialogOpened) UpdateFileView();
+		if (DialogActive) UpdateFileView();
 	}
 
 	public void GoToParentDirectory()
@@ -89,19 +85,11 @@ public class FileDialog : MonoDialog
 		_fileNameInputField.text = (file.Data as FileInfo).Name;
 	}
 
-	public void ShowDialog(string title)
+	public override void ShowDialog(string title = null)
 	{
-		gameObject.SetActive(true);
+		base.ShowDialog(title);
 
-		_titleLabel.text = title;
 		UpdateFileView();
-	}
-
-	protected override void OnOkButtonPressed()
-	{
-		base.OnOkButtonPressed();
-		OnOkClicked?.Invoke(FileName);
-		OnOkClicked = null;
 	}
 
 	public void UpdateFileView(string customTitle = null, FileInfo[] customFiles = null, DirectoryInfo[] customDirectories = null)

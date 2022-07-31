@@ -9,6 +9,7 @@ public class ConfigSerializer : MonoBehaviour
 {
     [SerializeField] private List<SerializablePair> _toSerialize;
 	[SerializeField] private FileDialog _fileDialog;
+	[SerializeField] private ParticleController _particleController;
     //[SerializeField] private string _targetPath = "Json/config.json";
 
 	[Serializable] private class SerializablePair
@@ -34,14 +35,9 @@ public class ConfigSerializer : MonoBehaviour
 
     public void SaveConfig()
     {
-        _fileDialog.ShowDialog("Select save location");
         _fileDialog.FileName = "config.json";
-        _fileDialog.OnOkClicked = OnFileDialogSaveFileSelected;
-    }
-
-    private void OnFileDialogSaveFileSelected(string file)
-    {
-        SerializeConfig(file);
+        _fileDialog.ShowDialog("Select save location");
+        _fileDialog.OnOkClicked = (x) => SerializeConfig((x as FileDialog).FileName);
     }
 
     public void SerializeConfig(string path)
@@ -55,13 +51,8 @@ public class ConfigSerializer : MonoBehaviour
     public void LoadConfig()
 	{
         _fileDialog.ShowDialog("Select config to load");
-        _fileDialog.OnOkClicked = OnFileDialogLoadFileSelected;
+        _fileDialog.OnOkClicked = (x) => DeserializeConfig((x as FileDialog).FileName);
     }
-
-    private void OnFileDialogLoadFileSelected(string file)
-	{
-        DeserializeConfig(file);
-	}
 
     public void DeserializeConfig(string path)
     {
@@ -69,6 +60,8 @@ public class ConfigSerializer : MonoBehaviour
         // Two times to ensure min/max properties deserialized correctly
         MultipleObjectOverwriteFromJson(json, _names, _objects);
         MultipleObjectOverwriteFromJson(json, _names, _objects);
+
+        _particleController.ReinitializeParticles();
     }
 
     public string MultipleObjectsToJson(string[] names, object[] objects, bool prettyPrint)

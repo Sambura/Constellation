@@ -51,7 +51,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _viewport: {fileID: 2391697314185345300}
   _curvePicker: {fileID: 0}
-  _curvePickerOffset: {x: -10, y: 90}
+  _curvePickerOffset: {x: -190, y: 40}
   _curvePickerPivot: {x: 0, y: 0.5}
 --- !u!1 &2391697314037727067
 GameObject:

@@ -10,9 +10,6 @@ public class ParticleController : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] private GameObject _particlePrefab;
 
-    [Header("Initialization parameters")]
-    [SerializeField] private bool _randomizeInitialPosition = true;
-
     [Header("Particles parameters")]
     [SerializeField] private float _particlesScale = 0.1f;
     [SerializeField] private int _particlesCount = 100;
@@ -102,12 +99,7 @@ public class ParticleController : MonoBehaviour
             particle.Color = ParticleColor;
             particle.Visible = ShowParticles;
             particle.Size = ParticleSize;
-            particle.SetRandomVelocity();
-            if (_randomizeInitialPosition)
-            {
-                particle.Position = new Vector3(Random.Range(-_viewport.MaxX, _viewport.MaxX),
-                    Random.Range(-_viewport.MaxY, _viewport.MaxY));
-            }
+            SetRandomPositionAndVelocity(particle);
 
             _particles.Add(particle);
         }
@@ -139,6 +131,15 @@ public class ParticleController : MonoBehaviour
 
             p.Velocity = Vector3.ClampMagnitude(p.Velocity, _maxParticleVelocity);
         }
+    }
+
+    private void SetRandomPositionAndVelocity(Particle particle)
+    {
+        particle.SetRandomVelocity();
+
+        particle.Position = new Vector3(Random.Range(-_viewport.MaxX, _viewport.MaxX),
+            Random.Range(-_viewport.MaxY, _viewport.MaxY));
+
     }
 
     private float GetParticleVelocity(Particle particle)
@@ -176,6 +177,12 @@ public class ParticleController : MonoBehaviour
 
         if (_particles != null) DoFragmentation();
     }
+
+    public void ReinitializeParticles()
+	{
+        foreach (Particle particle in _particles)
+            SetRandomPositionAndVelocity(particle);
+	}
 
 	private void Awake()
 	{

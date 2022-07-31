@@ -31,8 +31,8 @@ public class GradientPickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
 		Vector2 pivotPosition = zeroPosition + _transform.rect.size * _gradientPickerPivot;
-		_gradientPicker.transform.position = pivotPosition + _gradientPickerOffset;
-		_gradientPicker.gameObject.SetActive(true);
+		_gradientPicker.ShowDialog("Select gradient");
+		_gradientPicker.Position = pivotPosition + _gradientPickerOffset;
 		_gradientPicker.Gradient = Gradient;
 		_gradientPicker.OnGradientChanged = OnGradientPickerGradientChange;
 	}

@@ -7,6 +7,8 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     private Vector2 _dragOffset;
     private bool _isDragging;
 
+    public event Action<MonoDraggable, PointerEventData> PointerDown;
+
 	public Vector3 Position
 	{
 		get => transform.position;
@@ -24,6 +26,7 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     {
         _dragOffset = Position - (Vector3)eventData.position;
         _isDragging = true;
+        PointerDown?.Invoke(this, eventData);
     }
 
     public virtual void OnPointerUp(PointerEventData eventData)

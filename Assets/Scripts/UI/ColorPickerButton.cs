@@ -43,8 +43,8 @@ public class ColorPickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
 		Vector2 pivotPosition = zeroPosition + _transform.rect.size * _colorPickerPivot;
-		_colorPicker.transform.position = pivotPosition + _colorPickerOffset;
-		_colorPicker.gameObject.SetActive(true);
+		_colorPicker.ShowDialog("Select color");
+		_colorPicker.Position = _transform.position + (Vector3)_colorPickerOffset;//pivotPosition + _colorPickerOffset;
 		_colorPicker.OnColorChanged = OnColorPickerColorChange;
 		_colorPicker.Color = Color;
 	}

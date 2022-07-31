@@ -31,10 +31,10 @@ public class CurvePickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
 		Vector2 pivotPosition = zeroPosition + _transform.rect.size * _curvePickerPivot;
-		_curvePicker.transform.position = pivotPosition + _curvePickerOffset;
-		_curvePicker.gameObject.SetActive(true);
-		_curvePicker.Curve = Curve;
+		_curvePicker.ShowDialog("Set up curve");
+		_curvePicker.Position = pivotPosition + _curvePickerOffset;
 		_curvePicker.OnCurveChanged = OnCurvePickerCurveChange;
+		_curvePicker.Curve = Curve;
 	}
 
 	private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Curve = new AnimationCurve(); }

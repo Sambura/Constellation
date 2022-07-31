@@ -23,6 +23,7 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private GradientPickerButton _lineColorGradientButton;
 	[SerializeField] private MinMaxSliderWithInput _colorFadeDurationSlider;
 	[SerializeField] private ColorPickerButton _clearColorButton;
+	[SerializeField] private Button _restartSimulationButton;
 
 	[Header("Simulation parameters")]
 	[SerializeField] private SliderWithText _particlesCountSlider;
@@ -111,6 +112,13 @@ public class SimulationTabPresenter : MonoBehaviour
 
 		_colorFadeDurationSlider.MaxValueChanged += OnMaxColorFadeDurationChanged;
 		_vizualizator.MaxColorFadeDurationChanged += OnMaxColorFadeDurationChanged;
+
+		_restartSimulationButton.onClick.AddListener(OnRestartSimulationButtonClick);
+	}
+
+	private void OnRestartSimulationButtonClick()
+	{
+		_particles.ReinitializeParticles();
 	}
 
 	private void OnMaxColorFadeDurationChanged(float value)

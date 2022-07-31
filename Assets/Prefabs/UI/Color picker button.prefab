@@ -201,7 +201,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _colorImage: {fileID: 2297000100068409207}
   _colorPicker: {fileID: 0}
-  _colorPickerOffset: {x: -10, y: 60}
+  _colorPickerOffset: {x: -190, y: 40}
   _colorPickerPivot: {x: 0, y: 0.5}
 --- !u!1 &2297000100488132920
 GameObject:
