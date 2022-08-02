@@ -10,13 +10,11 @@ public class GradientStop : MonoSelectable
 	[SerializeField] private Image _colorImage;
 
 	private Image _image;
-	private RectTransform _transform;
-	private RectTransform _viewport;
 	private float _time;
 
 	public void SetNormalizedPosition(Vector2 normalizedPosition)
 	{
-		Position = UIPositionHelper.NormalizedToWorldPosition(_viewport, normalizedPosition);
+		Position = UIPositionHelper.NormalizedToWorldPosition(_parent, normalizedPosition);
 	}
 
 	public Color Color
@@ -43,18 +41,18 @@ public class GradientStop : MonoSelectable
 	{
 		Vector3 newPosition = pointerPosition;
 		if (newPosition == _transform.position) return;
-		Vector3 local = _viewport.InverseTransformPoint(newPosition);
-		local.x = Mathf.Clamp(local.x, _viewport.rect.xMin, _viewport.rect.xMax);
+		Vector3 local = _parent.InverseTransformPoint(newPosition);
+		local.x = Mathf.Clamp(local.x, _parent.rect.xMin, _parent.rect.xMax);
 		local.y = _yPosition;
-		_transform.position = _viewport.TransformPoint(local);
-		Time = UIPositionHelper.LocalToNormalizedPosition(_viewport, local).x;
+		_transform.position = _parent.TransformPoint(local);
+		Time = UIPositionHelper.LocalToNormalizedPosition(_parent, local).x;
 	}
 
-	private void Awake()
+	protected override void Awake()
 	{
+		base.Awake();
+
 		_image = GetComponent<Image>();
-		_transform = GetComponent<RectTransform>();
-		_viewport = transform.parent.GetComponent<RectTransform>();
 
 		SetSelectedWithoutNotify(false);
 	}

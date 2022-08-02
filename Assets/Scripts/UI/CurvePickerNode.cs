@@ -9,12 +9,10 @@ public class CurvePickerNode : MonoSelectable
     [SerializeField] private Vector2 _deselectedSize;
 
     private Image _image;
-	private RectTransform _transform;
-	private RectTransform _viewport;
 
 	public void SetNormalizedPosition(Vector2 normalizedPosition)
 	{
-		Position = UIPositionHelper.NormalizedToWorldPosition(_viewport, normalizedPosition);
+		Position = UIPositionHelper.NormalizedToWorldPosition(_parent, normalizedPosition);
 	}
 
 	public Keyframe Data;
@@ -31,20 +29,20 @@ public class CurvePickerNode : MonoSelectable
 	{
 		Vector3 newPosition = pointerPosition;
 		if (newPosition == _transform.position) return;
-		Vector3 local = _viewport.InverseTransformPoint(newPosition);
-		local.x = Mathf.Clamp(local.x, _viewport.rect.xMin, _viewport.rect.xMax);
-		local.y = Mathf.Clamp(local.y, _viewport.rect.yMin, _viewport.rect.yMax);
-		_transform.position = _viewport.TransformPoint(local);
-		Vector2 normal = UIPositionHelper.LocalToNormalizedPosition(_viewport, local);
+		Vector3 local = _parent.InverseTransformPoint(newPosition);
+		local.x = Mathf.Clamp(local.x, _parent.rect.xMin, _parent.rect.xMax);
+		local.y = Mathf.Clamp(local.y, _parent.rect.yMin, _parent.rect.yMax);
+		_transform.position = _parent.TransformPoint(local);
+		Vector2 normal = UIPositionHelper.LocalToNormalizedPosition(_parent, local);
 		Data.time = normal.x;
 		Data.value = normal.y;
 	}
 
-	private void Awake()
+	protected override void Awake()
 	{
+		base.Awake();
+
 		_image = GetComponent<Image>();
-		_transform = GetComponent<RectTransform>();
-		_viewport = transform.parent.GetComponent<RectTransform>();
 		Data = new Keyframe();
 		Data.inWeight = 0.1f;
 		Data.outWeight = 0.1f;

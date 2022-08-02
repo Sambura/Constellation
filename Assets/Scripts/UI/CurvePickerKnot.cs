@@ -9,8 +9,6 @@ public class CurvePickerKnot : MonoSelectable
 	[SerializeField] private Vector2 _deselectedSize;
 
 	private Image _image;
-	private RectTransform _transform;
-	private RectTransform _viewport;
 
 	public override void SetSelectedWithoutNotify(bool value)
 	{
@@ -22,14 +20,14 @@ public class CurvePickerKnot : MonoSelectable
 
 	public void SetNormalizedPosition(Vector2 normalizedPosition)
 	{
-		Position = UIPositionHelper.NormalizedToWorldPosition(_viewport, normalizedPosition);
+		Position = UIPositionHelper.NormalizedToWorldPosition(_parent, normalizedPosition);
 	}
 
-	private void Awake()
+	protected override void Awake()
 	{
+		base.Awake();
+
 		_image = GetComponent<Image>();
-		_transform = GetComponent<RectTransform>();
-		_viewport = transform.parent.GetComponent<RectTransform>();
 		SetSelectedWithoutNotify(false);
 	}
 }

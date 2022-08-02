@@ -365,8 +365,68 @@ namespace UnityCore
 		{
             if (prettify == false) return json;
 
-            return json.Replace(":", ": ").Replace(",", ",\n    ").Replace("{", "{\n    ").Replace("}", "\n    }")
-                .Replace("{\n    \n    }", "{}");
+            // Below code is (supposed to be) effectively equivalent to this one:
+            //
+            // json = json.Replace("{", "{\n").Replace("}", "\n}")
+            //     .Replace("{\n\n}", "{}").Replace("[", "[\n").Replace("]", "\n]")
+            //     .Replace("[\n\n]", "[]").Replace(":", ": ").Replace(",", ",\n");
+
+            StringBuilder prettyJson = new StringBuilder(json.Length);
+            for (int i = 0; i < json.Length; i++)
+			{
+                char c = json[i];
+                switch (c)
+				{
+                    case '[':
+                    case '{':
+                        prettyJson.Append(c);
+                        if (json[i + 1] != ']' && json[i + 1] != '}')
+                            prettyJson.Append('\n');
+                        break;
+                    case ']':
+                    case '}':
+                        prettyJson.Append('\n');
+                        prettyJson.Append(c);
+                        break;
+                    case ':':
+                        prettyJson.Append(": ");
+                        break;
+                    case ',':
+                        prettyJson.Append(",\n");
+                        break;
+                    default:
+                        prettyJson.Append(c);
+                        break;
+                }
+			}
+
+            // Code section end
+
+            json = prettyJson.ToString();
+            prettyJson.Clear();
+
+            int index = 0;
+            int indentLevel = 0;
+            int indentCount = 4;
+            while (index < json.Length)
+            {
+                int nextOpeningBrace = MathUtility.MinPositive(json.IndexOf('{', index), json.IndexOf('[', index));
+                int nextClosingBrace = MathUtility.MinPositive(json.IndexOf('}', index), json.IndexOf(']', index));
+
+                if (nextClosingBrace < 0) break;
+                int nextBrace = MathUtility.MinPositive(nextClosingBrace, nextOpeningBrace);
+                bool opening = nextBrace == nextOpeningBrace;
+
+                prettyJson.Append(json.Substring(index, nextBrace - index + 1).Replace("\n", "\n" + new string(' ', indentCount * indentLevel)));
+                if (opening == false && indentLevel > 0)
+                {
+                    prettyJson.Remove(prettyJson.Length - indentCount - 1, indentCount);
+                }
+                indentLevel += opening ? 1 : -1;
+                index = nextBrace + 1;
+            }
+
+            return prettyJson.ToString();
 		}
     }
 }
