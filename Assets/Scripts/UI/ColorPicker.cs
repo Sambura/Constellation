@@ -24,6 +24,20 @@ public class ColorPicker : MonoDialog
     public Action<Color> OnColorChanged { get; set; }
     public event Action<Color> ColorChanged;
 
+    public bool UseAlpha {
+        get => _useAlpha;
+        set
+		{
+            if (_useAlpha == value) return;
+            _useAlpha = value;
+            _alphaSlider.gameObject.SetActive(value);
+            if (_useAlpha == false)
+			{
+                _alphaSlider.Value = 255;
+			}
+		}
+    }
+
     private void SetColor(Color color)
 	{
         _color = color;
@@ -41,6 +55,7 @@ public class ColorPicker : MonoDialog
     private float _h;
     private float _s;
     private float _v;
+    private bool _useAlpha;
 
     private static readonly int HuePropertyId = Shader.PropertyToID("_Hue");
 

@@ -9,8 +9,10 @@ public class ColorPickerButton : MonoBehaviour, IPointerClickHandler
 	[SerializeField] private ColorPicker _colorPicker;
 	[SerializeField] private Vector2 _colorPickerOffset;
 	[SerializeField] private Vector2 _colorPickerPivot;
+	[SerializeField] private bool _useAlpha;
+	[SerializeField] private string _colorPickerTitle = "Select color";
 
-    public Color Color
+	public Color Color
 	{
 		get => _colorImage.color;
 		set { if (_colorImage.color != value) { _colorImage.color = value; ColorChanged?.Invoke(value); } }
@@ -34,7 +36,7 @@ public class ColorPickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		if (_colorPicker.OnColorChanged != OnColorPickerColorChange) return;
 
-		_colorPicker.CloseDialog();
+		_colorPicker.CloseDialog(false);
 	}
 
 	private void OnColorPickerColorChange(Color color) => Color = color;
@@ -43,10 +45,11 @@ public class ColorPickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
 		Vector2 pivotPosition = zeroPosition + _transform.rect.size * _colorPickerPivot;
-		_colorPicker.ShowDialog("Select color");
-		_colorPicker.Position = _transform.position + (Vector3)_colorPickerOffset;//pivotPosition + _colorPickerOffset;
+		_colorPicker.ShowDialog(_colorPickerTitle);
+		_colorPicker.Position = _transform.position + (Vector3)_colorPickerOffset;
 		_colorPicker.OnColorChanged = OnColorPickerColorChange;
 		_colorPicker.Color = Color;
+		_colorPicker.UseAlpha = _useAlpha;
 	}
 
 	private void Awake()

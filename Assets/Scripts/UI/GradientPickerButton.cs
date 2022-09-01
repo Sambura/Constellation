@@ -8,6 +8,7 @@ public class GradientPickerButton : MonoBehaviour, IPointerClickHandler
 	[SerializeField] private GradientPicker _gradientPicker;
 	[SerializeField] private Vector2 _gradientPickerOffset;
 	[SerializeField] private Vector2 _gradientPickerPivot;
+	[SerializeField] private string _gradientPickerTitle = "Select gradient";
 
 	public Gradient Gradient
 	{
@@ -31,7 +32,7 @@ public class GradientPickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
 		Vector2 pivotPosition = zeroPosition + _transform.rect.size * _gradientPickerPivot;
-		_gradientPicker.ShowDialog("Select gradient");
+		_gradientPicker.ShowDialog(_gradientPickerTitle);
 		_gradientPicker.Position = pivotPosition + _gradientPickerOffset;
 		_gradientPicker.Gradient = Gradient;
 		_gradientPicker.OnGradientChanged = OnGradientPickerGradientChange;

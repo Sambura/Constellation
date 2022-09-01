@@ -8,6 +8,7 @@ public class CurvePickerButton : MonoBehaviour, IPointerClickHandler
 	[SerializeField] private CurvePicker _curvePicker;
 	[SerializeField] private Vector2 _curvePickerOffset;
 	[SerializeField] private Vector2 _curvePickerPivot;
+	[SerializeField] private string _curvePickerTitle = "Select curve";
 
 	public AnimationCurve Curve
 	{
@@ -31,7 +32,7 @@ public class CurvePickerButton : MonoBehaviour, IPointerClickHandler
 	{
 		Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
 		Vector2 pivotPosition = zeroPosition + _transform.rect.size * _curvePickerPivot;
-		_curvePicker.ShowDialog("Set up curve");
+		_curvePicker.ShowDialog(_curvePickerTitle);
 		_curvePicker.Position = pivotPosition + _curvePickerOffset;
 		_curvePicker.OnCurveChanged = OnCurvePickerCurveChange;
 		_curvePicker.Curve = Curve;

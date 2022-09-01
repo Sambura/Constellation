@@ -5,6 +5,8 @@ using UnityEngine;
 public class VerticalUIStack : MonoBehaviour
 {
 	[SerializeField] private float _spacing = 3;
+	[SerializeField] private float _topMargin = 2;
+	[SerializeField] private float _bottomMargin = 2;
 
 	private RectTransform _transform;
 
@@ -43,11 +45,12 @@ public class VerticalUIStack : MonoBehaviour
 
 	private void RebuildLayout()
 	{
-		float y = -_spacing;
+		float y = -_topMargin;
 
 		foreach (RectTransform child in _transform)
 		{
 			if (child.gameObject.activeInHierarchy == false) continue;
+			if (child.anchorMax.y != child.anchorMin.y) continue;
 
 			CalculateExtents(child, out float top, out float bottom);
 
@@ -55,6 +58,8 @@ public class VerticalUIStack : MonoBehaviour
 			child.anchoredPosition = new Vector2(child.anchoredPosition.x, y);
 			y += bottom - _spacing;
 		}
+
+		y -= _bottomMargin;
 
 		_transform.sizeDelta = new Vector2(_transform.sizeDelta.x, -y);
 	}

@@ -51,6 +51,7 @@ public class GradientPicker : MonoDialog
             gradient = new Gradient() { alphaKeys = new GradientAlphaKey[] { new GradientAlphaKey(1, 0) } };
 
         _gradient = gradient;
+        SelectedStop = null; // Reset selection
         GradientColorKey[] keys = gradient.colorKeys;
 
         while (_stops.Count > keys.Length)
@@ -70,6 +71,8 @@ public class GradientPicker : MonoDialog
 
         // Raises GradientChanged event
         UpdateStops();
+
+        SelectedStop = _stops[0]; // Select first stop
     }
 
     private void CallOnGradientChanged(Gradient gradient) => OnGradientChanged?.Invoke(gradient);
@@ -160,6 +163,8 @@ public class GradientPicker : MonoDialog
         if (Gradient.colorKeys.Length >= 8)
         {
             SelectedStop = null;
+            Manager.ShowMessageBox("Warning", "Sorry, but currently you cannot" +
+				" add more than 8 gradient stops.", StandardMessageBoxIcons.Warning);
             return;
         }
 

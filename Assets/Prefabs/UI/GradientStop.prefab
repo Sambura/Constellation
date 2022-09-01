@@ -137,7 +137,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
-  m_RaycastPadding: {x: 7, y: 0, z: 7, w: 0}
+  m_RaycastPadding: {x: 6, y: -1, z: 6, w: -1}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -165,6 +165,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _selectedColor: {r: 0.1745283, g: 0.6746657, b: 1, a: 1}
-  _deselectedColor: {r: 1, g: 1, b: 1, a: 0.7058824}
+  _deselectedColor: {r: 1, g: 1, b: 1, a: 0.8235294}
   _yPosition: -2
   _colorImage: {fileID: 7141954912524600396}

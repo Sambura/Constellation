@@ -33,9 +33,10 @@ namespace UnityCore
             return JsonSerializerUtility.Prettyfy(json.ToString(), prettyPrint);
         }
 
-        public static void OverwriteConfigFromJson(string json, object obj)
+        public static int OverwriteConfigFromJson(string json, object obj)
 		{
             Dictionary<string, string> data = JsonSerializerUtility.GetProperties(json);
+            int deserealized = 0;
 
             foreach (PropertyInfo property in obj.GetType().GetProperties())
             {
@@ -45,8 +46,11 @@ namespace UnityCore
                     ConfigProperty attribute = property.GetCustomAttribute<ConfigProperty>();
                     if (attribute == null) { Debug.LogWarning("Invalid property deserialization attempt"); continue; }
                     property.SetValue(obj, DefaultJsonSerializer.Default.FromJson(value, type));
+                    deserealized++;
                 }
             }
+
+            return deserealized;
         }
     }
 
@@ -111,7 +115,7 @@ namespace UnityCore
             {
                 MethodInfo parser = type.GetMethod("Parse", ParseMethodArguments);
                 if (parser == null)
-                    throw new NotImplementedException($"Handling of {type.FullName} type is not supported by BasicJsonSerializer");
+                    throw new ArgumentException($"Handling of {type.FullName} type is not supported by BasicJsonSerializer");
 
                 return parser.Invoke(null, new object[] { json });
             }
@@ -136,15 +140,16 @@ namespace UnityCore
 	}
 
 	/// <summary>
-	/// This serializer is a wrapper around Unity's JsonUtility
-	/// It only serializes `properties` of objects marked with `ConfigProperty` attribute
-	/// If a property is not of primitive type, it is serialized fully using JsonUtility
-	/// Note: currently only float, double and bool primitive types are correctly supported
-	/// Note: This class may not be greatly optimized, but shouldn't have too terrible performance either
+	/// Utility methods for above classes
 	/// </summary>
 	public static class JsonSerializerUtility
     {
         public static IReadOnlyDictionary<Type, IJsonPropertySerializer> CustomSerializers { get; private set; }
+
+        /// <summary>
+        /// Each even index has an opening brace, each next index has respective closing brace
+        /// </summary>
+        private const string BracePairs = "{}[]\"\"";
 
         /// <summary>
         /// Finds all classes in this assembly that implement IJsonPropertySerializer<>
@@ -178,7 +183,7 @@ namespace UnityCore
             json = json.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
             // check curly braces
             if (json[0] != '{' || json[json.Length - 1] != '}')
-                throw new ArgumentException("Invalid json format: opening and/or closing curly brace not found");
+                throw new JsonSerializerException("Invalid json format: opening and/or closing curly brace not found");
             // remove curly braces
             json = json.Substring(1, json.Length - 2);
             // Allocate dictionary
@@ -203,7 +208,7 @@ namespace UnityCore
                     if (bracesStack.Count == 0 && propertyName == null)
                     {
                         if (index != json.Length - 1 && json[index + 1] != ':')
-                            throw new ArgumentException("Invalid json format: missing colon");
+                            throw new JsonSerializerException("Invalid json format: missing colon");
                     }
                 }
 
@@ -217,12 +222,12 @@ namespace UnityCore
                         bracesStack.Push(c);
                         continue;
                     case '}':
-                        if (bracesStack.Peek() != '{') throw new ArgumentException("Invalid json format: braces mismatch");
+                        if (bracesStack.Peek() != '{') throw new JsonSerializerException("Invalid json format: braces mismatch");
                         bracesStack.Pop();
                         entryClosed = true;
                         break;
                     case ']':
-                        if (bracesStack.Peek() != '[') throw new ArgumentException("Invalid json format: braces mismatch");
+                        if (bracesStack.Peek() != '[') throw new JsonSerializerException("Invalid json format: braces mismatch");
                         bracesStack.Pop();
                         entryClosed = true;
                         break;
@@ -264,7 +269,7 @@ namespace UnityCore
             json = json.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
             // check square braces
             if (json[0] != '[' || json[json.Length - 1] != ']')
-                throw new ArgumentException("Invalid json format: opening and/or closing square bracket not found");
+                throw new JsonSerializerException("Invalid json format: opening and/or closing square bracket not found");
             // remove square braces
             json = json.Substring(1, json.Length - 2);
             // Allocate dictionary
@@ -296,12 +301,105 @@ namespace UnityCore
                         bracesStack.Push(c);
                         continue;
                     case '}':
-                        if (bracesStack.Peek() != '{') throw new ArgumentException("Invalid json format: braces mismatch");
+                        if (bracesStack.Peek() != '{') throw new JsonSerializerException("Invalid json format: braces mismatch");
                         bracesStack.Pop();
                         entryClosed = true;
                         break;
                     case ']':
-                        if (bracesStack.Peek() != '[') throw new ArgumentException("Invalid json format: braces mismatch");
+                        if (bracesStack.Peek() != '[') throw new JsonSerializerException("Invalid json format: braces mismatch");
+                        bracesStack.Pop();
+                        entryClosed = true;
+                        break;
+                    case ',':
+                        entryClosed = true;
+                        break;
+                }
+
+                if (entryClosed || index == json.Length - 1)
+                {
+                    if (bracesStack.Count != 0) continue;
+                    if (index == json.Length - 1) index = json.Length;
+
+                    bool getClosing = (c == '}' || c == ']') && index < json.Length;
+                    string entry = json.Substring(lastIndex, index - lastIndex + (getClosing ? 1 : 0));
+                    if (getClosing && json[index + 1] == ',') index++;
+
+                    elements.Add(entry);
+
+                    lastIndex = index + 1;
+                }
+            }
+
+            return elements;
+        }
+
+        /// <summary>
+        /// This function accepts a json string. It analyzes only the content inside
+        /// the first pair of square/curly brackets. It deletes these braces, returning
+        /// a list of elements that were stored in this pair of braces.
+        /// Example: this input:
+        /// {
+        ///     "name": "foo",
+        ///     "value": "fee"
+        /// }
+        /// will produce this output:
+        /// List<string> {
+        ///     "\"name\":\"foo\"",
+        ///     "\"value\":\"fee\""
+        /// }
+        /// 
+        /// Note that all formatting is removed after this function is used
+        /// 
+        /// \\\\\\\\\
+        /// 
+        /// The function is just a concept, and is not implemented yet
+        /// </summary>
+        public static List<string> GetElements(string json)
+        {
+            // remove all pretty print chars
+            json = json.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
+            // check first brace
+            if (json[0] != '[' && json[0] != '{')
+                throw new JsonSerializerException("Invalid json format: an opening curly or square brace missing.");
+
+            // To remake (it does not work)
+            // remove square braces
+            json = json.Substring(1, json.Length - 2);
+            // Allocate dictionary
+            List<string> elements = new List<string>();
+            Stack<char> bracesStack = new Stack<char>();
+
+            int lastIndex = 0;
+            for (int index = 0; index < json.Length; index++)
+            {
+                char c = json[index];
+                bool entryClosed = false;
+
+                if (bracesStack.Count > 0 && bracesStack.Peek() == '"')
+                {
+                    if (c == '\\') index++;
+                    if (c != '"') continue;
+
+                    bracesStack.Pop();
+                    entryClosed = true;
+                }
+
+                switch (c)
+                {
+                    case '"':
+                    case '{':
+                    case '[':
+                        if (entryClosed) break;
+                        if (bracesStack.Count == 0) lastIndex = c == '"' ? index + 1 : index;
+                        bracesStack.Push(c);
+                        continue;
+                    case '}':
+                        if (bracesStack.Peek() != '{') throw new JsonSerializerException("Invalid json format: braces mismatch");
+                        bracesStack.Pop();
+                        entryClosed = true;
+                        break;
+                    case ']':
+                        if (bracesStack.Peek() != '[') throw new JsonSerializerException("Invalid json format: braces mismatch");
                         bracesStack.Pop();
                         entryClosed = true;
                         break;
@@ -428,5 +526,10 @@ namespace UnityCore
 
             return prettyJson.ToString();
 		}
+    }
+
+    public class JsonSerializerException : Exception 
+    {
+        public JsonSerializerException(string message) : base(message) { }
     }
 }

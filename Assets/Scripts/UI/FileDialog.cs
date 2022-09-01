@@ -4,6 +4,11 @@ using System.IO;
 using TMPro;
 using UnityEngine.UI;
 
+/// <summary>
+/// Class representing file choosing dialog - either for saving or for loading a file
+/// File dialog has a title, a list view of files and folders, file name filter selector,
+/// Input field for file name, input field for path, `Ok` and `Cancel` buttons
+/// </summary>
 public class FileDialog : MonoDialog
 {
 	[SerializeField] private TMP_InputField _pathInputField;
@@ -11,7 +16,6 @@ public class FileDialog : MonoDialog
 	[SerializeField] private GameObject _folderPrefab;
 	[SerializeField] private RectTransform _filesView;
 	[SerializeField] private Button _parentFolderButton;
-	[SerializeField] private GameObject _errorScreen;
 	[SerializeField] private CustomDropdown _fileFilterDropdown;
 	[SerializeField] private TMP_InputField _fileNameInputField;
 
@@ -32,12 +36,12 @@ public class FileDialog : MonoDialog
 	{
 		base.Awake();
 
-		_currentDirectory = new DirectoryInfo("Json/");
-		_errorScreen.SetActive(false);
+		_currentDirectory = new DirectoryInfo(".");
 		_parentFolderButton.onClick.AddListener(GoToParentDirectory);
 		_fileFilterDropdown.onValueChanged.AddListener(OnFileFilterChanged);
 		_fileFilterDropdown.value = 0;
 		OnFileFilterChanged(_fileFilterDropdown.value);
+		DialogOpened += x => UpdateFileView();
 	}
 
 	private void OnFileFilterChanged(int value)
@@ -85,21 +89,8 @@ public class FileDialog : MonoDialog
 		_fileNameInputField.text = (file.Data as FileInfo).Name;
 	}
 
-	public override void ShowDialog(string title = null)
-	{
-		base.ShowDialog(title);
-
-		UpdateFileView();
-	}
-
 	public void UpdateFileView(string customTitle = null, FileInfo[] customFiles = null, DirectoryInfo[] customDirectories = null)
 	{
-		_pathInputField.text = customTitle ?? _currentDirectory.Name;
-
-		foreach (GameObject file in _fileObjects) Destroy(file);
-		_fileObjects.Clear();
-		_selected = null;
-
 		DirectoryInfo[] directories;
 		FileInfo[] files;
 
@@ -110,13 +101,16 @@ public class FileDialog : MonoDialog
 		}
 		catch (System.Exception ex)
 		{
-			_errorScreen.SetActive(true);
-			Debug.Log(ex.Message);
-			Debug.LogError(ex.StackTrace);
+			Manager.ShowMessageBox("Error", "Sorry, but an error occured while trying to display files." +
+				$" The message is: {ex.Message}", StandardMessageBoxIcons.Error, this);
 			return;
 		}
 
-		_errorScreen.SetActive(false);
+		_pathInputField.text = customTitle ?? _currentDirectory.Name;
+
+		foreach (GameObject file in _fileObjects) Destroy(file);
+		_fileObjects.Clear();
+		_selected = null;
 
 		if (directories != null)
 		{

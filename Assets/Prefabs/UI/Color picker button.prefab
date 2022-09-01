@@ -203,6 +203,7 @@ MonoBehaviour:
   _colorPicker: {fileID: 0}
   _colorPickerOffset: {x: -190, y: 40}
   _colorPickerPivot: {x: 0, y: 0.5}
+  _useAlpha: 1
 --- !u!1 &2297000100488132920
 GameObject:
   m_ObjectHideFlags: 0
