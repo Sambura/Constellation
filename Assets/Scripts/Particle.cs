@@ -47,6 +47,16 @@ public class Particle : MonoBehaviour
         get => _transform.localScale.x;
         set => _transform.localScale = new Vector3(value, value, value);
 	}
+    public float BoundMargins
+    {
+        get => _boundMargins;
+        set
+        {
+            _boundMargins = value;
+            OnViewportChanged();
+        }
+    }
+    public bool Warp { get; set; }
 
     private Viewport _viewport;
     private Transform _transform;
@@ -56,13 +66,14 @@ public class Particle : MonoBehaviour
     private float _right;
     private float _top;
     private float _bottom;
+    private float _boundMargins;
 
     private void OnViewportChanged()
 	{
-        _left = -_viewport.MaxX;
-        _right = _viewport.MaxX;
-        _bottom = -_viewport.MaxY;
-        _top = _viewport.MaxY;
+        _left = -_viewport.MaxX + _boundMargins;
+        _right = _viewport.MaxX - _boundMargins;
+        _bottom = -_viewport.MaxY + _boundMargins;
+        _top = _viewport.MaxY - _boundMargins;
 	}
 
     public void SetRandomVelocity(float minAngle = Angle0, float maxAngle = Angle360)
@@ -93,13 +104,21 @@ public class Particle : MonoBehaviour
         bool bottomHit = _position.y < _bottom;
         bool topHit = _position.y > _top;
 
-        if ((leftHit || rightHit) && _position.x * _velocity.x > 0)
-		{
-            SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
-		} 
-        if ((bottomHit || topHit) && _position.y * _velocity.y > 0)
-        {
-            SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
-        }
+        //if (Warp)
+        //{
+        //    if (leftHit || rightHit && _position.x * _velocity.x > 0) _position.x = -_position.x;
+        //    if (bottomHit || topHit && _position.y * _velocity.y > 0) _position.y = -_position.y;
+        //}
+        //else
+        //{
+            if ((leftHit || rightHit) && _position.x * _velocity.x > 0)
+            {
+                SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
+            }
+            if ((bottomHit || topHit) && _position.y * _velocity.y > 0)
+            {
+                SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
+            }
+        //}
     }
 }

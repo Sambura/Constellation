@@ -17,6 +17,8 @@ public class ParticleController : MonoBehaviour
     [SerializeField] private bool _showParticles = true;
     [SerializeField] private float _minParticleVelocity = 0;
     [SerializeField] private float _maxParticleVelocity = 1;
+    [SerializeField] private float _boundMargins = 0;
+    //[SerializeField] private bool _warp = true;
 
     [ConfigProperty] 
     public bool ShowParticles
@@ -54,6 +56,12 @@ public class ParticleController : MonoBehaviour
         get => _maxParticleVelocity;
         set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }
     }
+    [ConfigProperty]
+    public float BoundMargins
+    {
+        get => _boundMargins;
+        set { if (_boundMargins != value) { SetBoundMargins(value); BoundMarginsChanged?.Invoke(value); }; }
+    }
 
     public event System.Action<bool> ShowParticlesChanged;
     public event System.Action<float> ParticleSizeChanged;
@@ -61,6 +69,7 @@ public class ParticleController : MonoBehaviour
     public event System.Action<int> ParticleCountChanged;
     public event System.Action<float> MinParticleVelocityChanged;
     public event System.Action<float> MaxParticleVelocityChanged;
+    public event System.Action<float> BoundMarginsChanged;
 
     private void SetShowParticles(bool value)
     {
@@ -99,6 +108,8 @@ public class ParticleController : MonoBehaviour
             particle.Color = ParticleColor;
             particle.Visible = ShowParticles;
             particle.Size = ParticleSize;
+            particle.BoundMargins = _boundMargins;
+            //particle.Warp = _warp;
             SetRandomPositionAndVelocity(particle);
 
             _particles.Add(particle);
@@ -130,6 +141,15 @@ public class ParticleController : MonoBehaviour
             if (magnitude <= _maxParticleVelocity) continue;
 
             p.Velocity = Vector3.ClampMagnitude(p.Velocity, _maxParticleVelocity);
+        }
+    }
+    private void SetBoundMargins(float value)
+    {
+        _boundMargins = value;
+
+        foreach (Particle p in _particles)
+        {
+            p.BoundMargins = value;
         }
     }
 

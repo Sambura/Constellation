@@ -31,6 +31,7 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private SliderWithText _strongDistanceSlider;
 	[SerializeField] private SliderWithText _minParticleVelocitySlider;
 	[SerializeField] private SliderWithText _maxParticleVelocitySlider;
+	[SerializeField] private SliderWithText _boundMarginsSlider;
 
 	private void Start()
 	{
@@ -54,6 +55,7 @@ public class SimulationTabPresenter : MonoBehaviour
 		_alternateColorToggle.isOn = _vizualizator.AlternateLineColor;
 		_colorFadeDurationSlider.MinValue = _vizualizator.MinColorFadeDuration;
 		_colorFadeDurationSlider.MaxValue = _vizualizator.MaxColorFadeDuration;
+		_boundMarginsSlider.Value = _particles.BoundMargins;
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
@@ -112,6 +114,9 @@ public class SimulationTabPresenter : MonoBehaviour
 
 		_colorFadeDurationSlider.MaxValueChanged += OnMaxColorFadeDurationChanged;
 		_vizualizator.MaxColorFadeDurationChanged += OnMaxColorFadeDurationChanged;
+
+		_boundMarginsSlider.ValueChanged += OnBoundMarginsChanged;
+		_particles.BoundMarginsChanged += OnBoundMarginsChanged;
 
 		_restartSimulationButton.onClick.AddListener(OnRestartSimulationButtonClick);
 	}
@@ -238,6 +243,12 @@ public class SimulationTabPresenter : MonoBehaviour
 	{
 		_particles.ShowParticles = value;
 		_showParticlesToggle.isOn = value;
+	}
+
+	private void OnBoundMarginsChanged(float value)
+	{
+		_particles.BoundMargins = value;
+		_boundMarginsSlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnDestroy()
