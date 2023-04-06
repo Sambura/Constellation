@@ -6,7 +6,7 @@ using SimpleGraphics;
 public class FragmentationVisualization : MonoBehaviour
 {
     [Header("Objects")]
-    [SerializeField] private BatchRenderer _drawer;
+    [SerializeField] private ImmediateBatchRenderer _drawer;
     [SerializeField] private ParticleController _fragmentator;
     [SerializeField] private int _renderQueueIndex = 1000;
 

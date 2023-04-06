@@ -59,14 +59,14 @@ public class Particle : MonoBehaviour
     public bool Warp { get; set; }
 
     private Viewport _viewport;
-    private Transform _transform;
-    private Vector3 _position;
-    private Vector3 _velocity;
-    private float _left;
-    private float _right;
-    private float _top;
-    private float _bottom;
-    private float _boundMargins;
+    public Transform _transform;
+    public Vector3 _position;
+    public Vector3 _velocity;
+    public float _left;
+    public float _right;
+    public float _top;
+    public float _bottom;
+    public float _boundMargins;
 
     private void OnViewportChanged()
 	{
@@ -92,33 +92,5 @@ public class Particle : MonoBehaviour
 	private void Start()
 	{
         _transform.localPosition = _position;
-    }
-
-	private void Update()
-    {
-        _position += _velocity * Time.deltaTime;
-        _transform.localPosition = _position;
-
-        bool leftHit = _position.x < _left;
-        bool rightHit = _position.x > _right;
-        bool bottomHit = _position.y < _bottom;
-        bool topHit = _position.y > _top;
-
-        //if (Warp)
-        //{
-        //    if (leftHit || rightHit && _position.x * _velocity.x > 0) _position.x = -_position.x;
-        //    if (bottomHit || topHit && _position.y * _velocity.y > 0) _position.y = -_position.y;
-        //}
-        //else
-        //{
-            if ((leftHit || rightHit) && _position.x * _velocity.x > 0)
-            {
-                SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
-            }
-            if ((bottomHit || topHit) && _position.y * _velocity.y > 0)
-            {
-                SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
-            }
-        //}
     }
 }

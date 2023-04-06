@@ -5,7 +5,7 @@ using TMPro;
 public class SimulationTabPresenter : MonoBehaviour
 {
 	[Header("General")]
-	[SerializeField] private MainVisualizator _vizualizator;
+	[SerializeField] private MainVisualizer _vizualizator;
 	[SerializeField] private ParticleController _particles;
 
 	[Header("General appearance")]

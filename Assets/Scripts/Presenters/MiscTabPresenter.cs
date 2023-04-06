@@ -16,6 +16,7 @@ public class MiscTabPresenter : MonoBehaviour
 	[SerializeField] private CustomDropdown _fullscreenDropdown;
 
 	[Header("Other")]
+	[SerializeField] private Button _makeTransparentButton;
 	[SerializeField] private Button _exitButton;
 
 	private Dictionary<int, FullScreenMode> _fullscreenModeMapping = new Dictionary<int, FullScreenMode>()
@@ -36,6 +37,8 @@ public class MiscTabPresenter : MonoBehaviour
 
 		// Set up listeners
 		_exitButton.onClick.AddListener(OnExitButtonClick);
+
+		_makeTransparentButton.onClick.AddListener(OnMakeTransparentButtonClick);
 
 		_fpsLimitSlider.IntValueChanged += OnTargetFrameRateChanged;
 		_application.TargetFrameRateChanged += OnTargetFrameRateChanged;
@@ -80,5 +83,11 @@ public class MiscTabPresenter : MonoBehaviour
 	}
 
 	private void OnExitButtonClick() => _application.Quit();
+
+	private void OnMakeTransparentButtonClick()
+	{
+		TransparentWindow tw = FindObjectOfType<TransparentWindow>(true);
+		tw.MakeTransparent();
+	}
 }
 

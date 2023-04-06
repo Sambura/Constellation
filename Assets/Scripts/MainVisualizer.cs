@@ -3,10 +3,10 @@ using UnityEngine;
 using Core;
 using SimpleGraphics;
 
-public class MainVisualizator : MonoBehaviour
+public class MainVisualizer : MonoBehaviour
 {
     [Header("Objects")]
-    [SerializeField] private BatchRenderer _drawer;
+    [SerializeField] private ImmediateBatchRenderer _drawer;
     [SerializeField] private Viewport _viewport;
     [SerializeField] private ParticleController _particleController;
 

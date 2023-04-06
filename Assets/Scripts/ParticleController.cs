@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Core;
+using static Core.MathUtility;
 
 public class ParticleController : MonoBehaviour
 {
@@ -241,6 +242,34 @@ public class ParticleController : MonoBehaviour
 
 	private void Update()
     {
+        foreach (var particle in _particles)
+		{
+            particle._position += particle._velocity * Time.deltaTime;
+            particle._transform.localPosition = particle._position;
+
+            bool leftHit = particle._position.x < particle._left;
+            bool rightHit = particle._position.x > particle._right;
+            bool bottomHit = particle._position.y < particle._bottom;
+            bool topHit = particle._position.y > particle._top;
+
+            //if (Warp)
+            //{
+            //    if (leftHit || rightHit && _position.x * _velocity.x > 0) _position.x = -_position.x;
+            //    if (bottomHit || topHit && _position.y * _velocity.y > 0) _position.y = -_position.y;
+            //}
+            //else
+            //{
+            if ((leftHit || rightHit) && particle._position.x * particle._velocity.x > 0)
+            {
+                particle.SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
+            }
+            if ((bottomHit || topHit) && particle._position.y * particle._velocity.y > 0)
+            {
+                particle.SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
+            }
+            //}
+        }
+        
         for (int ry = 0; ry <= _maxSquareY; ry++)
             for (int rx = 0; rx <= _maxSquareX; rx++)
                 _regionMap[rx, ry].PseudoClear();

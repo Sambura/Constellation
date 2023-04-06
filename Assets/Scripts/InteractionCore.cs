@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using Core;
+using UnityRawInput;
 
 public class InteractionCore : MonoBehaviour
 {
@@ -12,9 +13,9 @@ public class InteractionCore : MonoBehaviour
 	[SerializeField] private float _attractionOrder = 2;
 	[SerializeField] private float _attractionStrength = 1;
 	[SerializeField] private float _attractionAssertion = 0.01f;
-	[SerializeField] private float _driftStrength = 1;
-	[SerializeField] private float _decelerationStrength = 0.01f;
-	[SerializeField] private float _decelerationOrder = 0.5f;
+	//[SerializeField] private float _driftStrength = 1;
+	//[SerializeField] private float _decelerationStrength = 0.01f;
+	//[SerializeField] private float _decelerationOrder = 0.5f;
 
 	[ConfigProperty]
 	public float AttractionOrder
@@ -49,7 +50,7 @@ public class InteractionCore : MonoBehaviour
 		mousePosition.z = 0;
 		List<Particle> particles = _particles.Particles;
 
-		if (Input.GetKey(KeyCode.A)) // attract
+		if (Input.GetKey(KeyCode.A) || RawInput.IsKeyDown(RawKey.A)) // attract
 		{
 			foreach (Particle p in particles)
 			{
