@@ -8,38 +8,18 @@ public class ParticleController : MonoBehaviour
     [Header("Objects")]
     [SerializeField] private Viewport _viewport;
 
-    [Header("Prefabs")]
-    [SerializeField] private GameObject _particlePrefab;
-
-    [Header("Particles parameters")]
-    [SerializeField] private float _particlesScale = 0.1f;
+    [Header("Particles simulation parameters")]
     [SerializeField] private int _particlesCount = 100;
-    [SerializeField] private Color _particlesColor = Color.white;
-    [SerializeField] private bool _showParticles = true;
     [SerializeField] private float _minParticleVelocity = 0;
     [SerializeField] private float _maxParticleVelocity = 1;
     [SerializeField] private float _boundMargins = 0;
     //[SerializeField] private bool _warp = true;
 
-    [ConfigProperty] 
-    public bool ShowParticles
-    {
-        get => _showParticles;
-        set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
-    }
-    [ConfigProperty] 
-    public float ParticleSize
-    {
-        get => _particlesScale;
-        set { if (_particlesScale != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
-    }
-    [ConfigProperty]
-    public Color ParticleColor
-    {
-        get => _particlesColor;
-        set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
-    }
-    [ConfigProperty]
+    public event System.Action<Particle> ParticleCreated;
+
+	#region Config properties
+
+	[ConfigProperty]
     public int ParticleCount
     {
         get => _particlesCount;
@@ -64,32 +44,11 @@ public class ParticleController : MonoBehaviour
         set { if (_boundMargins != value) { SetBoundMargins(value); BoundMarginsChanged?.Invoke(value); }; }
     }
 
-    public event System.Action<bool> ShowParticlesChanged;
-    public event System.Action<float> ParticleSizeChanged;
-    public event System.Action<Color> ParticleColorChanged;
     public event System.Action<int> ParticleCountChanged;
     public event System.Action<float> MinParticleVelocityChanged;
     public event System.Action<float> MaxParticleVelocityChanged;
     public event System.Action<float> BoundMarginsChanged;
 
-    private void SetShowParticles(bool value)
-    {
-        _showParticles = value;
-        foreach (Particle p in _particles)
-            p.Visible = value;
-    }
-    private void SetParticleSize(float value)
-    {
-        _particlesScale = value;
-        foreach (Particle p in _particles)
-            p.Size = value;
-    }
-    private void SetParticleColor(Color value)
-    {
-        _particlesColor = value;
-        foreach (Particle p in _particles)
-            p.Color = value;
-    }
     private void SetParticlesCount(int value)
     {
         _particlesCount = value;
@@ -97,23 +56,20 @@ public class ParticleController : MonoBehaviour
         while (_particles.Count > value)
         {
             int index = _particles.Count - 1;
-            Destroy(_particles[index].gameObject);
             _particles.RemoveAt(index);
         }
 
         while (_particles.Count < value)
         {
-            Particle particle = Instantiate(_particlePrefab).GetComponent<Particle>();
-            particle.VelocityDelegate = GetParticleVelocity;
-            particle.Viewport = _viewport;
-            particle.Color = ParticleColor;
-            particle.Visible = ShowParticles;
-            particle.Size = ParticleSize;
-            particle.BoundMargins = _boundMargins;
-            //particle.Warp = _warp;
-            SetRandomPositionAndVelocity(particle);
+			Particle particle = new Particle
+			{
+				VelocityDelegate = GetParticleVelocity
+			};
+			SetRandomPositionAndVelocity(particle);
 
             _particles.Add(particle);
+
+            ParticleCreated?.Invoke(particle);
         }
     }
     private void SetMinParticleVelocity(float value)
@@ -147,19 +103,16 @@ public class ParticleController : MonoBehaviour
     private void SetBoundMargins(float value)
     {
         _boundMargins = value;
-
-        foreach (Particle p in _particles)
-        {
-            p.BoundMargins = value;
-        }
+        RecalculateBounds();
     }
+    #endregion
 
     private void SetRandomPositionAndVelocity(Particle particle)
     {
         particle.SetRandomVelocity();
 
-        particle.Position = new Vector3(Random.Range(-_viewport.MaxX, _viewport.MaxX),
-            Random.Range(-_viewport.MaxY, _viewport.MaxY));
+        particle.Position = new Vector3(Random.Range(_left, _right),
+            Random.Range(_bottom, _top));
 
     }
 
@@ -187,8 +140,8 @@ public class ParticleController : MonoBehaviour
         set
 		{
             _viewport = value;
-            _viewport.CameraDimensionsChanged += DoFragmentation;
-            DoFragmentation();
+            _viewport.CameraDimensionsChanged += OnViewportChanged;
+            OnViewportChanged();
         }
     }
 
@@ -209,9 +162,24 @@ public class ParticleController : MonoBehaviour
 	{
         _particles = new List<Particle>(_particlesCount);
 
+        RecalculateBounds();
         SetParticlesCount(_particlesCount);
         DoFragmentation();
     }
+
+    private void OnViewportChanged()
+	{
+		RecalculateBounds();
+		DoFragmentation();
+	}
+
+	private void RecalculateBounds()
+	{
+		_left = -_viewport.MaxX + _boundMargins;
+		_right = _viewport.MaxX - _boundMargins;
+		_bottom = -_viewport.MaxY + _boundMargins;
+		_top = _viewport.MaxY - _boundMargins;
+	}
 
 	private void DoFragmentation()
 	{
@@ -239,18 +207,21 @@ public class ParticleController : MonoBehaviour
     private int _ySquareOffset;
     private int _maxSquareX;
     private int _maxSquareY;
+    private float _left;
+    private float _right;
+    private float _top;
+    private float _bottom;
 
-	private void Update()
+    private void Update()
     {
         foreach (var particle in _particles)
 		{
-            particle._position += particle._velocity * Time.deltaTime;
-            particle._transform.localPosition = particle._position;
+            particle.Position += particle.Velocity * Time.deltaTime;
 
-            bool leftHit = particle._position.x < particle._left;
-            bool rightHit = particle._position.x > particle._right;
-            bool bottomHit = particle._position.y < particle._bottom;
-            bool topHit = particle._position.y > particle._top;
+            bool leftHit = particle.Position.x < _left;
+            bool rightHit = particle.Position.x > _right;
+            bool bottomHit = particle.Position.y < _bottom;
+            bool topHit = particle.Position.y > _top;
 
             //if (Warp)
             //{
@@ -259,11 +230,11 @@ public class ParticleController : MonoBehaviour
             //}
             //else
             //{
-            if ((leftHit || rightHit) && particle._position.x * particle._velocity.x > 0)
+            if ((leftHit || rightHit) && particle.Position.x * particle.Velocity.x > 0)
             {
                 particle.SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
             }
-            if ((bottomHit || topHit) && particle._position.y * particle._velocity.y > 0)
+            if ((bottomHit || topHit) && particle.Position.y * particle.Velocity.y > 0)
             {
                 particle.SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
             }

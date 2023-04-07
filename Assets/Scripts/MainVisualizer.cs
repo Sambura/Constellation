@@ -10,6 +10,9 @@ public class MainVisualizer : MonoBehaviour
     [SerializeField] private Viewport _viewport;
     [SerializeField] private ParticleController _particleController;
 
+	[Header("Static properties")]
+    [SerializeField] private Material _particleMaterial;
+
     [Header("Simulation parameters")]
     [SerializeField] private float _linesWidth = 0.1f;
     [SerializeField] private bool _meshLines = false;
@@ -30,88 +33,101 @@ public class MainVisualizer : MonoBehaviour
     [SerializeField] private float _colorMaxFadeDuration = 4;
     [SerializeField] private Color _clearColor = Color.black;
     [SerializeField][Range(0, 1)] private float _triangleFillOpacity;
+    [SerializeField] private float _particlesSize = 0.1f;
+    [SerializeField] private Color _particlesColor = Color.white;
+    [SerializeField] private bool _showParticles = true;
+    [SerializeField] private Texture _particleSprite;
 
     [Header("Rendering")]
     [SerializeField] private int _renderQueueIndex = 0;
 
-    [ConfigProperty]
-    public bool ShowLines
+	#region Config properties
+
+	[ConfigProperty] public bool ShowLines
     {
         get => _showLines;
         set { if (_showLines != value) { _showLines = value; ShowLinesChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-    public bool MeshLines
+    [ConfigProperty] public bool MeshLines
     {
         get => _meshLines;
         set { if (_meshLines != value) { _meshLines = value; MeshLinesChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-    public Gradient LineColor
+    [ConfigProperty] public Gradient LineColor
 	{
         get => _lineColor;
         set { if (_lineColor != value) { SetLineColor(value); LineColorChanged?.Invoke(value); } }
     }
-    [ConfigProperty]
-    public float LineWidth
+    [ConfigProperty] public float LineWidth
 	{
         get => _linesWidth;
         set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-    public float ConnectionDistance
+    [ConfigProperty] public float ConnectionDistance
     {
         get => _connectionDistance;
         set { if (_connectionDistance != value) { SetConnectionDistance(value); ConnectionDistanceChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-    public float StrongDistance
+    [ConfigProperty] public float StrongDistance
     {
         get => _strongDistance;
         set { if (_strongDistance != value) { SetStrongDistance(value); StrongDistanceChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-    public bool ShowTriangles
+    [ConfigProperty] public bool ShowTriangles
 	{
         get => _showTriangles;
         set { if (_showTriangles != value) { _showTriangles = value; ShowTrianglesChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-	public float TriangleFillOpacity
+    [ConfigProperty] public float TriangleFillOpacity
 	{
         get => _triangleFillOpacity;
         set { if (_triangleFillOpacity != value) { SetTriangleFillOpacity(value); TriangleFillOpacityChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-	public Color ClearColor
+    [ConfigProperty] public Color ClearColor
     {
         get => _clearColor;
         set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
-	public AnimationCurve AlphaCurve
+    [ConfigProperty] public AnimationCurve AlphaCurve
 	{
         get => _alphaCurve;
         set { if (_alphaCurve != value) { SetAlphaCurve(value); AlphaCurveChanged?.Invoke(value); } }
 	}
-    [ConfigProperty]
-	public bool AlternateLineColor
+    [ConfigProperty] public bool AlternateLineColor
 	{
         get => _alternateLineColor;
         set { if (_alternateLineColor != value) { SetAlternateLineColor(value); AlternateLineColorChanged?.Invoke(value); } }
 	}
-    [ConfigProperty]
-    public float MinColorFadeDuration
+    [ConfigProperty] public float MinColorFadeDuration
 	{
         get => _colorMinFadeDuration;
         set { if (_colorMinFadeDuration != value) { _colorMinFadeDuration = value; RestartColorChanger(); MinColorFadeDurationChanged?.Invoke(MinColorFadeDuration); } }
 	}
-    [ConfigProperty]
-	public float MaxColorFadeDuration
+    [ConfigProperty] public float MaxColorFadeDuration
     {
         get => _colorMaxFadeDuration;
         set { if (_colorMaxFadeDuration != value) { _colorMaxFadeDuration = value; RestartColorChanger(); MaxColorFadeDurationChanged?.Invoke(MaxColorFadeDuration); } }
     }
+    [ConfigProperty] public bool ShowParticles
+    {
+        get => _showParticles;
+        set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
+    }
+    [ConfigProperty] public float ParticleSize
+    {
+        get => _particlesSize;
+        set { if (_particlesSize != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
+    }
+    [ConfigProperty] public Color ParticleColor
+    {
+        get => _particlesColor;
+        set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
+    }
+    [ConfigProperty] public Texture ParticleSprite
+	{
+        get => _particleSprite;
+        set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
+	}
 
     public event System.Action<bool> ShowLinesChanged;
     public event System.Action<bool> MeshLinesChanged;
@@ -126,6 +142,10 @@ public class MainVisualizer : MonoBehaviour
     public event System.Action<bool> AlternateLineColorChanged;
     public event System.Action<float> MinColorFadeDurationChanged;
     public event System.Action<float> MaxColorFadeDurationChanged;
+    public event System.Action<bool> ShowParticlesChanged;
+    public event System.Action<float> ParticleSizeChanged;
+    public event System.Action<Color> ParticleColorChanged;
+    public event System.Action<Texture> ParticleSpriteChanged;
 
     private void RestartColorChanger()
 	{
@@ -204,6 +224,32 @@ public class MainVisualizer : MonoBehaviour
         _backgroundBatch.quads[0].color = value;
 	}
 
+    private void SetShowParticles(bool value)
+    {
+        _showParticles = value;
+        foreach (Particle p in _particleController.Particles)
+            p.Visible = value;
+    }
+    private void SetParticleSize(float value)
+    {
+        _particlesSize = value;
+        foreach (Particle p in _particleController.Particles)
+            p.Size = value;
+    }
+    private void SetParticleColor(Color value)
+    {
+        _particlesColor = value;
+        foreach (Particle p in _particleController.Particles)
+            p.Color = value;
+    }
+    private void SetParticleSprite(Texture value)
+    {
+        _particleSprite = value;
+        _particleMaterial.mainTexture = value;
+    }
+
+    #endregion
+
     private float _connectionDistanceSquared;
     private float _lineIntensityDenominator;
     private float _triangleColorOffset;
@@ -216,6 +262,7 @@ public class MainVisualizer : MonoBehaviour
     // rendering stuff
     private SimpleDrawBatch _backgroundBatch;
     private SimpleDrawBatch _mainBatch;
+    private SimpleDrawBatch _particleBatch;
     // stats
     private int _lineDrawCalls;
     private int _actualLineDrawCalls;
@@ -271,13 +318,22 @@ public class MainVisualizer : MonoBehaviour
     private void Awake()
     {
         _neighbours = new FastList<Particle>[4];
-        _backgroundBatch = new SimpleDrawBatch();
-        _backgroundBatch.quads = new FastList<QuadEntry>();
-        _mainBatch = new SimpleDrawBatch();
-        _mainBatch.lines = new FastList<LineEntry>();
-        _mainBatch.meshLines = new FastList<MeshLineEntry>();
-        _mainBatch.triangles = new FastList<TriangleEntry>();
-        _alphaCurveInternal = new AnimationCurve();
+		_backgroundBatch = new SimpleDrawBatch
+		{
+			quads = new FastList<QuadEntry>()
+		};
+		_mainBatch = new SimpleDrawBatch
+		{
+			lines = new FastList<LineEntry>(),
+			meshLines = new FastList<MeshLineEntry>(),
+			triangles = new FastList<TriangleEntry>()
+		};
+        _particleBatch = new SimpleDrawBatch()
+        {
+            quads = new FastList<QuadEntry>(),
+            material = _particleMaterial
+        };
+		_alphaCurveInternal = new AnimationCurve();
         _currentLineColorGradient = new Gradient();
 
         SetConnectionDistance(_connectionDistance);
@@ -294,22 +350,43 @@ public class MainVisualizer : MonoBehaviour
         UpdateBackgroundQuad();
         SetClearColor(_clearColor);
 
+        if (_particleController.Particles != null)
+        {
+            SetShowParticles(_showParticles);
+            SetParticleColor(_particlesColor);
+            SetParticleSize(_particlesSize);
+        }
+        SetParticleSprite(_particleSprite);
+		_particleController.ParticleCreated += OnParticleCreated;
+
         _drawer.AddBatch(_renderQueueIndex, _backgroundBatch);
         _drawer.AddBatch(_renderQueueIndex + 1, _mainBatch);
+        _drawer.AddBatch(_renderQueueIndex + 2, _particleBatch);
     }
 
-    private void Update()
+	private void OnParticleCreated(Particle particle)
+	{
+        particle.Visible = _showParticles;
+        particle.Color = _particlesColor;
+        particle.Size = _particlesSize;
+    }
+
+	private void Update()
     {
         _mainBatch.lines.PseudoClear();
         _mainBatch.triangles.PseudoClear();
         _mainBatch.meshLines.PseudoClear();
+
+        //
+        _particleBatch.quads.PseudoClear();
+        //
 
         _lineDrawCalls = 0;
         _actualLineDrawCalls = 0;
         _triangleDrawCalls = 0;
         _actualTriangleDrawCalls = 0;
 
-        if (_showLines == false && _showTriangles == false) return;
+        //if (_showLines == false && _showTriangles == false) return;
 
         var regionMap = _particleController.RegionMap;
         int maxSquareX = _particleController.MaxSquareX;
@@ -340,6 +417,17 @@ public class MainVisualizer : MonoBehaviour
                         neighbourCount++;
                     }
                 }
+
+                if (_showParticles)
+				{
+                    for (int i = 0; i < current._count; i++)
+					{
+                        Vector2 pos = current[i].Position;
+                        float hs = current[i].Size / 2;
+                        float x = pos.x, y = pos.y;
+                        _particleBatch.quads.Add(new QuadEntry(x - hs, y + hs, x - hs, y - hs, x + hs, y - hs, x + hs, y + hs, _particlesColor));
+                    }
+				}
 
                 if (_showLines)
                 {

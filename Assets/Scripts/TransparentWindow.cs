@@ -9,7 +9,9 @@ public class TransparentWindow : MonoBehaviour
 {
 	[SerializeField] private Camera _cam;
     [SerializeField] private bool _autoRun = true;
+#if UNITY_EDITOR
     [SerializeField] private bool _debugMessages = true;
+#endif
     [SerializeField] private int UILayer;
 
     [DllImport("user32.dll")]
@@ -18,10 +20,10 @@ public class TransparentWindow : MonoBehaviour
     [DllImport("user32.dll")]
     private static extern int SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
 
-    const int GWL_EXSTYLE = -20;
+    private const int GWL_EXSTYLE = -20;
 
-    const int WS_EX_LAYERED = 0x00080000;
-    const int WS_EX_TRANSPARENT = 0x00000020;
+    private const int WS_EX_LAYERED = 0x00080000;
+    private const int WS_EX_TRANSPARENT = 0x00000020;
 
 	[DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -66,9 +68,8 @@ public class TransparentWindow : MonoBehaviour
 
         _cam.clearFlags = CameraClearFlags.SolidColor;
         _cam.backgroundColor = new Color(0, 0, 0, 0);
-        enabled = true; // for debug purposes
+        enabled = true;
 
-        FindObjectOfType<SimpleGraphics.ImmediateBatchRenderer>().PostRenderMode = true;
         FindObjectOfType<MainVisualizer>().ClearColor = new Color(0, 0, 0, 0);
 
         RawInput.Start();
@@ -92,7 +93,6 @@ public class TransparentWindow : MonoBehaviour
         if (_debugMessages)
             Debug.Log($"Setting to {(clickthrough ? "transparent" : "clickable")}");
 #else
-        
         SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_LAYERED | (clickthrough ? WS_EX_TRANSPARENT : 0u));
 #endif
     }
@@ -100,7 +100,9 @@ public class TransparentWindow : MonoBehaviour
     // will only run if the script is enabled
 	private void Update()
 	{
+        // This one does not work when out of foces for whatever reason (double checked)
         //SetClickthrough(!EventSystem.current.IsPointerOverGameObject());
+
         SetClickthrough(!IsPointerOverUIElement());
     }
 

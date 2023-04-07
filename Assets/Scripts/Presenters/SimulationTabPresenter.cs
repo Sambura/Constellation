@@ -36,9 +36,9 @@ public class SimulationTabPresenter : MonoBehaviour
 	private void Start()
 	{
 		// UI initialization
-		_showParticlesToggle.isOn = _particles.ShowParticles;
-		_particleSizeSlider.Value = _particles.ParticleSize;
-		_particleColorButton.Color = _particles.ParticleColor;
+		_showParticlesToggle.isOn = _vizualizator.ShowParticles;
+		_particleSizeSlider.Value = _vizualizator.ParticleSize;
+		_particleColorButton.Color = _vizualizator.ParticleColor;
 		_showLinesToggle.isOn = _vizualizator.ShowLines;
 		_meshLinesToggle.isOn = _vizualizator.MeshLines;
 		_meshLineWidthSlider.Value = _vizualizator.LineWidth;
@@ -59,13 +59,13 @@ public class SimulationTabPresenter : MonoBehaviour
 
 		// Set up event listeners
 		_showParticlesToggle.onValueChanged.AddListener(OnShowParticlesChanged);
-		_particles.ShowParticlesChanged += OnShowParticlesChanged;
+		_vizualizator.ShowParticlesChanged += OnShowParticlesChanged;
 
 		_particleSizeSlider.ValueChanged += OnParticleSizeChanged;
-		_particles.ParticleSizeChanged += OnParticleSizeChanged;
+		_vizualizator.ParticleSizeChanged += OnParticleSizeChanged;
 
 		_particleColorButton.ColorChanged += OnParticleColorChanged;
-		_particles.ParticleColorChanged += OnParticleColorChanged;
+		_vizualizator.ParticleColorChanged += OnParticleColorChanged;
 
 		_showLinesToggle.onValueChanged.AddListener(OnShowLinesChanged);
 		_vizualizator.ShowLinesChanged += OnShowLinesChanged;
@@ -229,19 +229,19 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	private void OnParticleColorChanged(Color color)
 	{
-		_particles.ParticleColor = color;
+		_vizualizator.ParticleColor = color;
 		_particleColorButton.Color = color;
 	}
 
 	private void OnParticleSizeChanged(float value)
 	{
-		_particles.ParticleSize = value;
+		_vizualizator.ParticleSize = value;
 		_particleSizeSlider.SetValueWithoutNotify(value);
 	}
 
 	private void OnShowParticlesChanged(bool value)
 	{
-		_particles.ShowParticles = value;
+		_vizualizator.ShowParticles = value;
 		_showParticlesToggle.isOn = value;
 	}
 

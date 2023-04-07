@@ -106,5 +106,6 @@ namespace SimpleGraphics
         public FastList<MeshLineEntry> meshLines;
         public FastList<TriangleEntry> triangles;
         public FastList<QuadEntry> quads;
+        public Material material = null;
     }
 }

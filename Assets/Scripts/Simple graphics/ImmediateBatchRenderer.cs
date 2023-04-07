@@ -5,11 +5,9 @@ namespace SimpleGraphics
 {
     public class ImmediateBatchRenderer : MonoBehaviour
     {
-        [SerializeField] private Material _material;
+        [SerializeField] private Material _defaultMaterial;
         [SerializeField] private Camera _camera;
         [SerializeField] private bool _enabled = true;
-
-        public bool PostRenderMode = false;
 
         private Transform _cameraTransform;
         private SortedList<int, SimpleDrawBatch> _batches = new SortedList<int, SimpleDrawBatch>();
@@ -51,6 +49,8 @@ namespace SimpleGraphics
 
         private void DrawBatch(SimpleDrawBatch batch)
 		{
+            batch.material.SetPass(0);
+
             if (batch.triangles != null)
             {
                 GL.Begin(GL.TRIANGLES);
@@ -76,9 +76,13 @@ namespace SimpleGraphics
                 {
                     QuadEntry quad = buffer[i];
                     GL.Color(quad.color);
+                    GL.TexCoord(new Vector3(0, 1));
                     GL.Vertex3(quad.x1, quad.y1, 0);
+                    GL.TexCoord(new Vector3(0, 0));
                     GL.Vertex3(quad.x2, quad.y2, 0);
+                    GL.TexCoord(new Vector3(1, 0));
                     GL.Vertex3(quad.x3, quad.y3, 0);
+                    GL.TexCoord(new Vector3(1, 1));
                     GL.Vertex3(quad.x4, quad.y4, 0);
                 }
             }
@@ -119,58 +123,14 @@ namespace SimpleGraphics
             }
         }
 
-        private void OnPreRender()
-        {
-            if (_enabled == false || PostRenderMode) return;
-
-            _material.SetPass(0);
-            GL.PushMatrix();
-            GL.LoadProjectionMatrix(GetCameraProjectionMatrix());
-
-            for (int batchIndex = 0; batchIndex < _batchesCount; batchIndex++)
-                DrawBatch(_batchList[batchIndex]);
-
-            GL.PopMatrix();
-        }
-
         private void OnPostRender()
         {
-            if (_enabled == false || !PostRenderMode) return;
+            if (_enabled == false) return;
 
-            _material.SetPass(0);
             GL.PushMatrix();
-            //GL.LoadProjectionMatrix(GetCameraProjectionMatrix());
 
             for (int batchIndex = 0; batchIndex < _batchesCount; batchIndex++)
                 DrawBatch(_batchList[batchIndex]);
-
-            GL.PopMatrix();
-
-            return;
-
-            int randomNumber = -1;
-
-            if (_batches.ContainsKey(randomNumber) == false) return;
-
-            _material.SetPass(0);
-            GL.PushMatrix();
-
-            SimpleDrawBatch batch = _batches[randomNumber];
-
-            if (batch.lines != null)
-            {
-                GL.Begin(GL.LINES);
-                LineEntry[] buffer = batch.lines._buffer;
-                int count = batch.lines._count;
-                for (int i = 0; i < count; i++)
-                {
-                    LineEntry line = buffer[i];
-                    GL.Color(line.color);
-                    GL.Vertex3(line.x1, line.y1, 0);
-                    GL.Vertex3(line.x2, line.y2, 0);
-                }
-                GL.End();
-            }
 
             GL.PopMatrix();
         }
@@ -182,6 +142,7 @@ namespace SimpleGraphics
         /// <param name="batch">A batch to render</param>
         public void AddBatch(int renderQueueIndex, SimpleDrawBatch batch)
         {
+            if (batch.material == null) batch.material = _defaultMaterial;
             _batches.Add(renderQueueIndex, batch);
             _batchesCount = _batches.Count;
         }

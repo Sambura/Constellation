@@ -1723,6 +1723,7 @@ MonoBehaviour:
   _drawer: {fileID: 519420030}
   _viewport: {fileID: 519420034}
   _particleController: {fileID: 144636867}
+  _particleMaterial: {fileID: 2100000, guid: 98bc248b282298b4d836d33cc3e366e9, type: 2}
   _linesWidth: 0.02
   _meshLines: 0
   _connectionDistance: 1
@@ -1793,6 +1794,10 @@ MonoBehaviour:
   _colorMaxFadeDuration: 7
   _clearColor: {r: 0, g: 0, b: 0, a: 1}
   _triangleFillOpacity: 0.3
+  _particlesSize: 0.05
+  _particlesColor: {r: 1, g: 1, b: 1, a: 0.7882353}
+  _showParticles: 1
+  _particleSprite: {fileID: 2800000, guid: 7bc76c0b5bafe9a439d50075f4110a2a, type: 3}
   _renderQueueIndex: 0
 --- !u!114 &144636866
 MonoBehaviour:
@@ -1826,14 +1831,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _viewport: {fileID: 519420034}
-  _particlePrefab: {fileID: 7827596926780307577, guid: 843d90c62134a7f49b2281270eb61bc6, type: 3}
-  _particlesScale: 0.05
   _particlesCount: 400
-  _particlesColor: {r: 1, g: 1, b: 1, a: 0.8}
-  _showParticles: 1
   _minParticleVelocity: 0.1
   _maxParticleVelocity: 1
-  _boundMargins: -4
+  _boundMargins: 0
 --- !u!114 &144636868
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4771,10 +4772,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e2cb6537bffa1d4c9c8015b0b50c79f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _material: {fileID: 2100000, guid: 610d58bf15a1ab9468e9427e16ed7df2, type: 2}
+  _defaultMaterial: {fileID: 2100000, guid: 610d58bf15a1ab9468e9427e16ed7df2, type: 2}
   _camera: {fileID: 519420031}
   _enabled: 1
-  PostRenderMode: 0
 --- !u!20 &519420031
 Camera:
   m_ObjectHideFlags: 0
@@ -7848,7 +7848,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMin.x
@@ -7856,7 +7856,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_SizeDelta.x
@@ -7900,7 +7900,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -5.924999
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
