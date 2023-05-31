@@ -12,10 +12,12 @@ public class CurvePicker : MonoDialog
 	[SerializeField] private CurvePickerKnot _leftKnot;
 	[SerializeField] private CurvePickerKnot _rightKnot;
 	[SerializeField] private float _tangentLength = 1000f;
+	[SerializeField] private float _doubleClickTolerance = 0.5f;
 
 	private List<CurvePickerNode> _nodes;
 	private CurvePickerNode _selectedNode;
 	private AnimationCurve _curve;
+	private float _lastLeftClickTime = float.MinValue;
 
 	public CurvePickerNode SelectedNode
 	{
@@ -79,16 +81,18 @@ public class CurvePicker : MonoDialog
 
 	private void OnViewportPointerDown(PointerEventData eventData)
 	{
-		if (eventData.button == PointerEventData.InputButton.Right)
+		SelectedNode = null;
+
+		if (eventData.button != PointerEventData.InputButton.Left) return;
+		if (Time.time - _lastLeftClickTime <= _doubleClickTolerance)
 		{
-			SelectedNode = null;
-			return;
+			CurvePickerNode newNode = AddNode();
+			newNode.Position = eventData.position;
+			UpdateNodes();
+			newNode.OnPointerDown(eventData);
 		}
 
-		CurvePickerNode newNode = AddNode();
-		newNode.Position = eventData.position;
-		UpdateNodes();
-		newNode.OnPointerDown(eventData);
+		_lastLeftClickTime = Time.time;
 	}
 
 	private void OnViewportPointerUp(PointerEventData eventData)
