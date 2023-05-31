@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Reflection;
 using Core;
+using ConfigSerialization;
 
 namespace UnityCore
 {

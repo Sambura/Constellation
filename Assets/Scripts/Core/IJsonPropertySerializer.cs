@@ -2,8 +2,6 @@
 
 namespace Core
 {
-	public class ConfigProperty : Attribute { }
-
 	public interface IJsonPropertySerializer<T> : IJsonPropertySerializer { }
 
 	public interface IJsonPropertySerializer

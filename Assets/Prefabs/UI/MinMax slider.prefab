@@ -1428,11 +1428,14 @@ MonoBehaviour:
   _slider: {fileID: 7614142385977742584}
   _minInputField: {fileID: 1641938872401056514}
   _maxInputField: {fileID: 7614142385588041540}
-  _keepSliderConstraints: 0
-  _minConstraint: 0
-  _maxConstraint: 1
+  _label: {fileID: 7614142386898661446}
+  _lowerLabel: {fileID: 1641938874192741361}
+  _higherLabel: {fileID: 1641938872669804974}
+  _keepSliderConstraints: 1
   _minValue: 0
   _maxValue: 0
+  _lowerValue: 0
+  _higherValue: 0
   _inputFormatting: 0.000
   _inputRegex: ([-+]?[0-9]*\.?[0-9]+)
   _regexGroupIndex: 1

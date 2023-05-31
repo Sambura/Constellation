@@ -1,42 +1,74 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
+using TMPro;
 
-public class CurvePickerButton : MonoBehaviour, IPointerClickHandler
+namespace ConstellationUI
 {
-	[SerializeField] private CurvePickerViewport _viewport;
-	[SerializeField] private CurvePicker _curvePicker;
-	[SerializeField] private Vector2 _curvePickerOffset;
-	[SerializeField] private Vector2 _curvePickerPivot;
-	[SerializeField] private string _curvePickerTitle = "Select curve";
-
-	public AnimationCurve Curve
+	public class CurvePickerButton : MonoBehaviour, IPointerClickHandler
 	{
-		get => _viewport.Curve;
-		set { if (value != _viewport.Curve) { _viewport.Curve = value; CurveChanged?.Invoke(value); } }
+		[Header("Objects")]
+		[SerializeField] private CurvePickerViewport _viewport;
+		[SerializeField] private CurvePicker _curvePicker;
+		[SerializeField] private TextMeshProUGUI _label;
+
+		[Header("Parameters")]
+		[SerializeField] private Vector2 _curvePickerOffset;
+		[SerializeField] private Vector2 _curvePickerPivot;
+		[SerializeField] private string _curvePickerTitle = "Select curve";
+		[SerializeField] private bool _findCurvePicker = true;
+
+		public AnimationCurve Curve
+		{
+			get => _viewport.Curve;
+			set { if (value != _viewport.Curve) { _viewport.Curve = value; CurveChanged?.Invoke(value); } }
+		}
+		public event Action ButtonClick;
+		public event Action<AnimationCurve> CurveChanged;
+
+		public CurvePicker CurvePicker
+		{
+			get => _curvePicker != null ? _curvePicker : (_findCurvePicker ? _curvePicker = FindObjectOfType<CurvePicker>(true) : null);
+			/* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
+		}
+
+		public string TextLabel
+		{
+			get => _label == null ? null : _label.text;
+			set { if (_label != null) _label.text = value; }
+		}
+
+		public string DialogTitle
+		{
+			get => _curvePickerTitle;
+			set
+			{
+				if (_curvePickerTitle == value) return;
+				_curvePickerTitle = value;
+				/* TODO add dynamic title change for color picker */
+			}
+		}
+
+		private RectTransform _transform;
+
+		public void OnPointerClick(PointerEventData eventData)
+		{
+			ButtonClick?.Invoke();
+			OpenCurvePicker();
+		}
+
+		private void OnCurvePickerCurveChange(AnimationCurve curve) => Curve = curve;
+
+		private void OpenCurvePicker()
+		{
+			Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
+			Vector2 pivotPosition = zeroPosition + _transform.rect.size * _curvePickerPivot;
+			CurvePicker.ShowDialog(_curvePickerTitle);
+			CurvePicker.Position = pivotPosition + _curvePickerOffset;
+			CurvePicker.OnCurveChanged = OnCurvePickerCurveChange;
+			CurvePicker.Curve = Curve;
+		}
+
+		private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Curve = new AnimationCurve(); }
 	}
-	public event Action ButtonClick;
-	public event Action<AnimationCurve> CurveChanged;
-
-	private RectTransform _transform;
-
-	public void OnPointerClick(PointerEventData eventData)
-	{
-		ButtonClick?.Invoke();
-		OpenCurvePicker();
-	}
-
-	private void OnCurvePickerCurveChange(AnimationCurve curve) => Curve = curve;
-
-	private void OpenCurvePicker()
-	{
-		Vector2 zeroPosition = (Vector2)_transform.position + _transform.rect.position;
-		Vector2 pivotPosition = zeroPosition + _transform.rect.size * _curvePickerPivot;
-		_curvePicker.ShowDialog(_curvePickerTitle);
-		_curvePicker.Position = pivotPosition + _curvePickerOffset;
-		_curvePicker.OnCurveChanged = OnCurvePickerCurveChange;
-		_curvePicker.Curve = Curve;
-	}
-
-	private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Curve = new AnimationCurve(); }
 }

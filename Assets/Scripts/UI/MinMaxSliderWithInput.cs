@@ -6,17 +6,61 @@ using System.Text.RegularExpressions;
 
 public class MinMaxSliderWithInput : MonoBehaviour
 {
+	[Header("Objects")]
 	[SerializeField] private MinMaxSlider _slider;
 	[SerializeField] private TMP_InputField _minInputField;
 	[SerializeField] private TMP_InputField _maxInputField;
-	[SerializeField] private bool _keepSliderConstraints;
-	[SerializeField] private float _minConstraint;
-	[SerializeField] private float _maxConstraint;
+	[SerializeField] private TextMeshProUGUI _label;
+	[SerializeField] private TextMeshProUGUI _lowerLabel;
+	[SerializeField] private TextMeshProUGUI _higherLabel;
+
+	[Header("Parameters")]
+	[SerializeField] private bool _keepSliderConstraints = true;
 	[SerializeField] private float _minValue;
 	[SerializeField] private float _maxValue;
+	[SerializeField] private float _lowerValue;
+	[SerializeField] private float _higherValue;
 	[SerializeField] private string _inputFormatting = "0.000";
 	[SerializeField] private string _inputRegex = @"([-+]?[0-9]*\.?[0-9]+)";
 	[SerializeField] private int _regexGroupIndex = 1;
+	[SerializeField] private float _minMaxSpacing = 0;
+
+	public float LowerValue
+	{
+		get => _lowerValue;
+		set
+		{
+			if (value == _lowerValue) return;
+			int intValue = IntLowerValue;
+			SetLowerValueWithoutNotify(value);
+			LowerValueChanged?.Invoke(_lowerValue);
+			int newIntValue = IntLowerValue;
+			if (intValue != newIntValue) IntLowerValueChanged?.Invoke(newIntValue);
+		}
+	}
+	public int IntLowerValue => Mathf.RoundToInt(_lowerValue);
+
+	public float HigherValue
+	{
+		get => _higherValue;
+		set
+		{
+			if (value == _higherValue) return;
+			int intValue = IntHigherValue;
+			SetHigherValueWithoutNotify(value);
+			HigherValueChanged?.Invoke(_higherValue);
+			int newIntValue = IntHigherValue;
+			if (intValue != newIntValue) IntHigherValueChanged?.Invoke(newIntValue);
+		}
+	}
+	public int IntHigherValue => Mathf.RoundToInt(_higherValue);
+
+	public event Action<float> LowerValueChanged;
+	public event Action<int> IntLowerValueChanged;
+	public event Action<float> HigherValueChanged;
+	public event Action<int> IntHigherValueChanged;
+
+	protected float ActualMinMaxRange => HigherValue - LowerValue;
 
 	public float MinValue
 	{
@@ -24,66 +68,130 @@ public class MinMaxSliderWithInput : MonoBehaviour
 		set
 		{
 			if (value == _minValue) return;
-			int intValue = IntMinValue;
-			SetMinValueWithoutNotify(value);
-			MinValueChanged?.Invoke(_minValue);
-			int newIntValue = IntMinValue;
-			if (intValue != newIntValue) IntMinValueChanged?.Invoke(newIntValue);
+			_minValue = value;
+			LowerValue = Clamp(LowerValue);
+			HigherValue = Clamp(HigherValue);
 		}
 	}
-	public int IntMinValue => Mathf.RoundToInt(_minValue);
-
 	public float MaxValue
 	{
 		get => _maxValue;
 		set
 		{
 			if (value == _maxValue) return;
-			int intValue = IntMaxValue;
-			SetMaxValueWithoutNotify(value);
-			MaxValueChanged?.Invoke(_maxValue);
-			int newIntValue = IntMaxValue;
-			if (intValue != newIntValue) IntMaxValueChanged?.Invoke(newIntValue);
+			_maxValue = value;
+			LowerValue = Clamp(LowerValue);
+			HigherValue = Clamp(HigherValue);
 		}
 	}
-	public int IntMaxValue => Mathf.RoundToInt(_maxValue);
-
-	public event Action<float> MinValueChanged;
-	public event Action<int> IntMinValueChanged;
-	public event Action<float> MaxValueChanged;
-	public event Action<int> IntMaxValueChanged;
+	public float MinSliderValue
+	{
+		get => _slider.minValue;
+		set
+		{
+			if (_slider.minValue == value) return;
+			_slider.minValue = value;
+			MinValue = Mathf.Min(MinValue, value);
+		}
+	}
+	public float MaxSliderValue
+	{
+		get => _slider.maxValue;
+		set
+		{
+			if (_slider.maxValue == value) return;
+			_slider.maxValue = value;
+			MaxValue = Mathf.Max(MaxValue, value);
+		}
+	}
+	public string InputFormatting
+	{
+		get => _inputFormatting;
+		set
+		{
+			if (_inputFormatting == value) return;
+			_inputFormatting = value;
+			UpdateInputFieldValues(true);
+		}
+	}
+	public string InputRegex
+	{
+		get => _inputRegex;
+		set
+		{
+			if (_inputRegex == value) return;
+			_inputRegex = value;
+			_regex = new Regex(_inputRegex, RegexOptions.Compiled);
+		}
+	}
+	public int RegexGroupIndex
+	{
+		get => _regexGroupIndex;
+		set
+		{
+			if (_regexGroupIndex == value) return;
+			_regexGroupIndex = value;
+		}
+	}
+	public string TextLabel
+	{
+		get => _label == null ? null : _label.text;
+		set { if (_label != null) _label.text = value; }
+	}
+	public string LowerLabel
+	{
+		get => _lowerLabel == null ? null : _lowerLabel.text;
+		set { if (_lowerLabel != null) _lowerLabel.text = value; }
+	}
+	public string HigherLabel
+	{
+		get => _higherLabel == null ? null : _higherLabel.text;
+		set { if (_higherLabel != null) _higherLabel.text = value; }
+	}
+	public float MinMaxSpacing
+	{
+		get => _minMaxSpacing;
+		set
+		{
+			_minMaxSpacing = value;
+			if (ActualMinMaxRange - _minMaxSpacing < 0)
+				HigherValue = LowerValue + _minMaxSpacing; 
+			if (ActualMinMaxRange - _minMaxSpacing < 0)
+				LowerValue = HigherValue - _minMaxSpacing;
+		}
+	}
 
 	private Regex _regex;
 
-	public void SetMinValueWithoutNotify(float value)
+	public void SetLowerValueWithoutNotify(float value)
 	{
-		_minValue = Clamp(value);
-		MaxValue = Mathf.Max(MaxValue, _minValue);
-		_slider.SetMinSliderValueWithoutNotify(Mathf.Clamp(_minValue, _slider.minValue, _slider.maxValue));
+		_lowerValue = Clamp(value);
+		HigherValue = Mathf.Max(HigherValue, _lowerValue + MinMaxSpacing);
+		_slider.SetMinSliderValueWithoutNotify(Mathf.Clamp(_lowerValue, _slider.minValue, _slider.maxValue));
 		UpdateInputFieldValues();
 	}
 
-	public void SetMaxValueWithoutNotify(float value)
+	public void SetHigherValueWithoutNotify(float value)
 	{
-		_maxValue = Clamp(value);
-		MinValue = Mathf.Min(MinValue, _maxValue);
-		_slider.SetMaxSliderValueWithoutNotify(Mathf.Clamp(_maxValue, _slider.minValue, _slider.maxValue));
+		_higherValue = Clamp(value);
+		LowerValue = Mathf.Min(LowerValue, _higherValue - MinMaxSpacing);
+		_slider.SetMaxSliderValueWithoutNotify(Mathf.Clamp(_higherValue, _slider.minValue, _slider.maxValue));
 		UpdateInputFieldValues();
 	}
 
 	private void UpdateInputFieldValues(bool force = false)
 	{
 		if (force || _minInputField.isFocused == false)
-			_minInputField.SetTextWithoutNotify(_minValue.ToString(_inputFormatting));
+			_minInputField.SetTextWithoutNotify(_lowerValue.ToString(_inputFormatting));
 
 		if (force || _maxInputField.isFocused == false)
-			_maxInputField.SetTextWithoutNotify(_maxValue.ToString(_inputFormatting));
+			_maxInputField.SetTextWithoutNotify(_higherValue.ToString(_inputFormatting));
 	}
 
-	private float Clamp(float value) => Mathf.Clamp(value, _minConstraint, _maxConstraint);
+	private float Clamp(float value) => Mathf.Clamp(value, _minValue, _maxValue);
 
-	private void OnSliderMinValueChanged(float value) => MinValue = value;
-	private void OnSliderMaxValueChanged(float value) => MaxValue = value;
+	private void OnSliderLowerValueChanged(float value) => LowerValue = value;
+	private void OnSliderHigherValueChanged(float value) => HigherValue = value;
 
 	private bool TryParseInput(string text, out float value)
 	{
@@ -96,8 +204,8 @@ public class MinMaxSliderWithInput : MonoBehaviour
 		return float.TryParse(match.Groups[_regexGroupIndex].Value, out value);
 	}
 
-	private void OnMinInputFieldValueChanged(string text) { if (TryParseInput(text, out float value)) MinValue = value; }
-	private void OnMaxInputFieldValueChanged(string text) { if (TryParseInput(text, out float value)) MaxValue = value; }
+	private void OnLowerInputFieldValueChanged(string text) { if (TryParseInput(text, out float value)) LowerValue = value; }
+	private void OnHigherInputFieldValueChanged(string text) { if (TryParseInput(text, out float value)) HigherValue = value; }
 
 	private void OnInputFieldSubmit(string text) => UpdateInputFieldValues(true);
 
@@ -105,20 +213,20 @@ public class MinMaxSliderWithInput : MonoBehaviour
 	{
 		if (_keepSliderConstraints == false)
 		{
-			_slider.minValue = _minConstraint;
-			_slider.maxValue = _maxConstraint;
+			_slider.minValue = _minValue;
+			_slider.maxValue = _maxValue;
 		}
 		_regex = new Regex(_inputRegex, RegexOptions.Compiled);
 
-		SetMinValueWithoutNotify(_minValue);
-		SetMaxValueWithoutNotify(_maxValue);
+		SetLowerValueWithoutNotify(_lowerValue);
+		SetHigherValueWithoutNotify(_higherValue);
 
-		_slider.MinSliderValueChanged += OnSliderMinValueChanged;
-		_slider.MaxSliderValueChanged += OnSliderMaxValueChanged;
-		_minInputField.onValueChanged.AddListener(OnMinInputFieldValueChanged);
+		_slider.MinSliderValueChanged += OnSliderLowerValueChanged;
+		_slider.MaxSliderValueChanged += OnSliderHigherValueChanged;
+		_minInputField.onValueChanged.AddListener(OnLowerInputFieldValueChanged);
 		_minInputField.onDeselect.AddListener(OnInputFieldSubmit);
 		_minInputField.onSubmit.AddListener(OnInputFieldSubmit);
-		_maxInputField.onValueChanged.AddListener(OnMaxInputFieldValueChanged);
+		_maxInputField.onValueChanged.AddListener(OnHigherInputFieldValueChanged);
 		_maxInputField.onDeselect.AddListener(OnInputFieldSubmit);
 		_maxInputField.onSubmit.AddListener(OnInputFieldSubmit);
 	}
@@ -127,13 +235,13 @@ public class MinMaxSliderWithInput : MonoBehaviour
 	{
 		if (_slider != null)
 		{
-			_slider.MinSliderValueChanged -= OnSliderMinValueChanged;
-			_slider.MaxSliderValueChanged -= OnSliderMaxValueChanged;
+			_slider.MinSliderValueChanged -= OnSliderLowerValueChanged;
+			_slider.MaxSliderValueChanged -= OnSliderHigherValueChanged;
 		}
-		_minInputField?.onValueChanged.RemoveListener(OnMinInputFieldValueChanged);
+		_minInputField?.onValueChanged.RemoveListener(OnLowerInputFieldValueChanged);
 		_minInputField?.onDeselect.RemoveListener(OnInputFieldSubmit);
 		_minInputField?.onSubmit.RemoveListener(OnInputFieldSubmit);
-		_maxInputField?.onValueChanged.RemoveListener(OnMaxInputFieldValueChanged);
+		_maxInputField?.onValueChanged.RemoveListener(OnHigherInputFieldValueChanged);
 		_maxInputField?.onDeselect.RemoveListener(OnInputFieldSubmit);
 		_maxInputField?.onSubmit.RemoveListener(OnInputFieldSubmit);
 	}

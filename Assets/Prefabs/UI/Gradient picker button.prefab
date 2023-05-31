@@ -245,8 +245,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _viewport: {fileID: 2263990515302874612}
   _gradientPicker: {fileID: 0}
+  _label: {fileID: 2263990515651820473}
   _gradientPickerOffset: {x: 100, y: 40}
   _gradientPickerPivot: {x: 0, y: 0.5}
+  _gradientPickerTitle: Select gradient
 --- !u!1 &2263990515651820475
 GameObject:
   m_ObjectHideFlags: 0

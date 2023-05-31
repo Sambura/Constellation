@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using Core;
 using SimpleGraphics;
+using ConfigSerialization;
 
 public class MainVisualizer : MonoBehaviour
 {
@@ -43,6 +44,26 @@ public class MainVisualizer : MonoBehaviour
 
 	#region Config properties
 
+    [ConfigProperty] public bool ShowParticles
+    {
+        get => _showParticles;
+        set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
+    }
+    /*[ConfigProperty]*/ public Texture ParticleSprite
+	{
+        get => _particleSprite;
+        set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
+	}
+    [SliderProperty(0, 0.1f, 0, 10)] public float ParticleSize
+    {
+        get => _particlesSize;
+        set { if (_particlesSize != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
+    }
+    [ColorPickerButtonProperty(true, "Select Particles Color", "Color")] public Color ParticleColor
+    {
+        get => _particlesColor;
+        set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
+    }
 	[ConfigProperty] public bool ShowLines
     {
         get => _showLines;
@@ -53,82 +74,67 @@ public class MainVisualizer : MonoBehaviour
         get => _meshLines;
         set { if (_meshLines != value) { _meshLines = value; MeshLinesChanged?.Invoke(value); }; }
     }
-    [ConfigProperty] public Gradient LineColor
-	{
-        get => _lineColor;
-        set { if (_lineColor != value) { SetLineColor(value); LineColorChanged?.Invoke(value); } }
-    }
-    [ConfigProperty] public float LineWidth
+    [SliderProperty(0.001f, 0.05f, 0, 0.5f, "0.0000", name: "Width")] public float LineWidth
 	{
         get => _linesWidth;
         set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
-    }
-    [ConfigProperty] public float ConnectionDistance
-    {
-        get => _connectionDistance;
-        set { if (_connectionDistance != value) { SetConnectionDistance(value); ConnectionDistanceChanged?.Invoke(value); }; }
-    }
-    [ConfigProperty] public float StrongDistance
-    {
-        get => _strongDistance;
-        set { if (_strongDistance != value) { SetStrongDistance(value); StrongDistanceChanged?.Invoke(value); }; }
     }
     [ConfigProperty] public bool ShowTriangles
 	{
         get => _showTriangles;
         set { if (_showTriangles != value) { _showTriangles = value; ShowTrianglesChanged?.Invoke(value); }; }
     }
-    [ConfigProperty] public float TriangleFillOpacity
+    [SliderProperty(name: "Fill opacity")] public float TriangleFillOpacity
 	{
         get => _triangleFillOpacity;
         set { if (_triangleFillOpacity != value) { SetTriangleFillOpacity(value); TriangleFillOpacityChanged?.Invoke(value); }; }
     }
-    [ConfigProperty] public Color ClearColor
-    {
-        get => _clearColor;
-        set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
-    }
-    [ConfigProperty] public AnimationCurve AlphaCurve
+    [CurvePickerButtonProperty("Modify Alpha Curve")] public AnimationCurve AlphaCurve
 	{
         get => _alphaCurve;
         set { if (_alphaCurve != value) { SetAlphaCurve(value); AlphaCurveChanged?.Invoke(value); } }
 	}
-    [ConfigProperty] public bool AlternateLineColor
+    [RadioButtonsProperty(new string[] { "Color gradient", "Alternating Color" })] public bool AlternateLineColor
 	{
         get => _alternateLineColor;
         set { if (_alternateLineColor != value) { SetAlternateLineColor(value); AlternateLineColorChanged?.Invoke(value); } }
 	}
-    [ConfigProperty] public float MinColorFadeDuration
+    [GradientPickerButtonProperty("Set Line Color Gradient", "Gradient")] public Gradient LineColor
+	{
+        get => _lineColor;
+        set { if (_lineColor != value) { SetLineColor(value); LineColorChanged?.Invoke(value); } }
+    }
+	[MinMaxSliderProperty(0, 10, 0, 300, "0.00 s", @"([-+]?[0-9]*\.?[0-9]+) *s?", name: "Fade duration", higherPropertyName: nameof(MaxColorFadeDuration))]
+    public float MinColorFadeDuration
 	{
         get => _colorMinFadeDuration;
         set { if (_colorMinFadeDuration != value) { _colorMinFadeDuration = value; RestartColorChanger(); MinColorFadeDurationChanged?.Invoke(MinColorFadeDuration); } }
 	}
-    [ConfigProperty] public float MaxColorFadeDuration
+    [MinMaxSliderProperty] public float MaxColorFadeDuration
     {
         get => _colorMaxFadeDuration;
         set { if (_colorMaxFadeDuration != value) { _colorMaxFadeDuration = value; RestartColorChanger(); MaxColorFadeDurationChanged?.Invoke(MaxColorFadeDuration); } }
     }
-    [ConfigProperty] public bool ShowParticles
+    [ColorPickerButtonProperty(true, name: "Background clear color")] public Color ClearColor
     {
-        get => _showParticles;
-        set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
+        get => _clearColor;
+        set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
     }
-    [ConfigProperty] public float ParticleSize
+    [MinMaxSliderProperty] public float ConnectionDistance {
+        get => _connectionDistance;
+        set { if (_connectionDistance != value) { SetConnectionDistance(value); ConnectionDistanceChanged?.Invoke(value); }; }
+    }
+    [MinMaxSliderProperty(0, 3, 0, 100, "0.00", lowerLabel: "Strong", higherPropertyName: nameof(ConnectionDistance), name: "Connection distance", minMaxSpacing: 1e-3f)]
+    public float StrongDistance
     {
-        get => _particlesSize;
-        set { if (_particlesSize != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
+        get => _strongDistance;
+        set { if (_strongDistance != value) { SetStrongDistance(value); StrongDistanceChanged?.Invoke(value); }; }
     }
-    [ConfigProperty] public Color ParticleColor
-    {
-        get => _particlesColor;
-        set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
-    }
-    [ConfigProperty] public Texture ParticleSprite
-	{
-        get => _particleSprite;
-        set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
-	}
 
+    public event System.Action<bool> ShowParticlesChanged;
+    public event System.Action<Texture> ParticleSpriteChanged;
+    public event System.Action<float> ParticleSizeChanged;
+    public event System.Action<Color> ParticleColorChanged;
     public event System.Action<bool> ShowLinesChanged;
     public event System.Action<bool> MeshLinesChanged;
     public event System.Action<Gradient> LineColorChanged;
@@ -142,10 +148,6 @@ public class MainVisualizer : MonoBehaviour
     public event System.Action<bool> AlternateLineColorChanged;
     public event System.Action<float> MinColorFadeDurationChanged;
     public event System.Action<float> MaxColorFadeDurationChanged;
-    public event System.Action<bool> ShowParticlesChanged;
-    public event System.Action<float> ParticleSizeChanged;
-    public event System.Action<Color> ParticleColorChanged;
-    public event System.Action<Texture> ParticleSpriteChanged;
 
     private void RestartColorChanger()
 	{

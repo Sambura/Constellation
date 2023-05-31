@@ -311,8 +311,9 @@ GameObject:
   m_Component:
   - component: {fileID: 6718685849855497419}
   - component: {fileID: 6718685849855497412}
+  - component: {fileID: 7866888186923882996}
   m_Layer: 5
-  m_Name: Checkbox
+  m_Name: Toggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -386,3 +387,18 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_IsOn: 1
+--- !u!114 &7866888186923882996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6718685849855497418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c86befaadcfcb5e43802201aa12f73bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _toggle: {fileID: 6718685849855497412}
+  _label: {fileID: 6718685849718241271}
+  _isChecked: 0

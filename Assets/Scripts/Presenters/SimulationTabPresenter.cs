@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ConstellationUI;
+
+using Toggle = UnityEngine.UI.Toggle;
+using Button = UnityEngine.UI.Button;
 
 public class SimulationTabPresenter : MonoBehaviour
 {
@@ -53,8 +57,8 @@ public class SimulationTabPresenter : MonoBehaviour
 		_alphaCurveButton.Curve = _vizualizator.AlphaCurve;
 		_lineColorGradientButton.Gradient = _vizualizator.LineColor;
 		_alternateColorToggle.isOn = _vizualizator.AlternateLineColor;
-		_colorFadeDurationSlider.MinValue = _vizualizator.MinColorFadeDuration;
-		_colorFadeDurationSlider.MaxValue = _vizualizator.MaxColorFadeDuration;
+		_colorFadeDurationSlider.LowerValue = _vizualizator.MinColorFadeDuration;
+		_colorFadeDurationSlider.HigherValue = _vizualizator.MaxColorFadeDuration;
 		_boundMarginsSlider.Value = _particles.BoundMargins;
 
 		// Set up event listeners
@@ -109,10 +113,10 @@ public class SimulationTabPresenter : MonoBehaviour
 		_alternateColorToggle.onValueChanged.AddListener(OnAlternateColorChanged);
 		_vizualizator.AlternateLineColorChanged += OnAlternateColorChanged;
 
-		_colorFadeDurationSlider.MinValueChanged += OnMinColorFadeDurationChanged;
+		_colorFadeDurationSlider.LowerValueChanged += OnMinColorFadeDurationChanged;
 		_vizualizator.MinColorFadeDurationChanged += OnMinColorFadeDurationChanged;
 
-		_colorFadeDurationSlider.MaxValueChanged += OnMaxColorFadeDurationChanged;
+		_colorFadeDurationSlider.HigherValueChanged += OnMaxColorFadeDurationChanged;
 		_vizualizator.MaxColorFadeDurationChanged += OnMaxColorFadeDurationChanged;
 
 		_boundMarginsSlider.ValueChanged += OnBoundMarginsChanged;
@@ -129,13 +133,13 @@ public class SimulationTabPresenter : MonoBehaviour
 	private void OnMaxColorFadeDurationChanged(float value)
 	{
 		_vizualizator.MaxColorFadeDuration = value;
-		_colorFadeDurationSlider.SetMaxValueWithoutNotify(value);
+		_colorFadeDurationSlider.SetHigherValueWithoutNotify(value);
 	}
 
 	private void OnMinColorFadeDurationChanged(float value)
 	{
 		_vizualizator.MinColorFadeDuration = value;
-		_colorFadeDurationSlider.SetMinValueWithoutNotify(value);
+		_colorFadeDurationSlider.SetLowerValueWithoutNotify(value);
 	}
 
 	private void OnAlternateColorChanged(bool value)

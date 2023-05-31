@@ -36,11 +36,11 @@ namespace UnityEngine.UI
 
         [SerializeField]
         private float m_MinValue = 0;
-        public float minValue { get { return m_MinValue; } set { SetMinSliderValue(_minSliderValue); UpdateVisuals(); } }
+        public float minValue { get { return m_MinValue; } set { m_MinValue = value; SetMinSliderValue(_minSliderValue); UpdateVisuals(); } }
 
         [SerializeField]
         private float m_MaxValue = 1;
-        public float maxValue { get { return m_MaxValue; } set { SetMinSliderValue(_minSliderValue); UpdateVisuals(); } }
+        public float maxValue { get { return m_MaxValue; } set { m_MaxValue = value; SetMaxSliderValue(_maxSliderValue); UpdateVisuals(); } }
 
         [SerializeField]
         private bool m_WholeNumbers = false;

@@ -33,7 +33,7 @@ public class MiscTabPresenter : MonoBehaviour
 		_fpsLimitSlider.Value = _application.TargetFrameRate;
 		_showFpsToggle.isOn = _fpsCounterObject.activeSelf;
 		_timeWindowSlider.Value = _fpsCounter.TimeWindow;
-		_fullscreenDropdown.value = FullscreenModeToValue(FullScreenMode.FullScreenWindow);
+		_fullscreenDropdown.value = FullscreenModeToValue(_application.FullScreenMode);
 
 		// Set up listeners
 		_exitButton.onClick.AddListener(OnExitButtonClick);
@@ -62,7 +62,7 @@ public class MiscTabPresenter : MonoBehaviour
 	private void OnFullscreenChanged(int value) => OnFullscreenChanged(_fullscreenModeMapping[value]);
 	private void OnFullscreenChanged(FullScreenMode value)
 	{
-		_application.FullScreen = value;
+		_application.FullScreenMode = value;
 		_fullscreenDropdown.SetValueWithoutNotify(FullscreenModeToValue(value));
 	}
 

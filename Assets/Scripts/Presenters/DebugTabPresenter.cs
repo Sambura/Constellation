@@ -1,5 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
+using ConstellationUI;
+
+using Toggle = UnityEngine.UI.Toggle;
 
 public class DebugTabPresenter : MonoBehaviour
 {

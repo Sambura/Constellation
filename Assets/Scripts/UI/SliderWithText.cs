@@ -6,8 +6,12 @@ using System.Text.RegularExpressions;
 
 public class SliderWithText : MonoBehaviour
 {
+	[Header("Objects")]
 	[SerializeField] private Slider _slider;
 	[SerializeField] private TMP_InputField _inputField;
+	[SerializeField] private TextMeshProUGUI _label;
+
+	[Header("Parameters")]
 	[SerializeField] private bool _keepSliderConstraints;
 	[SerializeField] private float _minValue;
 	[SerializeField] private float _maxValue;
@@ -30,6 +34,81 @@ public class SliderWithText : MonoBehaviour
 		}
 	}
 	public int IntValue => Mathf.RoundToInt(_value);
+
+	public float MinValue
+	{
+		get => _minValue;
+		set
+		{
+			if (value == _minValue) return;
+			_minValue = value;
+			Value = Clamp(Value);
+		}
+	}
+	public float MaxValue
+	{
+		get => _maxValue;
+		set
+		{
+			if (value == _maxValue) return;
+			_maxValue = value;
+			Value = Clamp(Value);
+		}
+	}
+	public float MinSliderValue
+	{
+		get => _slider.minValue;
+		set
+		{
+			if (_slider.minValue == value) return;
+			MinValue = Mathf.Min(MinValue, value);
+			_slider.minValue = value;
+		}
+	}
+	public float MaxSliderValue
+	{
+		get => _slider.maxValue;
+		set
+		{
+			if (_slider.maxValue == value) return;
+			MaxValue = Mathf.Max(MaxValue, value);
+			_slider.maxValue = value;
+		}
+	}
+	public string InputFormatting
+	{
+		get => _inputFormatting;
+		set
+		{
+			if (_inputFormatting == value) return;
+			_inputFormatting = value;
+			UpdateInputFieldValue(true);
+		}
+	}
+	public string InputRegex
+	{
+		get => _inputRegex;
+		set
+		{
+			if (_inputRegex == value) return;
+			_inputRegex = value;
+			_regex = new Regex(_inputRegex, RegexOptions.Compiled);
+		}
+	}
+	public int RegexGroupIndex
+	{
+		get => _regexGroupIndex;
+		set
+		{
+			if (_regexGroupIndex == value) return;
+			_regexGroupIndex = value;
+		}
+	}
+	public string TextLabel
+	{
+		get => _label == null ? null : _label.text;
+		set { if (_label != null) _label.text = value; }
+	}
 
 	public event Action<float> ValueChanged;
 	public event Action<int> IntValueChanged;

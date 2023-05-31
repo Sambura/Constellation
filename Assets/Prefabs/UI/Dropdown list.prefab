@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6080415379645549205}
+  - component: {fileID: 6714978872440298755}
   m_Layer: 5
   m_Name: Dropdown list
   m_TagString: Untagged
@@ -37,6 +38,20 @@ RectTransform:
   m_AnchoredPosition: {x: 20, y: -387}
   m_SizeDelta: {x: -40, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6714978872440298755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6080415379645549204}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcb33d891a315564eb3cde2a2a569091, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropdown: {fileID: 6080415381334213265}
+  _label: {fileID: 6080415379687491527}
 --- !u!1 &6080415379687491525
 GameObject:
   m_ObjectHideFlags: 0
@@ -70,9 +85,9 @@ RectTransform:
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 1}
+  m_AnchorMax: {x: 0.45, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 282.1736, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &6080415379687491528
 CanvasRenderer:
@@ -834,7 +849,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Fullscreen
+  m_text: Option A
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 947f0574cde154742869fa68108e79ff, type: 2}
@@ -1016,10 +1031,10 @@ RectTransform:
   m_Father: {fileID: 6080415379645549205}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMin: {x: 0.45, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -20, y: 0}
-  m_SizeDelta: {x: 300, y: -4}
+  m_SizeDelta: {x: -40, y: -4}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &6080415381334213267
 CanvasRenderer:
@@ -1109,11 +1124,11 @@ MonoBehaviour:
   m_Value: 0
   m_Options:
     m_Options:
-    - m_Text: Fullscreen
+    - m_Text: Option A
       m_Image: {fileID: 0}
-    - m_Text: Fullscreen window
+    - m_Text: Option B
       m_Image: {fileID: 0}
-    - m_Text: Windowed
+    - m_Text: Option C
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:

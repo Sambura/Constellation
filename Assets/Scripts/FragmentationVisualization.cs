@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using Core;
 using SimpleGraphics;
+using ConfigSerialization;
 
 public class FragmentationVisualization : MonoBehaviour
 {
@@ -25,7 +26,7 @@ public class FragmentationVisualization : MonoBehaviour
         get => _showCellBorders;
         set { if (_showCellBorders != value) { SetShowCellBorders(value); ShowCellBordersChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
+    [ColorPickerButtonProperty(true, "Select color", "Color")]
 	public Color CellBorderColor
     {
         get => _cellBorderColor;
@@ -37,7 +38,7 @@ public class FragmentationVisualization : MonoBehaviour
         get => _showCells;
         set { if (_showCells != value) { SetShowCells(value); ShowCellsChanged?.Invoke(value); }; }
     }
-    [ConfigProperty]
+    [ColorPickerButtonProperty(true, "Select color", "Color")]
 	public Color CellColor
     {
         get => _cellColor;

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class VerticalUIStack : MonoBehaviour
@@ -7,6 +5,10 @@ public class VerticalUIStack : MonoBehaviour
 	[SerializeField] private float _spacing = 3;
 	[SerializeField] private float _topMargin = 2;
 	[SerializeField] private float _bottomMargin = 2;
+
+	public float Spacing { get => _spacing; set { _spacing = value; RebuildLayout(); } }
+	public float TopMargin { get => _topMargin; set { _topMargin = value; RebuildLayout(); } }
+	public float BottomMargin { get => _bottomMargin; set { _bottomMargin = value; RebuildLayout(); } }
 
 	private RectTransform _transform;
 
