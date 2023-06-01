@@ -3,6 +3,7 @@ using System;
 using Core;
 using SimpleGraphics;
 using ConfigSerialization;
+using ConfigSerialization.Structuring;
 
 public class FragmentationVisualization : MonoBehaviour
 {
@@ -20,24 +21,28 @@ public class FragmentationVisualization : MonoBehaviour
     private SimpleDrawBatch _renderBatch;
     private bool _isRendered = false;
 
+	[ConfigGroupMember("Fragmentation visualization")]
     [ConfigProperty]
     public bool ShowCellBorders
     {
         get => _showCellBorders;
         set { if (_showCellBorders != value) { SetShowCellBorders(value); ShowCellBordersChanged?.Invoke(value); }; }
     }
+    [ConfigGroupMember(1, 0)]
     [ColorPickerButtonProperty(true, "Select color", "Color")]
 	public Color CellBorderColor
     {
         get => _cellBorderColor;
         set { if (_cellBorderColor != value) { _cellBorderColor = value; CellBorderColorChanged?.Invoke(value); }; }
     }
+	[ConfigGroupMember]
     [ConfigProperty]
 	public bool ShowCells
     {
         get => _showCells;
         set { if (_showCells != value) { SetShowCells(value); ShowCellsChanged?.Invoke(value); }; }
     }
+    [ConfigGroupMember(2, 0)]
     [ColorPickerButtonProperty(true, "Select color", "Color")]
 	public Color CellColor
     {

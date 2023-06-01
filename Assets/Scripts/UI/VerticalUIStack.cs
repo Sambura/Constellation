@@ -12,11 +12,6 @@ public class VerticalUIStack : MonoBehaviour
 
 	private RectTransform _transform;
 
-	private void Awake()
-	{
-		_transform = GetComponent<RectTransform>();
-	}
-
 	private void Start()
 	{
 		foreach (RectTransform child in _transform)
@@ -35,17 +30,7 @@ public class VerticalUIStack : MonoBehaviour
 		RebuildLayout();
 	}
 
-	private void OnDestroy()
-	{
-		foreach (Transform child in transform)
-		{
-			MonoEvents events = child.gameObject.GetComponent<MonoEvents>();
-			if (events == null) continue;
-			Destroy(events);
-		}
-	}
-
-	private void RebuildLayout()
+	public void RebuildLayout()
 	{
 		float y = -_topMargin;
 
@@ -64,6 +49,21 @@ public class VerticalUIStack : MonoBehaviour
 		y -= _bottomMargin;
 
 		_transform.sizeDelta = new Vector2(_transform.sizeDelta.x, -y);
+	}
+
+	private void Awake()
+	{
+		_transform = GetComponent<RectTransform>();
+	}
+
+	private void OnDestroy()
+	{
+		foreach (Transform child in transform)
+		{
+			MonoEvents events = child.gameObject.GetComponent<MonoEvents>();
+			if (events == null) continue;
+			Destroy(events);
+		}
 	}
 
 	private void CalculateExtents(RectTransform obj, out float topExtent, out float bottomExtent)

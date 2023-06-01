@@ -3,6 +3,7 @@ using UnityEngine;
 using Core;
 using static Core.MathUtility;
 using ConfigSerialization;
+using ConfigSerialization.Structuring;
 
 public class ParticleController : MonoBehaviour
 {
@@ -20,22 +21,26 @@ public class ParticleController : MonoBehaviour
 
 	#region Config properties
 
+	[ConfigGroupMember("Simulation parameters", GroupId = "PC+sim_params")]
 	[SliderProperty(0, 2500, 0, 100000, name: "Particles count")] public int ParticleCount
     {
         get => _particlesCount;
         set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
     }
+    [ConfigGroupMember]
     [MinMaxSliderProperty(0, 5, 0, 100, "0.00", higherPropertyName: nameof(MaxParticleVelocity), name: "Particle velocity")]
     public float MinParticleVelocity
     {
         get => _minParticleVelocity;
         set { if (_minParticleVelocity != value) { SetMinParticleVelocity(value); MinParticleVelocityChanged?.Invoke(value); }; }
     }
+    [ConfigGroupMember]
     [MinMaxSliderProperty] public float MaxParticleVelocity
     {
         get => _maxParticleVelocity;
         set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }
     }
+    [ConfigGroupMember]
     [SliderProperty(-5, 5, -30, 30, "0.0")] public float BoundMargins
     {
         get => _boundMargins;
@@ -150,7 +155,7 @@ public class ParticleController : MonoBehaviour
         if (_particles != null) DoFragmentation();
     }
 
-	[InvokableMethod("Restart simulation")]
+    [ConfigGroupMember] [InvokableMethod("Restart simulation")]
     public void ReinitializeParticles()
 	{
         foreach (Particle particle in _particles)

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using ConfigSerialization;
+using ConfigSerialization.Structuring;
 using UnityRawInput;
 
 public class InteractionCore : MonoBehaviour
@@ -17,16 +18,19 @@ public class InteractionCore : MonoBehaviour
 	//[SerializeField] private float _decelerationStrength = 0.01f;
 	//[SerializeField] private float _decelerationOrder = 0.5f;
 
+	[ConfigGroupMember("Attraction settings")]
 	[SliderProperty(-10, 6, inputFormatting: "0.00")] public float AttractionOrder
 	{
 		get => _attractionOrder;
 		set { if (_attractionOrder != value) { SetAttractionOrder(value); AttractionOrderChanged?.Invoke(value); } }
 	}
+	[ConfigGroupMember]
 	[SliderProperty(-2, 2)] public float AttractionStrength
 	{
 		get => _attractionStrength;
 		set { if (_attractionStrength != value) { SetAttractionStrength(value); AttractionStrengthChanged?.Invoke(value); } }
 	}
+	[ConfigGroupMember]
 	[SliderProperty(-2, 2)] public float AttractionAssertion
 	{
 		get => _attractionAssertion;

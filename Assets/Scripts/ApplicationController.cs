@@ -1,9 +1,11 @@
 using UnityEngine;
 using System;
 using ConfigSerialization;
+using ConfigSerialization.Structuring;
 
 public class ApplicationController : MonoBehaviour
 {
+	[ConfigGroupMember("Frames per second", GroupId = "AC+fps")]
 	[SliderProperty(30, 360, 0, name: "FPS limit")] public int TargetFrameRate
 	{
 		get => Application.targetFrameRate;
@@ -11,6 +13,7 @@ public class ApplicationController : MonoBehaviour
 	}
 
 	private FullScreenMode _pendingMode;
+	[ConfigGroupMember("Display", 1)]
 	[DropdownListProperty(new object[] { FullScreenMode.ExclusiveFullScreen, FullScreenMode.FullScreenWindow, FullScreenMode.Windowed },
 		new string[] { "Fullscreen", "Fullscreen window", "Windowed" }, "Fullscreen mode")] 
 	public FullScreenMode FullScreenMode
@@ -39,6 +42,7 @@ public class ApplicationController : MonoBehaviour
 		_pendingMode = Screen.fullScreenMode;
 	}
 
+	[ConfigGroupMember("Other", 2, GroupId = "Misc+other")]
 	[InvokableMethod("Exit")]
 	public void Quit()
 	{

@@ -3,6 +3,7 @@ using UnityEngine;
 using Core;
 using SimpleGraphics;
 using ConfigSerialization;
+using ConfigSerialization.Structuring;
 
 public class MainVisualizer : MonoBehaviour
 {
@@ -44,7 +45,7 @@ public class MainVisualizer : MonoBehaviour
 
 	#region Config properties
 
-    [ConfigProperty] public bool ShowParticles
+    [ConfigGroupMember("General appearance")] [ConfigProperty] public bool ShowParticles
     {
         get => _showParticles;
         set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
@@ -54,77 +55,77 @@ public class MainVisualizer : MonoBehaviour
         get => _particleSprite;
         set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
 	}
-    [SliderProperty(0, 0.1f, 0, 10)] public float ParticleSize
+    [ConfigGroupMember(2, 0)] [SliderProperty(0, 0.1f, 0, 10)] public float ParticleSize
     {
         get => _particlesSize;
         set { if (_particlesSize != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
     }
-    [ColorPickerButtonProperty(true, "Select Particles Color", "Color")] public Color ParticleColor
+    [ConfigGroupMember(2)] [ColorPickerButtonProperty(true, "Select Particles Color", "Color")] public Color ParticleColor
     {
         get => _particlesColor;
         set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
     }
-	[ConfigProperty] public bool ShowLines
+	[ConfigGroupMember] [ConfigProperty] public bool ShowLines
     {
         get => _showLines;
         set { if (_showLines != value) { _showLines = value; ShowLinesChanged?.Invoke(value); }; }
     }
-    [ConfigProperty] public bool MeshLines
+    [ConfigGroupMember(3, 0)] [ConfigProperty] public bool MeshLines
     {
         get => _meshLines;
         set { if (_meshLines != value) { _meshLines = value; MeshLinesChanged?.Invoke(value); }; }
     }
-    [SliderProperty(0.001f, 0.05f, 0, 0.5f, "0.0000", name: "Width")] public float LineWidth
+    [ConfigGroupMember(4, 3)] [SliderProperty(0.001f, 0.05f, 0, 0.5f, "0.0000", name: "Width")] public float LineWidth
 	{
         get => _linesWidth;
         set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
     }
-    [ConfigProperty] public bool ShowTriangles
+    [ConfigGroupMember] [ConfigProperty] public bool ShowTriangles
 	{
         get => _showTriangles;
         set { if (_showTriangles != value) { _showTriangles = value; ShowTrianglesChanged?.Invoke(value); }; }
     }
-    [SliderProperty(name: "Fill opacity")] public float TriangleFillOpacity
+    [ConfigGroupMember(5, 0)] [SliderProperty(name: "Fill opacity")] public float TriangleFillOpacity
 	{
         get => _triangleFillOpacity;
         set { if (_triangleFillOpacity != value) { SetTriangleFillOpacity(value); TriangleFillOpacityChanged?.Invoke(value); }; }
     }
-    [CurvePickerButtonProperty("Modify Alpha Curve")] public AnimationCurve AlphaCurve
+    [ConfigGroupMember] [CurvePickerButtonProperty("Modify Alpha Curve")] public AnimationCurve AlphaCurve
 	{
         get => _alphaCurve;
         set { if (_alphaCurve != value) { SetAlphaCurve(value); AlphaCurveChanged?.Invoke(value); } }
 	}
-    [RadioButtonsProperty(new string[] { "Color gradient", "Alternating Color" })] public bool AlternateLineColor
+    [ConfigGroupMember] [RadioButtonsProperty(new string[] { "Color gradient", "Alternating Color" })] public bool AlternateLineColor
 	{
         get => _alternateLineColor;
         set { if (_alternateLineColor != value) { SetAlternateLineColor(value); AlternateLineColorChanged?.Invoke(value); } }
 	}
-    [GradientPickerButtonProperty("Set Line Color Gradient", "Gradient")] public Gradient LineColor
+    [ConfigGroupMember(6, 0)] [GradientPickerButtonProperty("Set Line Color Gradient", "Gradient")] public Gradient LineColor
 	{
         get => _lineColor;
         set { if (_lineColor != value) { SetLineColor(value); LineColorChanged?.Invoke(value); } }
     }
-	[MinMaxSliderProperty(0, 10, 0, 300, "0.00 s", @"([-+]?[0-9]*\.?[0-9]+) *s?", name: "Fade duration", higherPropertyName: nameof(MaxColorFadeDuration))]
+    [ConfigGroupMember(7, 0)] [MinMaxSliderProperty(0, 10, 0, 300, "0.00 s", @"([-+]?[0-9]*\.?[0-9]+) *s?", name: "Fade duration", higherPropertyName: nameof(MaxColorFadeDuration))]
     public float MinColorFadeDuration
 	{
         get => _colorMinFadeDuration;
         set { if (_colorMinFadeDuration != value) { _colorMinFadeDuration = value; RestartColorChanger(); MinColorFadeDurationChanged?.Invoke(MinColorFadeDuration); } }
 	}
-    [MinMaxSliderProperty] public float MaxColorFadeDuration
+    [ConfigGroupMember(7)] [MinMaxSliderProperty] public float MaxColorFadeDuration
     {
         get => _colorMaxFadeDuration;
         set { if (_colorMaxFadeDuration != value) { _colorMaxFadeDuration = value; RestartColorChanger(); MaxColorFadeDurationChanged?.Invoke(MaxColorFadeDuration); } }
     }
-    [ColorPickerButtonProperty(true, name: "Background clear color")] public Color ClearColor
+    [ConfigGroupMember] [ColorPickerButtonProperty(true, name: "Background clear color")] public Color ClearColor
     {
         get => _clearColor;
         set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
     }
-    [MinMaxSliderProperty] public float ConnectionDistance {
+    [ConfigGroupMember(1, GroupId = "PC+sim_params")] [MinMaxSliderProperty] public float ConnectionDistance {
         get => _connectionDistance;
         set { if (_connectionDistance != value) { SetConnectionDistance(value); ConnectionDistanceChanged?.Invoke(value); }; }
     }
-    [MinMaxSliderProperty(0, 3, 0, 100, "0.00", lowerLabel: "Strong", higherPropertyName: nameof(ConnectionDistance), name: "Connection distance", minMaxSpacing: 1e-3f)]
+    [ConfigGroupMember(1)] [MinMaxSliderProperty(0, 3, 0, 100, "0.00", lowerLabel: "Strong", higherPropertyName: nameof(ConnectionDistance), name: "Connection distance", minMaxSpacing: 1e-3f)]
     public float StrongDistance
     {
         get => _strongDistance;
