@@ -88,10 +88,57 @@ namespace ConfigSerialization
 			}
 		}
 
+		private enum ControlType
+		{
+			Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
+			Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader
+		}
+
+		private class UINode
+		{
+			// RectTransform GameObject of this UI element
+			public RectTransform Control { get; set; }
+			// Main member that caused this UI element serizlization
+			public MemberInfo Member { get; set; }
+			// Instance containing the main member
+			public object MemberContainer { get; set; }
+			// Full list of member that contribute to this UI serialization (in cases when UI needs more than one member to exist, e.g. MinMaxSlider)
+			public List<MemberInfo> SerializedMembers { get; set; }
+			// Type of this UI element
+			public ControlType Type { get; set; }
+			// Parent of this UI element
+			public UINode Parent { get; private set; }
+			// Ordered list of children of the current node
+			public List<UINode> Children { get; } = new List<UINode>();
+			// Group to which this node belongs
+			public Group Group { get; set; }
+			// Additional data specific to control type
+			public object Metadata { get; set; }
+
+			public void SetParent(UINode parent)
+			{
+				parent.Children.Add(this);
+				Parent = parent;
+			}
+
+			public UINode(UINode parent)
+			{
+				if (parent != null) SetParent(parent);
+			}
+
+			public UINode() { }
+		}
+
 		// TODO: make a Label UI wrapper (for TMPro.TextMeshProUGUI)
+		// Btw this method is a total mess, pretty sure a lot of cross-file stuff will not work with this...
 		public void Serialize()
 		{
 			Group baseGroup = new Group();
+			var idGroups = new Dictionary<string, Group>();
+			// group -> (toggle_property, invert_toggle)
+			var groupToggles = new Dictionary<Group, (PropertyInfo, bool)>();
+			var idGroupToggles = new Dictionary<string, (PropertyInfo, bool)>();
+			UINode rootNode = new UINode() { Control = _uiParent };
 
 			foreach (var container in ConfigContainers)
 			{
@@ -101,13 +148,37 @@ namespace ConfigSerialization
 				// index -> (id, name)
 				Dictionary<int, Group> localGroups = new Dictionary<int, Group>();
 				List<(MemberInfo, object)> ungroupedMembers = new List<(MemberInfo, object)>();
+				var localToggles = new List<(PropertyInfo, ConfigGroupToggleAttribute)>();
 
 				foreach (MemberInfo member in type.GetMembers())
 				{
 					ConfigProperty configProperty = member.GetCustomAttribute<ConfigProperty>();
 					InvokableMethod invokableMethod = member.GetCustomAttribute<InvokableMethod>();
 					if (configProperty == null && invokableMethod == null) continue;
+					ConfigGroupToggleAttribute toggleAttribute = member.GetCustomAttribute<ConfigGroupToggleAttribute>();
+					if (toggleAttribute != null)
+					{
+						if (member is PropertyInfo property)
+							localToggles.Add((property, toggleAttribute));
+						else
+							Debug.LogError("Toggle attribute encountered on non-property member");
+					}
 					UpdateLocalGroups(member);
+				}
+
+				foreach (var toggleInfo in localToggles)
+				{
+					ConfigGroupToggleAttribute toggleParams = toggleInfo.Item2;
+
+					if (toggleParams.GroupIndex != null)
+						groupToggles.Add(localGroups[(int)toggleParams.GroupIndex], (toggleInfo.Item1, toggleParams.InvertToggle));
+					else
+						idGroupToggles.Add(toggleParams.GroupId, (toggleInfo.Item1, toggleParams.InvertToggle));
+
+					if (toggleParams.InverseGroupIndex != null)
+						groupToggles.Add(localGroups[(int)toggleParams.InverseGroupIndex], (toggleInfo.Item1, !toggleParams.InvertToggle));
+					else if (toggleParams.InverseGroupId != null)
+						idGroupToggles.Add(toggleParams.InverseGroupId, (toggleInfo.Item1, !toggleParams.InvertToggle));
 				}
 
 				MergeGroups(localGroups, ungroupedMembers);
@@ -167,34 +238,66 @@ namespace ConfigSerialization
 				}
 			}
 
+			foreach (var toggleInfo in idGroupToggles)
+				groupToggles.Add(idGroups[toggleInfo.Key], toggleInfo.Value);
+
+			UINode rootContainer = CreateContainer(rootNode);
+
 			foreach (Group group in baseGroup.Subgroups)
-				SerializeTree(group, _uiParent);
+				SerializeTree(group, rootContainer);
 
 			foreach (var member in baseGroup.Members)
-				CreateControl(member.Item1, member.Item2, _uiParent);
+				CreateControl(member.Item1, member.Item2, rootContainer);
+
+			AddVerticalStack(rootContainer.Control.gameObject);
+
+			List<UINode> uiNodes = UnwindUITree(rootNode);
+
+			foreach (var toggleInfo in groupToggles)
+			{
+				Group targetGroup = toggleInfo.Key;
+				UINode groupNode = uiNodes.Find(x => x.Type == ControlType.Container && x.Group == targetGroup);
+				UINode toggleNode = uiNodes.Find(x => x.Member == toggleInfo.Value.Item1);
+				BindToggleAndGroup(toggleInfo.Value.Item1, toggleNode, groupNode, toggleInfo.Value.Item2);
+			}
 
 			// TODO
 			// Consider adding some kind of `reinitialize` function to VerticalUIStack,
 			// so that it registers new children and adds MonoEvents objects to them
 			_uiParent.GetComponent<VerticalUIStack>().RebuildLayout();
 
-			void SerializeTree(Group group, RectTransform parent, float parentExtraIndent = 20)
+			List<UINode> UnwindUITree(UINode root, List<UINode> output = null)
+			{
+				var list = output ?? new List<UINode>();
+				list.Add(root);
+
+				foreach (UINode child in root.Children)
+				{
+					UnwindUITree(child, list);
+				}
+
+				return list;
+			}
+
+			void SerializeTree(Group group, UINode parent, float parentExtraIndent = 20)
 			{
 				if (group.Name != null)
 				{
-					GameObject newObject = Instantiate(_groupHeaderPrefab, parent);
+					GameObject newObject = Instantiate(_groupHeaderPrefab, parent.Control);
 					var label = newObject.GetComponentInChildren<TMPro.TextMeshProUGUI>();
 					label.text = group.Name;
 				}
 
-				RectTransform groupTransform = CreateContainer(parent);
+				UINode containerNode = CreateContainer(parent);
+				containerNode.Group = group;
+				RectTransform groupTransform = containerNode.Control;
 				groupTransform.offsetMin = new Vector2(parentExtraIndent + 20, groupTransform.offsetMin.y);
 
 				foreach (var member in group.Members)
-					CreateControl(member.Item1, member.Item2, groupTransform);
+					CreateControl(member.Item1, member.Item2, containerNode);
 
 				foreach (Group subgroup in group.Subgroups)
-					SerializeTree(subgroup, groupTransform, 0);
+					SerializeTree(subgroup, containerNode, 0);
 
 				AddVerticalStack(groupTransform.gameObject);
 			}
@@ -205,10 +308,11 @@ namespace ConfigSerialization
 				{
 					if (group.Parent != null) continue;
 
-					Group idGroup = baseGroup.Subgroups.Find(x => x.Id == group.Id);
+					Group idGroup = (group.Id != null && idGroups.ContainsKey(group.Id)) ? idGroups[group.Id] : null;
 					if (group.Id == null || (group.Id != null && idGroup == null))
 					{
 						baseGroup.AddSubgroup(group);
+						if (group.Id != null) idGroups.Add(group.Id, group);
 						continue;
 					}
 
@@ -217,7 +321,7 @@ namespace ConfigSerialization
 						Debug.LogError($"Conflicting group name definitions for group ID: {idGroup.Id}");
 
 					foreach (Group subgroup in group.Subgroups)
-						if (subgroup.Parent == null) idGroup.AddSubgroup(subgroup);
+						if (subgroup.Parent == group) idGroup.AddSubgroup(subgroup);
 
 					idGroup.Members.AddRange(group.Members);
 				}
@@ -226,73 +330,90 @@ namespace ConfigSerialization
 			}
 		}
 
-		private List<string> CreateControl(MemberInfo member, object container, RectTransform parent)
+		private void BindToggleAndGroup(PropertyInfo toggle, UINode toggleNode, UINode groupNode, bool invertToggle, bool repositionGroup = true)
 		{
-			if (member is PropertyInfo property)
-				return CreatePropertyControl(property, GetEvent(property), container, parent);
+			RectTransform toggleTransform = toggleNode.Control;
+			RectTransform groupTransform = groupNode.Control;
 
-			if (member is MethodInfo method)
+			GetEvent(toggle).AddEventHandler(toggleNode.MemberContainer, (Action<bool>)(x => {
+				groupTransform.gameObject.SetActive(invertToggle ^ x);
+			}));
+
+			groupTransform.gameObject.SetActive(invertToggle ^ (bool)toggle.GetValue(toggleNode.MemberContainer));
+
+			if (repositionGroup == false) return;
+
+
+			if (toggleTransform.parent != groupTransform.parent)
 			{
-				CreateMethodControl(method, container, parent);
-				return new List<string>() { method.Name };
+				Debug.LogWarning($"Could not bind toggle {toggle} and group {groupNode.Group}");
+				return;
 			}
 
-			Debug.LogError($"Member {member} on {container} was not serialized - unknown member kind");
+			groupTransform.SetSiblingIndex(toggleTransform.GetSiblingIndex() + 1);
+		}
+
+		/// <summary>
+		/// Create a UI control for the specified member, which belongs to the specified object, and 
+		/// parents it to a specified UINode. Returns a newly created UINode.
+		/// 
+		/// It is basically a selector of CreatePropertyControl() vs. CreateMethodControl() methods
+		/// </summary>
+		private UINode CreateControl(MemberInfo member, object memberParent, UINode parent)
+		{
+			if (member is PropertyInfo property)
+				return CreatePropertyControl(property, memberParent, parent);
+
+			if (member is MethodInfo method)
+				return CreateMethodControl(method, memberParent, parent);
+
+			Debug.LogError($"Member {member} on {memberParent} was not serialized - unknown member kind");
 			return null;
 		}
 
-		private RectTransform CreateContainer(Transform parent, string name = null)
-		{
-			GameObject subContainer = new GameObject(name ?? "Container"); // Default game object name is longer...
-			RectTransform transform = subContainer.AddComponent<RectTransform>();
-			transform.SetParent(parent, false);
-			transform.anchorMin = new Vector2(0, 1);
-			transform.anchorMax = new Vector2(1, 1);
-			transform.pivot = new Vector2(0.5f, 1);
-			transform.offsetMin = new Vector2(0, transform.offsetMin.y);
-			transform.offsetMax = new Vector2(0, transform.offsetMax.y);
-
-			return transform;
-		}
-
-		private void AddVerticalStack(GameObject gameObject)
-		{
-			VerticalUIStack verticalStack = gameObject.AddComponent<VerticalUIStack>();
-			verticalStack.BottomMargin = verticalStack.TopMargin = verticalStack.Spacing = 2;
-		}
-
-		private void CreateMethodControl(MethodInfo method, object container, RectTransform parent)
+		private UINode CreateMethodControl(MethodInfo method, object container, UINode parent)
 		{
 			InvokableMethod invokableMethod = method.GetCustomAttribute<InvokableMethod>();
-			GameObject newControl = Instantiate(_buttonPrefab, parent);
+			GameObject newControl = Instantiate(_buttonPrefab, parent.Control);
 			Button button = newControl.GetComponent<Button>();
 			button.TextLabel = invokableMethod.Name ?? SplitAndLowerCamelCase(method.Name);
 
 			button.Click += () => method.Invoke(container, Array.Empty<object>());
+
+			return new UINode(parent)
+			{
+				Type = ControlType.Button,
+				Member = method,
+				MemberContainer = container,
+				Control = newControl.GetComponent<RectTransform>()
+			};
 		}
 
-		private List<string> CreatePropertyControl(PropertyInfo property, EventInfo @event, object container, RectTransform parent) {
+		private UINode CreatePropertyControl(PropertyInfo property, object container, UINode parent)
+		{
 			Type type = property.PropertyType;
 
 			if (type.IsEnum)
-				return CreateDropdownList(property, @event, container, parent);
+				return CreateDropdownList(property, container, parent);
 			if (IsIntegral(type) || type == typeof(float))
-				return CreateSlider(property, @event, container, parent);
-			else if (type == typeof(bool))
-				return CreateToggle(property, @event, container, parent);
-			else if (type == typeof(Color))
-				return CreateColorButton(property, @event, container, parent);
-			else if (type == typeof(Gradient))
-				return CreateGradientButton(property, @event, container, parent);
-			else if (type == typeof(AnimationCurve))
-				return CreateCurveButton(property, @event, container, parent);
-			else
-				Debug.LogError($"Failed to create control for {property} on {container} : not implemented!");
+				return CreateSlider(property, container, parent);
+			if (type == typeof(bool))
+				return CreateToggle(property, container, parent);
+			if (type == typeof(Color))
+				return CreateColorButton(property, container, parent);
+			if (type == typeof(Gradient))
+				return CreateGradientButton(property, container, parent);
+			if (type == typeof(AnimationCurve))
+				return CreateCurveButton(property, container, parent);
+
+			Debug.LogError($"Failed to create control for {property} on {container} : not implemented!");
 
 			return null;
 		}
 
-		private List<string> CreateDropdownList(PropertyInfo property, EventInfo @event, object container, RectTransform parent)
+		// Consider adding a property `DisplayOrder` to DropdownList class, in order to make native mapping support
+		// If this is done, This method should be rewritable into a CreateUniversal wrapper
+		private UINode CreateDropdownList(PropertyInfo property, object memberContainer, UINode parent)
 		{
 			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
 			DropdownListProperty dropdownProperty = configProperty as DropdownListProperty;
@@ -306,7 +427,7 @@ namespace ConfigSerialization
 
 			if (!property.PropertyType.IsEnum) throw new NotImplementedException("Currently only enums properties can have dropdown list");
 
-			GameObject newControl = Instantiate(_dropdownPrefab, parent);
+			GameObject newControl = Instantiate(_dropdownPrefab, parent.Control);
 			DropdownList dropdown = newControl.GetComponent<DropdownList>();
 			dropdown.TextLabel = configProperty.Name ?? SplitAndLowerCamelCase(property.Name);
 
@@ -339,9 +460,9 @@ namespace ConfigSerialization
 			}
 
 			dropdown.SetOptions(options);
-			dropdown.SelectedValue = mapping.IndexOf((int)property.GetValue(container));
+			dropdown.SelectedValue = mapping.IndexOf((int)property.GetValue(memberContainer));
 
-			Action<int> dropdownHandler = x => property.SetValue(container, mapping[x]);
+			Action<int> dropdownHandler = x => property.SetValue(memberContainer, mapping[x]);
 			dropdown.SelectedValueChanged += dropdownHandler;
 
 			if (configProperty.HasEvent)
@@ -350,10 +471,16 @@ namespace ConfigSerialization
 					.MakeGenericMethod(property.PropertyType);
 				Delegate containerHandler = (Delegate)getDelegate.Invoke(null, new object[] { dropdown, mapping });
 
-				@event.AddEventHandler(container, containerHandler);
+				GetEvent(property).AddEventHandler(memberContainer, containerHandler);
 			}
 
-			return new List<string>() { property.Name };
+			return new UINode(parent)
+			{
+				Control = newControl.GetComponent<RectTransform>(),
+				Member = property,
+				MemberContainer = memberContainer,
+				Type = ControlType.DropdownList
+			};
 		}
 
 		private static Delegate GetDropdownContainerDelegate<T>(DropdownList dropdown, List<int> mapping)
@@ -363,148 +490,142 @@ namespace ConfigSerialization
 			return (Action<T>)(x => dropdown.SelectedValue = mapping.IndexOf(Convert.ToInt32(x)));
 		}
 
-		private List<string> CreateCurveButton(PropertyInfo property, EventInfo @event, object container, RectTransform parent)
+		private UINode CreateGradientButton(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
-			CurvePickerButtonProperty curveProperty = configProperty as CurvePickerButtonProperty;
-			Type configType = configProperty.GetType();
-
-			if (curveProperty == null && configType != typeof(ConfigProperty))
-			{
-				Debug.LogError($"Serialization error: attribute of type {configType} encountered on the property of type {property.PropertyType}");
-				return null;
-			}
-
-			GameObject newControl = Instantiate(_curveButtonPrefab, parent);
-			CurvePickerButton curveButton = newControl.GetComponent<CurvePickerButton>();
-
-			AnimationCurve value = (AnimationCurve)property.GetValue(container);
-
-			curveButton.TextLabel = configProperty.Name ?? SplitAndLowerCamelCase(property.Name);
-			curveButton.DialogTitle = curveProperty?.DialogTitle ?? $"Modify {curveButton.TextLabel}";
-			curveButton.Curve = value;
-
-			Action<AnimationCurve> handler = (AnimationCurve x) =>
-			{
-				property.SetValue(container, x);
-				curveButton.Curve = x;
-			};
-
-			curveButton.CurveChanged += handler;
-			if (configProperty.HasEvent) @event.AddEventHandler(container, handler);
-
-			return new List<string>() { property.Name };
+			return CreateUniversal<GradientPickerButtonProperty, GradientPickerButton>(
+				property, _gradientButtonPrefab, memberContainer, parent, (x, y, z) =>
+				{
+					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.DialogTitle = z?.DialogTitle ?? $"Modify {SplitCamelCase(property.Name)}";
+				},
+				nameof(GradientPickerButton.Gradient), ControlType.GradientPickerButton
+			);
 		}
 
-		private List<string> CreateGradientButton(PropertyInfo property, EventInfo @event, object container, RectTransform parent)
+		private UINode CreateCurveButton(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
-			GradientPickerButtonProperty gradientProperty = configProperty as GradientPickerButtonProperty;
-			Type configType = configProperty.GetType();
-
-			if (gradientProperty == null && configType != typeof(ConfigProperty))
-			{
-				Debug.LogError($"Serialization error: attribute of type {configType} encountered on the property of type {property.PropertyType}");
-				return null;
-			}
-
-			GameObject newControl = Instantiate(_gradientButtonPrefab, parent);
-			GradientPickerButton gradientButton = newControl.GetComponent<GradientPickerButton>();
-
-			Gradient value = (Gradient)property.GetValue(container);
-
-			gradientButton.TextLabel = configProperty.Name ?? SplitAndLowerCamelCase(property.Name);
-			gradientButton.DialogTitle = gradientProperty?.DialogTitle ?? $"Modify {SplitCamelCase(property.Name)}";
-			gradientButton.Gradient = value;
-
-			Action<Gradient> handler = (Gradient x) =>
-			{
-				property.SetValue(container, x);
-				gradientButton.Gradient = x;
-			};
-
-			gradientButton.GradientChanged += handler;
-			if (configProperty.HasEvent) @event.AddEventHandler(container, handler);
-
-			return new List<string>() { property.Name };
+			return CreateUniversal<CurvePickerButtonProperty, CurvePickerButton>(
+				property, _curveButtonPrefab, memberContainer, parent, (x, y, z) =>
+				{
+					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.DialogTitle = z?.DialogTitle ?? $"Modify {SplitCamelCase(property.Name)}";
+				},
+				nameof(CurvePickerButton.Curve), ControlType.CurvePickerButton
+			);
 		}
 
-		private List<string> CreateColorButton(PropertyInfo property, EventInfo @event, object container, RectTransform parent)
+		private UINode CreateColorButton(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
-			ColorPickerButtonProperty colorProperty = configProperty as ColorPickerButtonProperty;
-			Type configType = configProperty.GetType();
-
-			if (colorProperty == null && configType != typeof(ConfigProperty))
-			{
-				Debug.LogError($"Serialization error: attribute of type {configType} encountered on the property of type {property.PropertyType}");
-				return null;
-			}
-
-			GameObject newControl = Instantiate(_colorButtonPrefab, parent);
-			ColorPickerButton colorButton = newControl.GetComponent<ColorPickerButton>();
-
-			Color value = (Color)property.GetValue(container);
-
-			colorButton.TextLabel = configProperty.Name ?? SplitAndLowerCamelCase(property.Name);
-			colorButton.UseAlpha = colorProperty?.UseAlpha ?? true;
-			colorButton.DialogTitle = colorProperty?.DialogTitle ?? $"Select {SplitCamelCase(property.Name)}";
-			colorButton.Color = value;
-
-			Action<Color> handler = (Color x) =>
-			{
-				property.SetValue(container, x);
-				colorButton.Color = x;
-			};
-
-			colorButton.ColorChanged += handler;
-			if (configProperty.HasEvent) @event.AddEventHandler(container, handler);
-
-			return new List<string>() { property.Name };
+			return CreateUniversal<ColorPickerButtonProperty, ColorPickerButton>(
+				property, _colorButtonPrefab, memberContainer, parent, (x, y, z) =>
+				{
+					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.UseAlpha = z?.UseAlpha ?? true;
+					x.DialogTitle = z?.DialogTitle ?? $"Select {SplitCamelCase(property.Name)}";
+				},
+				nameof(ColorPickerButton.Color), ControlType.ColorPickerButton
+			);
 		}
 
-		private List<string> CreateToggle(PropertyInfo property, EventInfo @event, object container, RectTransform parent)
+		private UINode CreateUniversal<T, V>(PropertyInfo property, GameObject prefab, object memberContainer, UINode parent,
+				Action<V, ConfigProperty, T> initDelegate, string propertyName, ControlType controlType) 
+			where T : ConfigProperty where V : Component
 		{
 			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
-			RadioButtonsProperty radioButtonProperty = configProperty as RadioButtonsProperty;
+			T specificAttribute = configProperty as T;
 			Type configType = configProperty.GetType();
 
-			if (radioButtonProperty == null && configType != typeof(ConfigProperty))
+			if (specificAttribute == null && configType != typeof(ConfigProperty))
 			{
 				Debug.LogError($"Serialization error: attribute of type {configType} encountered on the property of type {property.PropertyType}");
 				return null;
 			}
+
+			GameObject newControl = Instantiate(prefab, parent.Control);
+			V specificControl = newControl.GetComponent<V>();
+			initDelegate(specificControl, configProperty, specificAttribute);
+			var specificProperty = typeof(V).GetProperty(propertyName);
+			specificProperty.SetValue(specificControl, property.GetValue(memberContainer));
+			var controlEvent = GetEvent(specificProperty);
+			Delegate handler = (Delegate)GetType().GetMethod(nameof(GetUniversalDelegate), BindingFlags.Static | BindingFlags.NonPublic)
+				.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl });
+
+			controlEvent.AddEventHandler(specificControl, handler);
+			if (configProperty.HasEvent)
+			{
+				var parentEvent = GetEvent(property);
+				if (parentEvent == null)
+					Debug.LogError($"Event not found for property {property} on {memberContainer}");
+				else
+					parentEvent.AddEventHandler(memberContainer, handler);
+			}
+
+			return new UINode(parent)
+			{
+				Control = newControl.GetComponent<RectTransform>(),
+				Member = property,
+				MemberContainer = memberContainer,
+				Type = controlType,
+			};
+		}
+
+		private static Delegate GetUniversalDelegate<T>(PropertyInfo p1, PropertyInfo p2, object c1, object c2)
+		{
+			return (Action<T>)(x =>
+			{
+				p1.SetValue(c1, x);
+				p2.SetValue(c2, x);
+			});
+		}
+
+		private UINode CreateToggle(PropertyInfo property, object memberContainer, UINode parent)
+		{
+			RadioButtonsProperty radioButtonProperty = property.GetCustomAttribute<RadioButtonsProperty>();
 
 			if (radioButtonProperty != null)
-				return CreateRadioButtons(property, @event, container, parent);
+				return CreateRadioButtons(property, memberContainer, parent);
 
-			GameObject newControl = Instantiate(_togglePrefab, parent);
-			Toggle toggle = newControl.GetComponent<Toggle>();
-
-			bool value = (bool)property.GetValue(container);
-
-			toggle.IsChecked = value;
-			toggle.TextLabel = SplitAndLowerCamelCase(property.Name);
-			
-			Action<bool> handler = (bool x) =>
-			{
-				property.SetValue(container, x);
-				toggle.SetIsCheckedWithoutNotify(x);
-			};
-
-			toggle.IsCheckedChanged += handler;
-			if (configProperty.HasEvent) @event.AddEventHandler(container, handler);
-
-			return new List<string>() { property.Name };
+			return CreateUniversal<ConfigProperty, Toggle>(
+				property, _togglePrefab, memberContainer, parent, (x, y, z) =>
+				{ x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name); },
+				nameof(Toggle.IsChecked), ControlType.Toggle
+			);
 		}
 
-		private List<string> CreateRadioButtons(PropertyInfo property, EventInfo @event, object container, RectTransform parent)
+		private UINode CreateSlider(PropertyInfo property, object memberContainer, UINode parent)
+		{
+			if (property.GetCustomAttribute<MinMaxSliderProperty>() != null)
+				return CreateMinMaxSlider(property, memberContainer, parent);
+
+			bool isInt = IsIntegral(property.PropertyType);
+
+			return CreateUniversal<SliderProperty, SliderWithText>(
+				property, _sliderPrefab, memberContainer, parent, (x, y, z) =>
+				{
+					int intValue = isInt ? (int)property.GetValue(memberContainer) : 0;
+					float floatValue = isInt ? intValue : (float)property.GetValue(memberContainer);
+
+					x.MinValue = z?.MinValue ?? float.MinValue;
+					x.MaxValue = z?.MaxValue ?? float.MaxValue;
+					x.MinSliderValue = z?.MinSliderValue ?? (isInt ? intValue - 100 : floatValue - 5);
+					x.MaxSliderValue = z?.MaxSliderValue ?? (isInt ? intValue + 100 : floatValue + 5);
+					x.InputFormatting = z?.InputFormatting ?? (isInt ? "0" : "0.000");
+					x.InputRegex = z?.InputRegex ?? @"([-+]?[0-9]*\.?[0-9]+)";
+					x.RegexGroupIndex = z?.RegexGroupIndex ?? 1;
+					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+				},
+				isInt ? nameof(SliderWithText.IntValue) : nameof(SliderWithText.Value), ControlType.Slider
+			);
+		}
+
+		private UINode CreateRadioButtons(PropertyInfo property, object memberContainer, UINode parent)
 		{
 			RadioButtonsProperty radioButtonsProperty = property.GetCustomAttribute<RadioButtonsProperty>();
 			if (property.PropertyType == typeof(bool) && radioButtonsProperty.RadioNames.Length != 2)
 				throw new ArgumentException("Can only create 2 radio buttons for bool property");
 
-			RectTransform transform = CreateContainer(parent, $"{property.Name} radio group");
+			UINode containerNode = CreateContainer(parent, $"{property.Name} radio group");
+			RectTransform transform = containerNode.Control;
 			var toggleGroup = transform.gameObject.AddComponent<UnityEngine.UI.ToggleGroup>();
 			toggleGroup.allowSwitchOff = false;
 
@@ -521,7 +642,7 @@ namespace ConfigSerialization
 
 			AddVerticalStack(transform.gameObject);
 
-			bool value = (bool)property.GetValue(container);
+			bool value = (bool)property.GetValue(memberContainer);
 
 			radioButtons[Convert.ToInt32(value)].IsChecked = true;
 
@@ -529,7 +650,7 @@ namespace ConfigSerialization
 			{
 				Action<bool> handler = (bool x) =>
 				{
-					property.SetValue(container, i == 0 ? x : !x);
+					property.SetValue(memberContainer, i == 0 ? x : !x);
 				};
 
 				radioButtons[i].IsCheckedChanged += handler;
@@ -543,71 +664,20 @@ namespace ConfigSerialization
 					radioButtons[1 - Convert.ToInt32(x)].IsChecked = false;
 				};
 
-				@event.AddEventHandler(container, commonHandler);
+				GetEvent(property).AddEventHandler(memberContainer, commonHandler);
 			}
 
-			return new List<string>() { property.Name };
+			return new UINode(parent)
+			{
+				Control = transform,
+				Member = property,
+				MemberContainer = memberContainer,
+				Type = ControlType.RadioButtonArray,
+				Metadata = radioButtons
+			};
 		}
 
-		private List<string> CreateSlider(PropertyInfo property, EventInfo @event, object container, RectTransform parent)
-		{
-			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
-			SliderProperty sliderProperty = configProperty as SliderProperty;
-			Type configType = configProperty.GetType();
-
-			if (sliderProperty == null && configType != typeof(ConfigProperty))
-			{
-				Debug.LogError($"Serialization error: attribute of type {configType} encountered on the property of type {property.PropertyType}");
-				return null;
-			}
-
-			if (sliderProperty is MinMaxSliderProperty)
-				return CreateMinMaxSlider(property, container, parent);
-
-			GameObject newControl = Instantiate(_sliderPrefab, parent);
-			SliderWithText slider = newControl.GetComponent<SliderWithText>();
-			bool isInt = IsIntegral(property.PropertyType);
-
-			int intValue = isInt ? (int)property.GetValue(container) : 0;
-			float floatValue = isInt ? intValue : (float)property.GetValue(container);
-
-			slider.MinValue = sliderProperty?.MinValue ?? float.MinValue;
-			slider.MaxValue = sliderProperty?.MaxValue ?? float.MaxValue;
-			slider.MinSliderValue = sliderProperty?.MinSliderValue ?? (isInt ? intValue - 100 : floatValue - 5);
-			slider.MaxSliderValue = sliderProperty?.MaxSliderValue ?? (isInt ? intValue + 100 : floatValue + 5);
-			slider.InputFormatting = sliderProperty?.InputFormatting ?? (isInt ? "0" : "0.000");
-			slider.InputRegex = sliderProperty?.InputRegex ?? @"([-+]?[0-9]*\.?[0-9]+)";
-			slider.RegexGroupIndex = sliderProperty?.RegexGroupIndex ?? 1;
-			slider.TextLabel = configProperty.Name ?? SplitAndLowerCamelCase(property.Name);
-			slider.Value = floatValue; // Currently sliders work with floats only
-
-			Delegate handler;
-			if (isInt)
-			{
-				Action<int> intHandler = (int x) =>
-				{
-					property.SetValue(container, x);
-					slider.SetValueWithoutNotify(x);
-				};
-				slider.IntValueChanged += intHandler;
-				handler = intHandler;
-			} else
-			{
-				Action<float> floatHandler = (float x) =>
-				{
-					property.SetValue(container, x);
-					slider.SetValueWithoutNotify(x);
-				};
-				slider.ValueChanged += floatHandler;
-				handler = floatHandler;
-			}
-
-			if (configProperty.HasEvent) @event.AddEventHandler(container, handler);
-
-			return new List<string>() { property.Name };
-		}
-
-		private List<string> CreateMinMaxSlider(PropertyInfo property, object container, RectTransform parent)
+		private UINode CreateMinMaxSlider(PropertyInfo property, object memberContainer, UINode parent)
 		{
 			MinMaxSliderProperty sliderProperty = property.GetCustomAttribute<MinMaxSliderProperty>();
 			if (sliderProperty.HigherPropertyName == null) return null;
@@ -616,15 +686,15 @@ namespace ConfigSerialization
 			PropertyInfo higher = property.DeclaringType.GetProperty(sliderProperty.HigherPropertyName);
 			EventInfo lowerEvent = GetEvent(lower), higherEvent = GetEvent(higher);
 
-			GameObject newControl = Instantiate(_minMaxSliderPrefab, parent);
+			GameObject newControl = Instantiate(_minMaxSliderPrefab, parent.Control);
 			MinMaxSliderWithInput slider = newControl.GetComponent<MinMaxSliderWithInput>();
 
 			bool isInt = IsIntegral(lower.PropertyType);
 
-			int lowerIntValue = isInt ? (int)lower.GetValue(container) : 0;
-			float lowerFloatValue = isInt ? lowerIntValue : (float)lower.GetValue(container);
-			int higherIntValue = isInt ? (int)higher.GetValue(container) : 0;
-			float higherFloatValue = isInt ? higherIntValue : (float)higher.GetValue(container);
+			int lowerIntValue = isInt ? (int)lower.GetValue(memberContainer) : 0;
+			float lowerFloatValue = isInt ? lowerIntValue : (float)lower.GetValue(memberContainer);
+			int higherIntValue = isInt ? (int)higher.GetValue(memberContainer) : 0;
+			float higherFloatValue = isInt ? higherIntValue : (float)higher.GetValue(memberContainer);
 
 			slider.MinSliderValue = sliderProperty.MinSliderValue;
 			slider.MaxSliderValue = sliderProperty.MaxSliderValue;
@@ -644,40 +714,67 @@ namespace ConfigSerialization
 			{
 				Action<int> intLowerHandler = (int x) =>
 				{
-					lower.SetValue(container, x);
+					lower.SetValue(memberContainer, x);
 					slider.SetLowerValueWithoutNotify(x);
 				};
 				slider.IntLowerValueChanged += intLowerHandler;
-				lowerEvent.AddEventHandler(container, intLowerHandler);
+				lowerEvent.AddEventHandler(memberContainer, intLowerHandler);
 
 				Action<int> intHigherHandler = (int x) =>
 				{
-					higher.SetValue(container, x);
+					higher.SetValue(memberContainer, x);
 					slider.SetHigherValueWithoutNotify(x);
 				};
 				slider.IntHigherValueChanged += intHigherHandler;
-				if (sliderProperty.HasEvent) higherEvent.AddEventHandler(container, intHigherHandler);
+				if (sliderProperty.HasEvent) higherEvent.AddEventHandler(memberContainer, intHigherHandler);
 			}
 			else
 			{
 				Action<float> floatLowerHandler = (float x) =>
 				{
-					lower.SetValue(container, x);
+					lower.SetValue(memberContainer, x);
 					slider.SetLowerValueWithoutNotify(x);
 				};
 				slider.LowerValueChanged += floatLowerHandler;
-				lowerEvent.AddEventHandler(container, floatLowerHandler);
+				lowerEvent.AddEventHandler(memberContainer, floatLowerHandler);
 
 				Action<float> floatHigherHandler = (float x) =>
 				{
-					higher.SetValue(container, x);
+					higher.SetValue(memberContainer, x);
 					slider.SetHigherValueWithoutNotify(x);
 				};
 				slider.HigherValueChanged += floatHigherHandler;
-				if (sliderProperty.HasEvent) higherEvent.AddEventHandler(container, floatHigherHandler);
+				if (sliderProperty.HasEvent) higherEvent.AddEventHandler(memberContainer, floatHigherHandler);
 			}
 
-			return new List<string>() { lower.Name, higher.Name };
+			return new UINode(parent)
+			{
+				Control = newControl.GetComponent<RectTransform>(),
+				Member = property,
+				MemberContainer = memberContainer,
+				SerializedMembers = new List<MemberInfo>() { lower, higher },
+				Type = ControlType.MinMaxSlider
+			};
+		}
+
+		private UINode CreateContainer(UINode parent, string name = null)
+		{
+			GameObject container = new GameObject(name ?? "Container"); // Default game object name is longer...
+			RectTransform transform = container.AddComponent<RectTransform>();
+			transform.SetParent(parent.Control, false);
+			transform.anchorMin = new Vector2(0, 1);
+			transform.anchorMax = new Vector2(1, 1);
+			transform.pivot = new Vector2(0.5f, 1);
+			transform.offsetMin = new Vector2(0, transform.offsetMin.y);
+			transform.offsetMax = new Vector2(0, transform.offsetMax.y);
+
+			return new UINode(parent) { Control = transform, Type = ControlType.Container };
+		}
+
+		private void AddVerticalStack(GameObject gameObject)
+		{
+			VerticalUIStack verticalStack = gameObject.AddComponent<VerticalUIStack>();
+			verticalStack.BottomMargin = verticalStack.TopMargin = verticalStack.Spacing = 2;
 		}
 
 		private static EventInfo GetEvent(PropertyInfo property) => property.DeclaringType.GetEvent(property.Name + "Changed");
@@ -708,11 +805,11 @@ namespace ConfigSerialization
 			ConfigContainers = new List<object>()
 			{
 				//FindObjectOfType<ParticleController>(),
-				FindObjectOfType<MainVisualizer>(),
+				//FindObjectOfType<MainVisualizer>(),
 				//FindObjectOfType<FragmentationVisualization>(),
 				//FindObjectOfType<InteractionCore>(),
-				//FindObjectOfType<ApplicationController>(),
-				//FindObjectOfType<MiscConfigCollection>(),
+				FindObjectOfType<ApplicationController>(),
+				FindObjectOfType<MiscConfigCollection>(),
 			};
 			Serialize();
 		}

@@ -10,14 +10,20 @@ public class MiscConfigCollection : MonoBehaviour
 	[SerializeField] private TransparentWindow _transparentWindow;
 	[SerializeField] private ConfigSerializer _configSerializer;
 
-	[ConfigGroupMember(GroupId = "AC+fps")]
+	[ConfigGroupToggle(3)] [ConfigGroupMember(GroupId = "AC+fps")]
 	[ConfigProperty(hasEvent: false)] public bool ShowFPS
 	{
 		get => _fpsCounterObject.activeSelf;
-		set => _fpsCounterObject.SetActive(value);
+		set
+		{
+			if (_fpsCounterObject.activeSelf == value) return;
+			_fpsCounterObject.SetActive(value);
+			ShowFPSChanged?.Invoke(value);
+		}
 	}
+	public event System.Action<bool> ShowFPSChanged;
 
-	[ConfigGroupMember]
+	[ConfigGroupMember(3, 0)]
 	[SliderProperty(0.1f, 5, 0, 999, "0.00 s", @"([-+]?[0-9]*\.?[0-9]+) *s?", hasEvent: false)] 
 	public float TimeWindow
 	{

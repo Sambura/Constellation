@@ -21,7 +21,7 @@ public class FragmentationVisualization : MonoBehaviour
     private SimpleDrawBatch _renderBatch;
     private bool _isRendered = false;
 
-	[ConfigGroupMember("Fragmentation visualization")]
+	[ConfigGroupToggle(1)] [ConfigGroupMember("Fragmentation visualization")]
     [ConfigProperty]
     public bool ShowCellBorders
     {
@@ -35,7 +35,7 @@ public class FragmentationVisualization : MonoBehaviour
         get => _cellBorderColor;
         set { if (_cellBorderColor != value) { _cellBorderColor = value; CellBorderColorChanged?.Invoke(value); }; }
     }
-	[ConfigGroupMember]
+	[ConfigGroupToggle(2)] [ConfigGroupMember]
     [ConfigProperty]
 	public bool ShowCells
     {

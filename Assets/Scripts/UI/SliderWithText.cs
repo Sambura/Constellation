@@ -33,7 +33,11 @@ public class SliderWithText : MonoBehaviour
 			if (intValue != newIntValue) IntValueChanged?.Invoke(newIntValue);
 		}
 	}
-	public int IntValue => Mathf.RoundToInt(_value);
+	public int IntValue
+	{
+		get => Mathf.RoundToInt(_value);
+		set => Value = value;
+	}
 
 	public float MinValue
 	{

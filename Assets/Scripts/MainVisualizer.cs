@@ -15,7 +15,10 @@ public class MainVisualizer : MonoBehaviour
 	[Header("Static properties")]
     [SerializeField] private Material _particleMaterial;
 
-    [Header("Simulation parameters")]
+    [Header("General appearance parameters")]
+    [SerializeField] private bool _showParticles = true;
+    [SerializeField] private float _particlesSize = 0.1f;
+    [SerializeField] private Color _particlesColor = Color.white;
     [SerializeField] private float _linesWidth = 0.1f;
     [SerializeField] private bool _meshLines = false;
     [SerializeField] private float _connectionDistance = 60f;
@@ -35,9 +38,6 @@ public class MainVisualizer : MonoBehaviour
     [SerializeField] private float _colorMaxFadeDuration = 4;
     [SerializeField] private Color _clearColor = Color.black;
     [SerializeField][Range(0, 1)] private float _triangleFillOpacity;
-    [SerializeField] private float _particlesSize = 0.1f;
-    [SerializeField] private Color _particlesColor = Color.white;
-    [SerializeField] private bool _showParticles = true;
     [SerializeField] private Texture _particleSprite;
 
     [Header("Rendering")]
@@ -45,6 +45,7 @@ public class MainVisualizer : MonoBehaviour
 
 	#region Config properties
 
+	[ConfigGroupToggle(2)]
     [ConfigGroupMember("General appearance")] [ConfigProperty] public bool ShowParticles
     {
         get => _showParticles;
@@ -65,11 +66,13 @@ public class MainVisualizer : MonoBehaviour
         get => _particlesColor;
         set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
     }
-	[ConfigGroupMember] [ConfigProperty] public bool ShowLines
+    [ConfigGroupToggle(3)]
+    [ConfigGroupMember] [ConfigProperty] public bool ShowLines
     {
         get => _showLines;
         set { if (_showLines != value) { _showLines = value; ShowLinesChanged?.Invoke(value); }; }
     }
+    [ConfigGroupToggle(4)]
     [ConfigGroupMember(3, 0)] [ConfigProperty] public bool MeshLines
     {
         get => _meshLines;
@@ -80,6 +83,7 @@ public class MainVisualizer : MonoBehaviour
         get => _linesWidth;
         set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
     }
+    [ConfigGroupToggle(5)]
     [ConfigGroupMember] [ConfigProperty] public bool ShowTriangles
 	{
         get => _showTriangles;
@@ -95,6 +99,7 @@ public class MainVisualizer : MonoBehaviour
         get => _alphaCurve;
         set { if (_alphaCurve != value) { SetAlphaCurve(value); AlphaCurveChanged?.Invoke(value); } }
 	}
+    [ConfigGroupToggle(7, 6)]
     [ConfigGroupMember] [RadioButtonsProperty(new string[] { "Color gradient", "Alternating Color" })] public bool AlternateLineColor
 	{
         get => _alternateLineColor;
