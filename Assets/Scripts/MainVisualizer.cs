@@ -56,7 +56,7 @@ public class MainVisualizer : MonoBehaviour
         get => _particleSprite;
         set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
 	}
-    [ConfigGroupMember(2, 0)] [SliderProperty(0, 0.1f, 0, 10)] public float ParticleSize
+    [ConfigGroupMember(2, 0)] [SliderProperty(0, 0.1f, 0, 10, name: "Size")] public float ParticleSize
     {
         get => _particlesSize;
         set { if (_particlesSize != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }

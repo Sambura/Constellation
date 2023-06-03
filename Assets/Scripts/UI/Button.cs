@@ -1,21 +1,13 @@
 ﻿using UnityEngine;
-using TMPro;
 
 namespace ConstellationUI
 {
-	public class Button : MonoBehaviour
+	public class Button : LabeledUIElement
 	{
 		[Header("Objects")]
 		[SerializeField] private UnityEngine.UI.Button _button;
-		[SerializeField] private TextMeshProUGUI _label;
 
 		public event System.Action Click;
-
-		public string TextLabel
-		{
-			get => _label == null ? null : _label.text;
-			set { if (_label != null) _label.text = value; }
-		}
 
 		private void OnButtonClick() => Click?.Invoke();
 

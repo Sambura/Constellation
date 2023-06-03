@@ -1,16 +1,14 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
-using TMPro;
 
 namespace ConstellationUI
 {
-	public class CurvePickerButton : MonoBehaviour, IPointerClickHandler
+	public class CurvePickerButton : LabeledUIElement, IPointerClickHandler
 	{
 		[Header("Objects")]
 		[SerializeField] private CurvePickerViewport _viewport;
 		[SerializeField] private CurvePicker _curvePicker;
-		[SerializeField] private TextMeshProUGUI _label;
 
 		[Header("Parameters")]
 		[SerializeField] private Vector2 _curvePickerOffset;
@@ -30,12 +28,6 @@ namespace ConstellationUI
 		{
 			get => _curvePicker != null ? _curvePicker : (_findCurvePicker ? _curvePicker = FindObjectOfType<CurvePicker>(true) : null);
 			/* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
-		}
-
-		public string TextLabel
-		{
-			get => _label == null ? null : _label.text;
-			set { if (_label != null) _label.text = value; }
 		}
 
 		public string DialogTitle

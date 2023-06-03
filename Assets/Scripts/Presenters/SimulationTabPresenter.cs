@@ -5,6 +5,7 @@ using ConstellationUI;
 
 using Toggle = UnityEngine.UI.Toggle;
 using Button = UnityEngine.UI.Button;
+using Slider = ConstellationUI.Slider;
 
 public class SimulationTabPresenter : MonoBehaviour
 {
@@ -14,13 +15,13 @@ public class SimulationTabPresenter : MonoBehaviour
 
 	[Header("General appearance")]
 	[SerializeField] private Toggle _showParticlesToggle;
-	[SerializeField] private SliderWithText _particleSizeSlider;
+	[SerializeField] private Slider _particleSizeSlider;
 	[SerializeField] private ColorPickerButton _particleColorButton;
 	[SerializeField] private Toggle _showLinesToggle;
 	[SerializeField] private Toggle _meshLinesToggle;
-	[SerializeField] private SliderWithText _meshLineWidthSlider;
+	[SerializeField] private Slider _meshLineWidthSlider;
 	[SerializeField] private Toggle _showTrianglesToggle;
-	[SerializeField] private SliderWithText _triangleFillOpacitySlider;
+	[SerializeField] private Slider _triangleFillOpacitySlider;
 	[SerializeField] private CurvePickerButton _alphaCurveButton;
 	[SerializeField] private Toggle _gradientColorToggle;
 	[SerializeField] private Toggle _alternateColorToggle;
@@ -30,12 +31,12 @@ public class SimulationTabPresenter : MonoBehaviour
 	[SerializeField] private Button _restartSimulationButton;
 
 	[Header("Simulation parameters")]
-	[SerializeField] private SliderWithText _particlesCountSlider;
-	[SerializeField] private SliderWithText _connectionDistanceSlider;
-	[SerializeField] private SliderWithText _strongDistanceSlider;
-	[SerializeField] private SliderWithText _minParticleVelocitySlider;
-	[SerializeField] private SliderWithText _maxParticleVelocitySlider;
-	[SerializeField] private SliderWithText _boundMarginsSlider;
+	[SerializeField] private Slider _particlesCountSlider;
+	[SerializeField] private Slider _connectionDistanceSlider;
+	[SerializeField] private Slider _strongDistanceSlider;
+	[SerializeField] private Slider _minParticleVelocitySlider;
+	[SerializeField] private Slider _maxParticleVelocitySlider;
+	[SerializeField] private Slider _boundMarginsSlider;
 
 	private void Start()
 	{

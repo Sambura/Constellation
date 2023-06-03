@@ -25,7 +25,6 @@ namespace ConfigSerialization
 		[SerializeField] private GameObject _groupHeaderPrefab;
 
 		public List<object> ConfigContainers;
-
 		private static readonly Type[] IntegralTypes = new[] { typeof(int), typeof(uint),
 													   typeof(short), typeof(ushort),
 													   typeof(long), typeof(ulong),
@@ -79,7 +78,8 @@ namespace ConfigSerialization
 
 			public static Group FromAttribute(ConfigGroupMemberAttribute groupAttribute, object container)
 			{
-				return new Group() {
+				return new Group()
+				{
 					Name = groupAttribute.GroupName,
 					Id = groupAttribute.GroupId,
 					LocalIndex = groupAttribute.GroupIndex,
@@ -129,8 +129,6 @@ namespace ConfigSerialization
 			public UINode() { }
 		}
 
-		// TODO: make a Label UI wrapper (for TMPro.TextMeshProUGUI)
-		// Btw this method is a total mess, pretty sure a lot of cross-file stuff will not work with this...
 		public void Serialize()
 		{
 			Group baseGroup = new Group();
@@ -210,9 +208,6 @@ namespace ConfigSerialization
 					{
 						if (groupAttribute.ParentIndex < 0 && groupAttribute.ParentId == null) return;
 
-						// ######################################## TODO: CHANGE localGroups to a global equivalent if needed #############################333333
-						// ######################################## TODO: CHANGE localGroups to a global equivalent if needed #############################333333
-						// ######################################## TODO: CHANGE localGroups to a global equivalent if needed #############################333333
 						Group parent = groupAttribute.ParentId != null ?
 							localGroups.Values.FirstOrDefault(x => x.Id == groupAttribute.ParentId) :
 							(localGroups.ContainsKey(groupAttribute.ParentIndex) ? localGroups[groupAttribute.ParentIndex] : null);
@@ -261,10 +256,7 @@ namespace ConfigSerialization
 				BindToggleAndGroup(toggleInfo.Value.Item1, toggleNode, groupNode, toggleInfo.Value.Item2);
 			}
 
-			// TODO
-			// Consider adding some kind of `reinitialize` function to VerticalUIStack,
-			// so that it registers new children and adds MonoEvents objects to them
-			_uiParent.GetComponent<VerticalUIStack>().RebuildLayout();
+			_uiParent.GetComponent<VerticalUIStack>().RegisterNewChildren();
 
 			List<UINode> UnwindUITree(UINode root, List<UINode> output = null)
 			{
@@ -284,8 +276,8 @@ namespace ConfigSerialization
 				if (group.Name != null)
 				{
 					GameObject newObject = Instantiate(_groupHeaderPrefab, parent.Control);
-					var label = newObject.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-					label.text = group.Name;
+					LabeledUIElement label = newObject.GetComponent<LabeledUIElement>();
+					label.LabelText = group.Name;
 				}
 
 				UINode containerNode = CreateContainer(parent);
@@ -335,7 +327,8 @@ namespace ConfigSerialization
 			RectTransform toggleTransform = toggleNode.Control;
 			RectTransform groupTransform = groupNode.Control;
 
-			GetEvent(toggle).AddEventHandler(toggleNode.MemberContainer, (Action<bool>)(x => {
+			GetEvent(toggle).AddEventHandler(toggleNode.MemberContainer, (Action<bool>)(x =>
+			{
 				groupTransform.gameObject.SetActive(invertToggle ^ x);
 			}));
 
@@ -376,7 +369,7 @@ namespace ConfigSerialization
 			InvokableMethod invokableMethod = method.GetCustomAttribute<InvokableMethod>();
 			GameObject newControl = Instantiate(_buttonPrefab, parent.Control);
 			Button button = newControl.GetComponent<Button>();
-			button.TextLabel = invokableMethod.Name ?? SplitAndLowerCamelCase(method.Name);
+			button.LabelText = invokableMethod.Name ?? SplitAndLowerCamelCase(method.Name);
 
 			button.Click += () => method.Invoke(container, Array.Empty<object>());
 
@@ -411,91 +404,12 @@ namespace ConfigSerialization
 			return null;
 		}
 
-		// Consider adding a property `DisplayOrder` to DropdownList class, in order to make native mapping support
-		// If this is done, This method should be rewritable into a CreateUniversal wrapper
-		private UINode CreateDropdownList(PropertyInfo property, object memberContainer, UINode parent)
-		{
-			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
-			DropdownListProperty dropdownProperty = configProperty as DropdownListProperty;
-			Type configType = configProperty.GetType();
-
-			if (dropdownProperty == null && configType != typeof(ConfigProperty))
-			{
-				Debug.LogError($"Serialization error: attempt to make a dropdown list on property with {configType} attribute");
-				return null;
-			}
-
-			if (!property.PropertyType.IsEnum) throw new NotImplementedException("Currently only enums properties can have dropdown list");
-
-			GameObject newControl = Instantiate(_dropdownPrefab, parent.Control);
-			DropdownList dropdown = newControl.GetComponent<DropdownList>();
-			dropdown.TextLabel = configProperty.Name ?? SplitAndLowerCamelCase(property.Name);
-
-			List<string> options = new List<string>();
-			string[] enumNames = property.PropertyType.GetEnumNames();
-			// mapping[0] == enum index that corresponds to the first displayed option
-			List<int> mapping = new List<int>();
-
-			if (dropdownProperty?.DisplayedOptions != null)
-			{
-				string[] names = dropdownProperty.OptionNames;
-
-				foreach (object option in dropdownProperty.DisplayedOptions)
-				{
-					if (option.GetType() != property.PropertyType) throw new ArgumentException("Dropdown displayed options contain invalid types");
-					int optionIndex = Convert.ToInt32(option);
-					options.Add(names?[mapping.Count] ?? SplitAndLowerCamelCase(option.ToString()));
-					mapping.Add(optionIndex);
-				}
-			}
-			else
-			{
-				string[] names = dropdownProperty?.OptionNames;
-
-				for (int i = 0; i < (names ?? enumNames).Length; i++)
-				{
-					options.Add(names?[i] ?? SplitAndLowerCamelCase(enumNames[i]));
-					mapping.Add(i);
-				}
-			}
-
-			dropdown.SetOptions(options);
-			dropdown.SelectedValue = mapping.IndexOf((int)property.GetValue(memberContainer));
-
-			Action<int> dropdownHandler = x => property.SetValue(memberContainer, mapping[x]);
-			dropdown.SelectedValueChanged += dropdownHandler;
-
-			if (configProperty.HasEvent)
-			{
-				MethodInfo getDelegate = GetType().GetMethod(nameof(GetDropdownContainerDelegate), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod(property.PropertyType);
-				Delegate containerHandler = (Delegate)getDelegate.Invoke(null, new object[] { dropdown, mapping });
-
-				GetEvent(property).AddEventHandler(memberContainer, containerHandler);
-			}
-
-			return new UINode(parent)
-			{
-				Control = newControl.GetComponent<RectTransform>(),
-				Member = property,
-				MemberContainer = memberContainer,
-				Type = ControlType.DropdownList
-			};
-		}
-
-		private static Delegate GetDropdownContainerDelegate<T>(DropdownList dropdown, List<int> mapping)
-		{
-			// I use IndexOf() to search for the needed mapping instead of creating an inverse mapping list
-			// since this is a really rare operation I don't think it is worth to spend additional memory on it
-			return (Action<T>)(x => dropdown.SelectedValue = mapping.IndexOf(Convert.ToInt32(x)));
-		}
-
 		private UINode CreateGradientButton(PropertyInfo property, object memberContainer, UINode parent)
 		{
 			return CreateUniversal<GradientPickerButtonProperty, GradientPickerButton>(
 				property, _gradientButtonPrefab, memberContainer, parent, (x, y, z) =>
 				{
-					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
 					x.DialogTitle = z?.DialogTitle ?? $"Modify {SplitCamelCase(property.Name)}";
 				},
 				nameof(GradientPickerButton.Gradient), ControlType.GradientPickerButton
@@ -507,7 +421,7 @@ namespace ConfigSerialization
 			return CreateUniversal<CurvePickerButtonProperty, CurvePickerButton>(
 				property, _curveButtonPrefab, memberContainer, parent, (x, y, z) =>
 				{
-					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
 					x.DialogTitle = z?.DialogTitle ?? $"Modify {SplitCamelCase(property.Name)}";
 				},
 				nameof(CurvePickerButton.Curve), ControlType.CurvePickerButton
@@ -519,7 +433,7 @@ namespace ConfigSerialization
 			return CreateUniversal<ColorPickerButtonProperty, ColorPickerButton>(
 				property, _colorButtonPrefab, memberContainer, parent, (x, y, z) =>
 				{
-					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
 					x.UseAlpha = z?.UseAlpha ?? true;
 					x.DialogTitle = z?.DialogTitle ?? $"Select {SplitCamelCase(property.Name)}";
 				},
@@ -527,9 +441,50 @@ namespace ConfigSerialization
 			);
 		}
 
-		private UINode CreateUniversal<T, V>(PropertyInfo property, GameObject prefab, object memberContainer, UINode parent,
-				Action<V, ConfigProperty, T> initDelegate, string propertyName, ControlType controlType) 
-			where T : ConfigProperty where V : Component
+		private UINode CreateDropdownList(PropertyInfo property, object memberContainer, UINode parent)
+		{
+			if (!property.PropertyType.IsEnum) throw new NotImplementedException("Currently only enums properties can have dropdown list");
+
+			return CreateUniversal<DropdownListProperty, DropdownList>(
+				property, _dropdownPrefab, memberContainer, parent, (x, y, z) =>
+				{
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					string[] names = z.DisplayedOptions == null ? null : new string[z.DisplayedOptions.Length];
+					for (int i = 0; i < (z.DisplayedOptions?.Length ?? 0); i++) names[i] = SplitAndLowerCamelCase(z.DisplayedOptions[i].ToString());
+					x.SetOptions(new List<string>(z.OptionNames ?? names ?? property.PropertyType.GetEnumNames()));
+				},
+				nameof(DropdownList.SelectedValue), ControlType.DropdownList, (x, z) =>
+				{
+					List<int> mapping = new List<int>();
+					for (int i = 0; i < x.Options.Count; i++) mapping.Add(i);
+
+					for (int i = 0; i < (z.DisplayedOptions?.Length ?? 0); i++)
+					{
+						if (z.DisplayedOptions[i].GetType() != property.PropertyType)
+							throw new ArgumentException("Dropdown displayed options contain invalid types");
+						mapping[i] = Convert.ToInt32(z.DisplayedOptions[i]);
+					}
+
+					return ((Delegate, Delegate))GetType().GetMethod(nameof(GenerateDropdownListConverters), BindingFlags.Static | BindingFlags.NonPublic)
+							.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { mapping });
+				}
+			);
+		}
+
+		private static (Delegate, Delegate) GenerateDropdownListConverters<T>(List<int> mapping) where T : Enum
+		{
+			return (
+				(Func<T, int>)(x => mapping.IndexOf(Convert.ToInt32(x))),
+				(Func<int, T>)(x => (T)Enum.ToObject(typeof(T), mapping[x]))
+			);
+		}
+
+		/// <summary>
+		/// converterGenerator should return (prop2ui, ui2prop)
+		/// </summary>
+		private UINode CreateUniversal<T, V>(PropertyInfo property, GameObject prefab, object memberContainer,
+			UINode parent, Action<V, ConfigProperty, T> initDelegate, string propertyName, ControlType controlType,
+			Func<V, T, (Delegate, Delegate)> converterGenerator = null) where T : ConfigProperty where V : Component
 		{
 			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
 			T specificAttribute = configProperty as T;
@@ -547,17 +502,28 @@ namespace ConfigSerialization
 			var specificProperty = typeof(V).GetProperty(propertyName);
 			specificProperty.SetValue(specificControl, property.GetValue(memberContainer));
 			var controlEvent = GetEvent(specificProperty);
-			Delegate handler = (Delegate)GetType().GetMethod(nameof(GetUniversalDelegate), BindingFlags.Static | BindingFlags.NonPublic)
+			Delegate handler = (Delegate)GetType().GetMethod(nameof(GetUniversalHandler), BindingFlags.Static | BindingFlags.NonPublic)
 				.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl });
+			Delegate propToUiHandler = handler, uiToPropHandler = handler;
+			if (converterGenerator != null)
+			{
+				(Delegate prop2ui, Delegate ui2prop) = converterGenerator(specificControl, specificAttribute);
+				propToUiHandler = (Delegate)GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
+				.MakeGenericMethod(property.PropertyType, specificProperty.PropertyType).Invoke(null, new object[] { specificProperty, specificControl, prop2ui });
+				uiToPropHandler = (Delegate)GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
+				.MakeGenericMethod(specificProperty.PropertyType, property.PropertyType).Invoke(null, new object[] { property, memberContainer, ui2prop });
 
-			controlEvent.AddEventHandler(specificControl, handler);
+				specificProperty.SetValue(specificControl, prop2ui.DynamicInvoke(property.GetValue(memberContainer)));
+			}
+
+			controlEvent.AddEventHandler(specificControl, uiToPropHandler);
 			if (configProperty.HasEvent)
 			{
 				var parentEvent = GetEvent(property);
 				if (parentEvent == null)
 					Debug.LogError($"Event not found for property {property} on {memberContainer}");
 				else
-					parentEvent.AddEventHandler(memberContainer, handler);
+					parentEvent.AddEventHandler(memberContainer, propToUiHandler);
 			}
 
 			return new UINode(parent)
@@ -569,13 +535,23 @@ namespace ConfigSerialization
 			};
 		}
 
-		private static Delegate GetUniversalDelegate<T>(PropertyInfo p1, PropertyInfo p2, object c1, object c2)
+		private static Delegate GetUniversalHandler<T>(PropertyInfo prop1, PropertyInfo prop2, object cont1, object cont2)
 		{
 			return (Action<T>)(x =>
 			{
-				p1.SetValue(c1, x);
-				p2.SetValue(c2, x);
+				prop1.SetValue(cont1, x);
+				prop2.SetValue(cont2, x);
 			});
+		}
+
+		/// <summary>
+		/// property is a Property that is going to be updated by this handler
+		/// property has type S, whereas input is type T
+		/// </summary>
+		private static Delegate GetDirectionalHandler<T, S>(PropertyInfo property, object container, Delegate converter)
+		{
+			Func<T, S> t2o = (Func<T, S>)converter;
+			return (Action<T>)(x => property.SetValue(container, t2o(x)));
 		}
 
 		private UINode CreateToggle(PropertyInfo property, object memberContainer, UINode parent)
@@ -587,7 +563,7 @@ namespace ConfigSerialization
 
 			return CreateUniversal<ConfigProperty, Toggle>(
 				property, _togglePrefab, memberContainer, parent, (x, y, z) =>
-				{ x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name); },
+				{ x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name); },
 				nameof(Toggle.IsChecked), ControlType.Toggle
 			);
 		}
@@ -599,7 +575,7 @@ namespace ConfigSerialization
 
 			bool isInt = IsIntegral(property.PropertyType);
 
-			return CreateUniversal<SliderProperty, SliderWithText>(
+			return CreateUniversal<SliderProperty, Slider>(
 				property, _sliderPrefab, memberContainer, parent, (x, y, z) =>
 				{
 					int intValue = isInt ? (int)property.GetValue(memberContainer) : 0;
@@ -612,9 +588,9 @@ namespace ConfigSerialization
 					x.InputFormatting = z?.InputFormatting ?? (isInt ? "0" : "0.000");
 					x.InputRegex = z?.InputRegex ?? @"([-+]?[0-9]*\.?[0-9]+)";
 					x.RegexGroupIndex = z?.RegexGroupIndex ?? 1;
-					x.TextLabel = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
 				},
-				isInt ? nameof(SliderWithText.IntValue) : nameof(SliderWithText.Value), ControlType.Slider
+				isInt ? nameof(Slider.IntValue) : nameof(Slider.Value), ControlType.Slider
 			);
 		}
 
@@ -636,7 +612,7 @@ namespace ConfigSerialization
 				Toggle toggle = newControl.GetComponent<Toggle>();
 				radioButtons.Add(toggle);
 				toggle.IsChecked = false;
-				toggle.TextLabel = name;
+				toggle.LabelText = name;
 				toggle.ToggleGroup = toggleGroup;
 			}
 
@@ -647,14 +623,7 @@ namespace ConfigSerialization
 			radioButtons[Convert.ToInt32(value)].IsChecked = true;
 
 			for (int i = 0; i < radioButtons.Count - 1; i++)
-			{
-				Action<bool> handler = (bool x) =>
-				{
-					property.SetValue(memberContainer, i == 0 ? x : !x);
-				};
-
-				radioButtons[i].IsCheckedChanged += handler;
-			}
+				radioButtons[i].IsCheckedChanged += x => property.SetValue(memberContainer, i == 0 ? x : !x);
 
 			if (radioButtonsProperty.HasEvent)
 			{
@@ -703,7 +672,7 @@ namespace ConfigSerialization
 			slider.InputFormatting = sliderProperty.InputFormatting ?? (isInt ? "0" : "0.000");
 			slider.InputRegex = sliderProperty.InputRegex ?? @"([-+]?[0-9]*\.?[0-9]+)";
 			slider.RegexGroupIndex = sliderProperty.RegexGroupIndex ?? 1;
-			slider.TextLabel = sliderProperty.Name ?? SplitAndLowerCamelCase(lower.Name);
+			slider.LabelText = sliderProperty.Name ?? SplitAndLowerCamelCase(lower.Name);
 			slider.LowerLabel = sliderProperty.LowerLabel ?? "Min";
 			slider.HigherLabel = sliderProperty.HigherLabel ?? "Max";
 			slider.MinMaxSpacing = sliderProperty.MinMaxSpacing;
@@ -771,10 +740,11 @@ namespace ConfigSerialization
 			return new UINode(parent) { Control = transform, Type = ControlType.Container };
 		}
 
-		private void AddVerticalStack(GameObject gameObject)
+		private VerticalUIStack AddVerticalStack(GameObject gameObject)
 		{
 			VerticalUIStack verticalStack = gameObject.AddComponent<VerticalUIStack>();
 			verticalStack.BottomMargin = verticalStack.TopMargin = verticalStack.Spacing = 2;
+			return verticalStack;
 		}
 
 		private static EventInfo GetEvent(PropertyInfo property) => property.DeclaringType.GetEvent(property.Name + "Changed");
@@ -804,8 +774,8 @@ namespace ConfigSerialization
 		{
 			ConfigContainers = new List<object>()
 			{
-				//FindObjectOfType<ParticleController>(),
-				//FindObjectOfType<MainVisualizer>(),
+				FindObjectOfType<ParticleController>(),
+				FindObjectOfType<MainVisualizer>(),
 				//FindObjectOfType<FragmentationVisualization>(),
 				//FindObjectOfType<InteractionCore>(),
 				FindObjectOfType<ApplicationController>(),

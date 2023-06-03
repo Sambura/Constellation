@@ -1,15 +1,13 @@
 ﻿using UnityEngine;
-using TMPro;
 using System;
 using UnityEngine.UI;
 
 namespace ConstellationUI
 {
-	public class Toggle : MonoBehaviour
+	public class Toggle : LabeledUIElement
 	{
 		[Header("Objects")]
 		[SerializeField] private UnityEngine.UI.Toggle _toggle;
-		[SerializeField] private TextMeshProUGUI _label;
 
 		[Header("Parameters")]
 		[SerializeField] private bool _isChecked;
@@ -32,12 +30,6 @@ namespace ConstellationUI
 		}
 
 		public event Action<bool> IsCheckedChanged;
-
-		public string TextLabel
-		{
-			get => _label == null ? null : _label.text;
-			set { if (_label != null) _label.text = value; }
-		}
 
 		public void SetIsCheckedWithoutNotify(bool value)
 		{

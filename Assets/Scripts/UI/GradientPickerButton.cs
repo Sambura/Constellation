@@ -1,16 +1,14 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
-using TMPro;
 
 namespace ConstellationUI
 {
-	public class GradientPickerButton : MonoBehaviour, IPointerClickHandler
+	public class GradientPickerButton : LabeledUIElement, IPointerClickHandler
 	{
 		[Header("Objects")]
 		[SerializeField] private GradientImage _viewport;
 		[SerializeField] private GradientPicker _gradientPicker;
-		[SerializeField] private TextMeshProUGUI _label;
 
 		[Header("Parameters")]
 		[SerializeField] private Vector2 _gradientPickerOffset;
@@ -32,12 +30,6 @@ namespace ConstellationUI
 		{
 			get => _gradientPicker != null ? _gradientPicker : (_findGradientPicker ? _gradientPicker = FindObjectOfType<GradientPicker>(true) : null);
 			/* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
-		}
-
-		public string TextLabel
-		{
-			get => _label == null ? null : _label.text;
-			set { if (_label != null) _label.text = value; }
 		}
 
 		public string DialogTitle

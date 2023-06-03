@@ -1801,6 +1801,9 @@ MonoBehaviour:
   _viewport: {fileID: 519420034}
   _particleController: {fileID: 144636867}
   _particleMaterial: {fileID: 2100000, guid: 98bc248b282298b4d836d33cc3e366e9, type: 2}
+  _showParticles: 1
+  _particlesSize: 0.05
+  _particlesColor: {r: 1, g: 1, b: 1, a: 0.7882353}
   _linesWidth: 0.02
   _meshLines: 0
   _connectionDistance: 1
@@ -1871,9 +1874,6 @@ MonoBehaviour:
   _colorMaxFadeDuration: 7
   _clearColor: {r: 0, g: 0, b: 0, a: 1}
   _triangleFillOpacity: 0.3
-  _particlesSize: 0.05
-  _particlesColor: {r: 1, g: 1, b: 1, a: 0.7882353}
-  _showParticles: 1
   _particleSprite: {fileID: 2800000, guid: 7bc76c0b5bafe9a439d50075f4110a2a, type: 3}
   _renderQueueIndex: 0
 --- !u!114 &144636866
@@ -8068,7 +8068,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMin.x
@@ -8076,7 +8076,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_SizeDelta.x
@@ -8120,7 +8120,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -5.924999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -11058,7 +11058,7 @@ RectTransform:
   m_GameObject: {fileID: 1327517687}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 0.9, z: 0.9}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 157455317}
   - {fileID: 1377524617}

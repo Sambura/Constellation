@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
+using ConstellationUI;
 
 public class InterationTabPresenter : MonoBehaviour 
 {
@@ -7,9 +7,9 @@ public class InterationTabPresenter : MonoBehaviour
 	[SerializeField] private InteractionCore _interactionCore;
 
 	[Header("Interaction parameters")]
-	[SerializeField] private SliderWithText _attractionOrderSlider;
-	[SerializeField] private SliderWithText _attractionStrenghtSlider;
-	[SerializeField] private SliderWithText _attractionAssertionSlider;
+	[SerializeField] private Slider _attractionOrderSlider;
+	[SerializeField] private Slider _attractionStrenghtSlider;
+	[SerializeField] private Slider _attractionAssertionSlider;
 
 	private void Start()
 	{

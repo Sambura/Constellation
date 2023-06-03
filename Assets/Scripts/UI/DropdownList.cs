@@ -1,25 +1,17 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using TMPro;
 
 namespace ConstellationUI
 {
-	public class DropdownList : MonoBehaviour
+	public class DropdownList : LabeledUIElement
 	{
 		[Header("Objects")]
 		[SerializeField] private CustomDropdown _dropdown;
-		[SerializeField] private TextMeshProUGUI _label;
 
 		public List<CustomDropdown.OptionData> Options
 		{
 			get => _dropdown.options;
 			set => _dropdown.options = value;
-		}
-
-		public string TextLabel
-		{
-			get => _label == null ? null : _label.text;
-			set { if (_label != null) _label.text = value; }
 		}
 
 		public int SelectedValue

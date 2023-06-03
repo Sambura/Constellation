@@ -10,9 +10,9 @@ public class MiscTabPresenter : MonoBehaviour
 	[SerializeField] private GameObject _fpsCounterObject;
 
 	[Header("FPS")]
-	[SerializeField] private SliderWithText _fpsLimitSlider;
+	[SerializeField] private ConstellationUI.Slider _fpsLimitSlider;
 	[SerializeField] private Toggle _showFpsToggle;
-	[SerializeField] private SliderWithText _timeWindowSlider;
+	[SerializeField] private ConstellationUI.Slider _timeWindowSlider;
 	[SerializeField] private CustomDropdown _fullscreenDropdown;
 
 	[Header("Other")]

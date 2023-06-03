@@ -12,21 +12,29 @@ public class VerticalUIStack : MonoBehaviour
 
 	private RectTransform _transform;
 
-	private void Start()
+	private void Start() => RegisterNewChildren();
+
+	private void OnTransformChildrenChanged()
+	{
+		RebuildLayout();
+	}
+
+	public void RegisterNewChildren()
 	{
 		foreach (RectTransform child in _transform)
 		{
-			MonoEvents events = child.gameObject.AddComponent<MonoEvents>();
+			MonoEvents events = child.gameObject.GetComponent<MonoEvents>();
+			events = (events != null) ? events : child.gameObject.AddComponent<MonoEvents>();
+
+			events.OnObjectDisable -= RebuildLayout;
+			events.OnObjectEnable -= RebuildLayout;
+			events.OnRectTransformChange -= RebuildLayout;
+
 			events.OnObjectDisable += RebuildLayout;
 			events.OnObjectEnable += RebuildLayout;
 			events.OnRectTransformChange += RebuildLayout;
 		}
 
-		RebuildLayout();
-	}
-
-	private void OnTransformChildrenChanged()
-	{
 		RebuildLayout();
 	}
 
