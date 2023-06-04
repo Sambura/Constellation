@@ -199,13 +199,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d6c5ca3aacc2c24885e656a3ff66f5a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _label: {fileID: 2297000100488132922}
   _colorImage: {fileID: 2297000100068409207}
   _colorPicker: {fileID: 0}
-  _label: {fileID: 2297000100488132922}
   _colorPickerOffset: {x: -190, y: 40}
   _colorPickerPivot: {x: 0, y: 0.5}
   _useAlpha: 1
   _colorPickerTitle: Select color
+  _findColorPicker: 1
 --- !u!1 &2297000100488132920
 GameObject:
   m_ObjectHideFlags: 0
@@ -298,8 +299,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30
-  m_fontSizeBase: 30
+  m_fontSize: 36
+  m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

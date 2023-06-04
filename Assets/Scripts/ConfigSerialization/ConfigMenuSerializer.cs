@@ -10,8 +10,6 @@ namespace ConfigSerialization
 {
 	public class ConfigMenuSerializer : MonoBehaviour
 	{
-		[SerializeField] private RectTransform _uiParent;
-
 		[Header("Prefabs")]
 		[SerializeField] private GameObject _sliderPrefab;
 		[SerializeField] private GameObject _togglePrefab;
@@ -24,7 +22,21 @@ namespace ConfigSerialization
 		[SerializeField] private GameObject _dropdownPrefab;
 		[SerializeField] private GameObject _groupHeaderPrefab;
 
-		public List<object> ConfigContainers;
+		[Header("Tabs to generate")]
+		[SerializeField] private List<ConfigTab> _tabs;
+
+		[Header("Objects")]
+		[SerializeField] private TabView _tabView;
+
+		[Header("Parameters")]
+		[SerializeField] private int _selectedTab;
+
+		[Serializable] private class ConfigTab
+		{
+			public string Name;
+			public List<MonoBehaviour> ConfigSources;
+		}
+
 		private static readonly Type[] IntegralTypes = new[] { typeof(int), typeof(uint),
 													   typeof(short), typeof(ushort),
 													   typeof(long), typeof(ulong),
@@ -131,120 +143,129 @@ namespace ConfigSerialization
 
 		public void Serialize()
 		{
-			Group baseGroup = new Group();
+			// Global dictionary of groups that have IDs
 			var idGroups = new Dictionary<string, Group>();
 			// group -> (toggle_property, invert_toggle)
 			var groupToggles = new Dictionary<Group, (PropertyInfo, bool)>();
-			var idGroupToggles = new Dictionary<string, (PropertyInfo, bool)>();
-			UINode rootNode = new UINode() { Control = _uiParent };
+			// UINode without a real GameObject behind it. Used to collect all the tab's UINodes as children
+			UINode rootNode = new UINode();
 
-			foreach (var container in ConfigContainers)
+			foreach (ConfigTab tab in _tabs)
 			{
-				Type type = container.GetType();
-				PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-				EventInfo[] events = type.GetEvents(BindingFlags.Instance | BindingFlags.Public);
-				// index -> (id, name)
-				Dictionary<int, Group> localGroups = new Dictionary<int, Group>();
-				List<(MemberInfo, object)> ungroupedMembers = new List<(MemberInfo, object)>();
-				var localToggles = new List<(PropertyInfo, ConfigGroupToggleAttribute)>();
+				var idGroupToggles = new Dictionary<string, (PropertyInfo, bool)>();
+				// Pseudo group used to collect all the top-level groups and members as its children
+				Group baseGroup = new Group();
 
-				foreach (MemberInfo member in type.GetMembers())
+				RectTransform tabTransform = _tabView.AddTab(tab.Name);
+				UINode tabNode = new UINode() { Control = tabTransform };
+				tabNode.SetParent(rootNode);
+
+				foreach (var container in tab.ConfigSources)
 				{
-					ConfigProperty configProperty = member.GetCustomAttribute<ConfigProperty>();
-					InvokableMethod invokableMethod = member.GetCustomAttribute<InvokableMethod>();
-					if (configProperty == null && invokableMethod == null) continue;
-					ConfigGroupToggleAttribute toggleAttribute = member.GetCustomAttribute<ConfigGroupToggleAttribute>();
-					if (toggleAttribute != null)
+					Type type = container.GetType();
+					PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+					EventInfo[] events = type.GetEvents(BindingFlags.Instance | BindingFlags.Public);
+					// index -> (id, name)
+					Dictionary<int, Group> localGroups = new Dictionary<int, Group>();
+					List<(MemberInfo, object)> ungroupedMembers = new List<(MemberInfo, object)>();
+					var localToggles = new List<(PropertyInfo, ConfigGroupToggleAttribute)>();
+
+					foreach (MemberInfo member in type.GetMembers())
 					{
-						if (member is PropertyInfo property)
-							localToggles.Add((property, toggleAttribute));
-						else
-							Debug.LogError("Toggle attribute encountered on non-property member");
-					}
-					UpdateLocalGroups(member);
-				}
-
-				foreach (var toggleInfo in localToggles)
-				{
-					ConfigGroupToggleAttribute toggleParams = toggleInfo.Item2;
-
-					if (toggleParams.GroupIndex != null)
-						groupToggles.Add(localGroups[(int)toggleParams.GroupIndex], (toggleInfo.Item1, toggleParams.InvertToggle));
-					else
-						idGroupToggles.Add(toggleParams.GroupId, (toggleInfo.Item1, toggleParams.InvertToggle));
-
-					if (toggleParams.InverseGroupIndex != null)
-						groupToggles.Add(localGroups[(int)toggleParams.InverseGroupIndex], (toggleInfo.Item1, !toggleParams.InvertToggle));
-					else if (toggleParams.InverseGroupId != null)
-						idGroupToggles.Add(toggleParams.InverseGroupId, (toggleInfo.Item1, !toggleParams.InvertToggle));
-				}
-
-				MergeGroups(localGroups, ungroupedMembers);
-
-				void UpdateLocalGroups(MemberInfo member)
-				{
-					var groupAttribute = member.GetCustomAttribute<ConfigGroupMemberAttribute>();
-					if (groupAttribute == null)
-					{
-						ungroupedMembers.Add((member, container));
-						return;
-					}
-
-					if (localGroups.TryGetValue(groupAttribute.GroupIndex, out Group group))
-					{
-						if (!group.UpdateProperties(groupAttribute, container))
-							Debug.LogWarning($"Group #{groupAttribute.GroupIndex} on {container} has several different {group.LastInvalidUpdatePropertyName}s!");
-					}
-					else
-					{
-						group = Group.FromAttribute(groupAttribute, container);
-						localGroups.Add(groupAttribute.GroupIndex, group);
-					}
-
-					ValidateParent(group, groupAttribute);
-					group.Members.Add((member, container));
-
-					void ValidateParent(Group group, ConfigGroupMemberAttribute groupAttribute)
-					{
-						if (groupAttribute.ParentIndex < 0 && groupAttribute.ParentId == null) return;
-
-						Group parent = groupAttribute.ParentId != null ?
-							localGroups.Values.FirstOrDefault(x => x.Id == groupAttribute.ParentId) :
-							(localGroups.ContainsKey(groupAttribute.ParentIndex) ? localGroups[groupAttribute.ParentIndex] : null);
-
-						if (parent != null)
+						ConfigProperty configProperty = member.GetCustomAttribute<ConfigProperty>();
+						InvokableMethod invokableMethod = member.GetCustomAttribute<InvokableMethod>();
+						if (configProperty == null && invokableMethod == null) continue;
+						ConfigGroupToggleAttribute toggleAttribute = member.GetCustomAttribute<ConfigGroupToggleAttribute>();
+						if (toggleAttribute != null)
 						{
-							if (group.Parent == null) parent.AddSubgroup(group);
-							if (parent == group.Parent) return;
-							Debug.LogError($"Group {group.LocalIndex} on {group.DefiningContainer} has several different parents");
+							if (member is PropertyInfo property)
+								localToggles.Add((property, toggleAttribute));
+							else
+								Debug.LogError("Toggle attribute encountered on non-property member");
+						}
+						UpdateLocalGroups(member);
+					}
+
+					foreach (var toggleInfo in localToggles)
+					{
+						ConfigGroupToggleAttribute toggleParams = toggleInfo.Item2;
+
+						if (toggleParams.GroupIndex != null)
+							groupToggles.Add(localGroups[(int)toggleParams.GroupIndex], (toggleInfo.Item1, toggleParams.InvertToggle));
+						else
+							idGroupToggles.Add(toggleParams.GroupId, (toggleInfo.Item1, toggleParams.InvertToggle));
+
+						if (toggleParams.InverseGroupIndex != null)
+							groupToggles.Add(localGroups[(int)toggleParams.InverseGroupIndex], (toggleInfo.Item1, !toggleParams.InvertToggle));
+						else if (toggleParams.InverseGroupId != null)
+							idGroupToggles.Add(toggleParams.InverseGroupId, (toggleInfo.Item1, !toggleParams.InvertToggle));
+					}
+
+					MergeGroups(baseGroup, localGroups, ungroupedMembers);
+
+					void UpdateLocalGroups(MemberInfo member)
+					{
+						var groupAttribute = member.GetCustomAttribute<ConfigGroupMemberAttribute>();
+						if (groupAttribute == null)
+						{
+							ungroupedMembers.Add((member, container));
 							return;
 						}
 
-						Group newParentGroup = new Group() { Id = groupAttribute.ParentId };
-						if (groupAttribute.ParentIndex >= 0)
+						if (localGroups.TryGetValue(groupAttribute.GroupIndex, out Group group))
 						{
-							newParentGroup.LocalIndex = groupAttribute.ParentIndex;
-							newParentGroup.DefiningContainer = container;
+							if (!group.UpdateProperties(groupAttribute, container))
+								Debug.LogWarning($"Group #{groupAttribute.GroupIndex} on {container} has several different {group.LastInvalidUpdatePropertyName}s!");
+						}
+						else
+						{
+							group = Group.FromAttribute(groupAttribute, container);
+							localGroups.Add(groupAttribute.GroupIndex, group);
 						}
 
-						newParentGroup.AddSubgroup(group);
-						localGroups.Add(groupAttribute.ParentIndex, newParentGroup);
+						ValidateParent(group, groupAttribute);
+						group.Members.Add((member, container));
+
+						void ValidateParent(Group group, ConfigGroupMemberAttribute groupAttribute)
+						{
+							if (groupAttribute.ParentIndex < 0 && groupAttribute.ParentId == null) return;
+
+							Group parent = groupAttribute.ParentId != null ?
+								localGroups.Values.FirstOrDefault(x => x.Id == groupAttribute.ParentId) :
+								(localGroups.ContainsKey(groupAttribute.ParentIndex) ? localGroups[groupAttribute.ParentIndex] : null);
+
+							if (parent != null)
+							{
+								if (group.Parent == null) parent.AddSubgroup(group);
+								if (parent == group.Parent) return;
+								Debug.LogError($"Group {group.LocalIndex} on {group.DefiningContainer} has several different parents");
+								return;
+							}
+
+							Group newParentGroup = new Group() { Id = groupAttribute.ParentId };
+							if (groupAttribute.ParentIndex >= 0)
+							{
+								newParentGroup.LocalIndex = groupAttribute.ParentIndex;
+								newParentGroup.DefiningContainer = container;
+							}
+
+							newParentGroup.AddSubgroup(group);
+							localGroups.Add(groupAttribute.ParentIndex, newParentGroup);
+						}
 					}
 				}
+
+				foreach (var toggleInfo in idGroupToggles)
+					groupToggles.Add(idGroups[toggleInfo.Key], toggleInfo.Value);
+
+				foreach (Group group in baseGroup.Subgroups)
+					SerializeTree(group, tabNode);
+
+				foreach (var member in baseGroup.Members)
+					CreateControl(member.Item1, member.Item2, tabNode);
+
+				AddVerticalStack(tabNode.Control.gameObject);
 			}
-
-			foreach (var toggleInfo in idGroupToggles)
-				groupToggles.Add(idGroups[toggleInfo.Key], toggleInfo.Value);
-
-			UINode rootContainer = CreateContainer(rootNode);
-
-			foreach (Group group in baseGroup.Subgroups)
-				SerializeTree(group, rootContainer);
-
-			foreach (var member in baseGroup.Members)
-				CreateControl(member.Item1, member.Item2, rootContainer);
-
-			AddVerticalStack(rootContainer.Control.gameObject);
 
 			List<UINode> uiNodes = UnwindUITree(rootNode);
 
@@ -256,7 +277,7 @@ namespace ConfigSerialization
 				BindToggleAndGroup(toggleInfo.Value.Item1, toggleNode, groupNode, toggleInfo.Value.Item2);
 			}
 
-			_uiParent.GetComponent<VerticalUIStack>().RegisterNewChildren();
+			_tabView.SelectTab(_selectedTab);
 
 			List<UINode> UnwindUITree(UINode root, List<UINode> output = null)
 			{
@@ -294,7 +315,7 @@ namespace ConfigSerialization
 				AddVerticalStack(groupTransform.gameObject);
 			}
 
-			void MergeGroups(Dictionary<int, Group> localGroups, List<(MemberInfo, object)> ungroupedMembers)
+			void MergeGroups(Group baseGroup, Dictionary<int, Group> localGroups, List<(MemberInfo, object)> ungroupedMembers)
 			{
 				foreach (Group group in localGroups.Values)
 				{
@@ -770,18 +791,6 @@ namespace ConfigSerialization
 			);
 		}
 
-		private void Start()
-		{
-			ConfigContainers = new List<object>()
-			{
-				FindObjectOfType<ParticleController>(),
-				FindObjectOfType<MainVisualizer>(),
-				//FindObjectOfType<FragmentationVisualization>(),
-				//FindObjectOfType<InteractionCore>(),
-				FindObjectOfType<ApplicationController>(),
-				FindObjectOfType<MiscConfigCollection>(),
-			};
-			Serialize();
-		}
+		private void Start() => Serialize();
 	}
 }

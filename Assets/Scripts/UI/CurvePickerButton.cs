@@ -61,6 +61,6 @@ namespace ConstellationUI
 			CurvePicker.Curve = Curve;
 		}
 
-		private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Curve = new AnimationCurve(); }
+		private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Curve = Curve ?? new AnimationCurve(); }
 	}
 }

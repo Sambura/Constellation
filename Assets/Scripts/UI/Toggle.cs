@@ -29,6 +29,8 @@ namespace ConstellationUI
 			set => _toggle.group = value;
 		}
 
+		public UnityEngine.UI.Toggle WrappedToggle => _toggle;
+
 		public event Action<bool> IsCheckedChanged;
 
 		public void SetIsCheckedWithoutNotify(bool value)

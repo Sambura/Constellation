@@ -11,6 +11,7 @@ public class VerticalUIStack : MonoBehaviour
 	public float BottomMargin { get => _bottomMargin; set { _bottomMargin = value; RebuildLayout(); } }
 
 	private RectTransform _transform;
+	protected RectTransform RectTransform => _transform ?? (_transform = GetComponent<RectTransform>());
 
 	private void Start() => RegisterNewChildren();
 
@@ -21,7 +22,7 @@ public class VerticalUIStack : MonoBehaviour
 
 	public void RegisterNewChildren()
 	{
-		foreach (RectTransform child in _transform)
+		foreach (RectTransform child in RectTransform)
 		{
 			MonoEvents events = child.gameObject.GetComponent<MonoEvents>();
 			events = (events != null) ? events : child.gameObject.AddComponent<MonoEvents>();
@@ -41,8 +42,8 @@ public class VerticalUIStack : MonoBehaviour
 	public void RebuildLayout()
 	{
 		float y = -_topMargin;
-
-		foreach (RectTransform child in _transform)
+;
+		foreach (RectTransform child in RectTransform)
 		{
 			if (child.gameObject.activeInHierarchy == false) continue;
 			if (child.anchorMax.y != child.anchorMin.y) continue;
@@ -56,12 +57,7 @@ public class VerticalUIStack : MonoBehaviour
 
 		y -= _bottomMargin;
 
-		_transform.sizeDelta = new Vector2(_transform.sizeDelta.x, -y);
-	}
-
-	private void Awake()
-	{
-		_transform = GetComponent<RectTransform>();
+		RectTransform.sizeDelta = new Vector2(RectTransform.sizeDelta.x, -y);
 	}
 
 	private void OnDestroy()

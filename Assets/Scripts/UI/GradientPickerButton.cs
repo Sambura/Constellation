@@ -61,6 +61,6 @@ namespace ConstellationUI
 			GradientPicker.OnGradientChanged = OnGradientPickerGradientChange;
 		}
 
-		private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Gradient = new Gradient(); }
+		private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Gradient = Gradient ?? new Gradient(); }
 	}
 }
