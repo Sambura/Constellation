@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Collections;
+using UnityCore;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -44,8 +46,6 @@ namespace ConstellationUI
 
         public void ClearAllTabs()
 		{
-            if (_tabs == null) return;
-
             for (int i = 0; i < _tabs.Count; i++)
             {
                 Destroy(_tabs[i].Contents.gameObject);
@@ -54,6 +54,7 @@ namespace ConstellationUI
 
             _tabs.Clear();
             _tabButtons.Clear();
+            _selectedIndex = -1;
         }
 
         public RectTransform AddTab(string name)
@@ -81,7 +82,7 @@ namespace ConstellationUI
 
         private void RegisterTab(Tab tab)
 		{
-            MonoEvents events = tab.Contents.gameObject.AddComponent<MonoEvents>();
+            MonoEvents events = tab.Contents.gameObject.GetOrAddComponent<MonoEvents>();
             events.OnRectTransformChange += OnTabRectTransformChange;
             tab.Contents.gameObject.SetActive(false);
 
@@ -96,6 +97,14 @@ namespace ConstellationUI
             toggle.LabelText = name;
             toggle.ToggleGroup = _tabButtonsGroup;
             _tabButtons.Add(toggle);
+
+            StartCoroutine(ForceLayoutUpdate(_tabButtonsContainer));
+        }
+
+        private IEnumerator ForceLayoutUpdate(RectTransform root)
+		{
+            yield return null;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(root);
         }
 
         private void ResizeScrollRectContent()

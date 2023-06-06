@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityCore;
 
 public class VerticalUIStack : MonoBehaviour
 {
@@ -24,8 +25,7 @@ public class VerticalUIStack : MonoBehaviour
 	{
 		foreach (RectTransform child in RectTransform)
 		{
-			MonoEvents events = child.gameObject.GetComponent<MonoEvents>();
-			events = (events != null) ? events : child.gameObject.AddComponent<MonoEvents>();
+			MonoEvents events = child.gameObject.GetOrAddComponent<MonoEvents>();
 
 			events.OnObjectDisable -= RebuildLayout;
 			events.OnObjectEnable -= RebuildLayout;

@@ -1,11 +1,11 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using TMPro;
+using UnityCore;
 
 [RequireComponent(typeof(RectTransform))]
 /// <summary>
@@ -647,7 +647,7 @@ public class CustomDropdown : Selectable, IPointerClickHandler, ISubmitHandler, 
             parentTransform = parentTransform.parent;
         }
 
-        Canvas popupCanvas = GetOrAddComponent<Canvas>(templateGo);
+        Canvas popupCanvas = templateGo.GetOrAddComponent<Canvas>();
         popupCanvas.overrideSorting = true;
         popupCanvas.sortingOrder = 30000;
 
@@ -666,21 +666,13 @@ public class CustomDropdown : Selectable, IPointerClickHandler, ISubmitHandler, 
         }
         else
         {
-            GetOrAddComponent<GraphicRaycaster>(templateGo);
+            templateGo.GetOrAddComponent<GraphicRaycaster>();
         }
 
-        GetOrAddComponent<CanvasGroup>(templateGo);
+        templateGo.GetOrAddComponent<CanvasGroup>();
         templateGo.SetActive(false);
 
         validTemplate = true;
-    }
-
-    private static T GetOrAddComponent<T>(GameObject go) where T : Component
-    {
-        T comp = go.GetComponent<T>();
-        if (!comp)
-            comp = go.AddComponent<T>();
-        return comp;
     }
 
     /// <summary>
@@ -909,9 +901,8 @@ public class CustomDropdown : Selectable, IPointerClickHandler, ISubmitHandler, 
         else
         {
             // Add raycaster since it's needed to block.
-            GetOrAddComponent<GraphicRaycaster>(blocker);
+            blocker.GetOrAddComponent<GraphicRaycaster>();
         }
-
 
         // Add image since it's needed to block, but make it clear.
         Image blockerImage = blocker.AddComponent<Image>();

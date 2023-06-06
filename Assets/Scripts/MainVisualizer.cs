@@ -126,10 +126,11 @@ public class MainVisualizer : MonoBehaviour
         get => _clearColor;
         set { if (_clearColor != value) { SetClearColor(value); ClearColorChanged?.Invoke(value); }; }
     }
-    [ConfigGroupMember(1, GroupId = "PC+sim_params")] [MinMaxSliderProperty] public float ConnectionDistance {
+    [ConfigMemberOrder(1)] [ConfigGroupMember(1, GroupId = "PC+sim_params")] [MinMaxSliderProperty] public float ConnectionDistance {
         get => _connectionDistance;
         set { if (_connectionDistance != value) { SetConnectionDistance(value); ConnectionDistanceChanged?.Invoke(value); }; }
     }
+    [ConfigMemberOrder(1)]
     [ConfigGroupMember(1)] [MinMaxSliderProperty(0, 3, 0, 100, "0.00", lowerLabel: "Strong", higherPropertyName: nameof(ConnectionDistance), name: "Connection distance", minMaxSpacing: 1e-3f)]
     public float StrongDistance
     {

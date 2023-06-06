@@ -35,6 +35,6 @@ public class MiscConfigCollection : MonoBehaviour
 	[InvokableMethod] public void SaveConfig() => _configSerializer.SaveConfig();
 	[ConfigGroupMember("Save/Load configuration", 1)]
 	[InvokableMethod] public void LoadConfig() => _configSerializer.LoadConfig();
-	[ConfigGroupMember(2, GroupId = "Misc+other")]
+	[ConfigGroupMember(2, GroupId = "Misc+other")] [ConfigMemberOrder(0)]
 	[InvokableMethod] public void MakeTransparent() => _transparentWindow.MakeTransparent();
 }

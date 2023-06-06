@@ -30,6 +30,7 @@ namespace ConfigSerialization
 
 		[Header("Parameters")]
 		[SerializeField] private int _selectedTab;
+		[SerializeField] private bool _serializeOnStart = false;
 
 		[Serializable] private class ConfigTab
 		{
@@ -47,7 +48,18 @@ namespace ConfigSerialization
 			return IntegralTypes.Contains(type);
 		}
 
-		private class Group
+		private class Orderable
+		{
+			public int? DisplayIndex { get; set; }
+		}
+
+		private class Member : Orderable
+		{
+			public MemberInfo MemberInfo { get; set; }
+			public object MemberContainer { get; set; }
+		}
+
+		private class Group : Orderable
 		{
 			public string Name { get; set; }
 			public string Id { get; set; }
@@ -57,7 +69,7 @@ namespace ConfigSerialization
 			public string LastInvalidUpdatePropertyName { get; private set; }
 
 			public List<Group> Subgroups { get; } = new List<Group>();
-			public List<(MemberInfo, object)> Members { get; } = new List<(MemberInfo, object)>();
+			public List<Member> Members { get; } = new List<Member>();
 
 			public void AddSubgroup(Group group)
 			{
@@ -75,6 +87,7 @@ namespace ConfigSerialization
 				Id ??= reference.Id;
 				LocalIndex ??= reference.LocalIndex;
 				DefiningContainer ??= reference.DefiningContainer;
+				DisplayIndex ??= reference.DisplayIndex;
 
 				if (Name != reference.Name && reference.Name != null)
 					LastInvalidUpdatePropertyName = nameof(Name);
@@ -82,6 +95,8 @@ namespace ConfigSerialization
 					LastInvalidUpdatePropertyName = nameof(Id);
 				if (LocalIndex != reference.LocalIndex)
 					LastInvalidUpdatePropertyName = nameof(LocalIndex);
+				if (DisplayIndex != reference.DisplayIndex)
+					LastInvalidUpdatePropertyName = nameof(DisplayIndex);
 				if (DefiningContainer != reference.DefiningContainer && reference.DefiningContainer != null)
 					LastInvalidUpdatePropertyName = nameof(DefiningContainer);
 
@@ -95,7 +110,8 @@ namespace ConfigSerialization
 					Name = groupAttribute.GroupName,
 					Id = groupAttribute.GroupId,
 					LocalIndex = groupAttribute.GroupIndex,
-					DefiningContainer = container
+					DefiningContainer = container,
+					DisplayIndex = groupAttribute.DisplayIndex
 				};
 			}
 		}
@@ -167,7 +183,7 @@ namespace ConfigSerialization
 					EventInfo[] events = type.GetEvents(BindingFlags.Instance | BindingFlags.Public);
 					// index -> (id, name)
 					Dictionary<int, Group> localGroups = new Dictionary<int, Group>();
-					List<(MemberInfo, object)> ungroupedMembers = new List<(MemberInfo, object)>();
+					List<Member> ungroupedMembers = new List<Member>();
 					var localToggles = new List<(PropertyInfo, ConfigGroupToggleAttribute)>();
 
 					foreach (MemberInfo member in type.GetMembers())
@@ -206,9 +222,12 @@ namespace ConfigSerialization
 					void UpdateLocalGroups(MemberInfo member)
 					{
 						var groupAttribute = member.GetCustomAttribute<ConfigGroupMemberAttribute>();
+						var orderAttribute = member.GetCustomAttribute<ConfigMemberOrderAttribute>();
+						Member newMember = new Member { MemberInfo = member, MemberContainer = container, DisplayIndex = orderAttribute?.DisplayIndex };
+
 						if (groupAttribute == null)
 						{
-							ungroupedMembers.Add((member, container));
+							ungroupedMembers.Add(newMember);
 							return;
 						}
 
@@ -224,7 +243,7 @@ namespace ConfigSerialization
 						}
 
 						ValidateParent(group, groupAttribute);
-						group.Members.Add((member, container));
+						group.Members.Add(newMember);
 
 						void ValidateParent(Group group, ConfigGroupMemberAttribute groupAttribute)
 						{
@@ -258,14 +277,10 @@ namespace ConfigSerialization
 				foreach (var toggleInfo in idGroupToggles)
 					groupToggles.Add(idGroups[toggleInfo.Key], toggleInfo.Value);
 
-				foreach (Group group in baseGroup.Subgroups)
-					SerializeTree(group, tabNode);
-
-				foreach (var member in baseGroup.Members)
-					CreateControl(member.Item1, member.Item2, tabNode);
-
-				AddVerticalStack(tabNode.Control.gameObject);
+				FinilizeContainer(baseGroup, tabNode, tabTransform);
 			}
+
+			// Binding toggles to groups
 
 			List<UINode> uiNodes = UnwindUITree(rootNode);
 
@@ -278,6 +293,12 @@ namespace ConfigSerialization
 			}
 
 			_tabView.SelectTab(_selectedTab);
+
+
+			// ##################################################################
+			// ##################################################################
+			// ##################################################################
+
 
 			List<UINode> UnwindUITree(UINode root, List<UINode> output = null)
 			{
@@ -306,16 +327,51 @@ namespace ConfigSerialization
 				RectTransform groupTransform = containerNode.Control;
 				groupTransform.offsetMin = new Vector2(parentExtraIndent + 20, groupTransform.offsetMin.y);
 
-				foreach (var member in group.Members)
-					CreateControl(member.Item1, member.Item2, containerNode);
+				FinilizeContainer(group, containerNode, groupTransform, 0);
+			}
 
-				foreach (Group subgroup in group.Subgroups)
-					SerializeTree(subgroup, containerNode, 0);
+			void FinilizeContainer(Group group, UINode containerNode, RectTransform groupTransform, float parentExtraIndent = 20)
+			{
+				List<Orderable> orderedList = new List<Orderable>();
+				List<Orderable> unorderedObjects = new List<Orderable>();
+
+				while (orderedList.Count < group.Subgroups.Count + group.Members.Count) orderedList.Add(null);
+
+				foreach (Orderable orderable in group.Members.Cast<Orderable>().Concat(group.Subgroups))
+				{
+					if (orderable.DisplayIndex != null)
+					{
+						int value = orderable.DisplayIndex.Value;
+						int actualIndex = value < 0 ? value + orderedList.Count : value;
+						if (orderedList[actualIndex] != null)
+						{
+							orderedList.RemoveAt(orderedList.Count - 1);
+						}
+						orderedList[actualIndex] = orderable;
+						continue;
+					}
+
+					unorderedObjects.Add(orderable);
+				}
+
+				int index = 0;
+				foreach (Orderable orderable in unorderedObjects)
+				{
+					while (orderedList[index] != null) index++;
+					orderedList[index] = orderable;
+				}
+
+				foreach (Orderable orderable in orderedList)
+				{
+					if (orderable is Member member) CreateControl(member.MemberInfo, member.MemberContainer, containerNode);
+					else if (orderable is Group subgroup) SerializeTree(subgroup, containerNode, parentExtraIndent);
+					else Debug.LogError("Somethings wrong I can feel it");
+				}
 
 				AddVerticalStack(groupTransform.gameObject);
 			}
 
-			void MergeGroups(Group baseGroup, Dictionary<int, Group> localGroups, List<(MemberInfo, object)> ungroupedMembers)
+			void MergeGroups(Group baseGroup, Dictionary<int, Group> localGroups, List<Member> ungroupedMembers)
 			{
 				foreach (Group group in localGroups.Values)
 				{
@@ -791,6 +847,6 @@ namespace ConfigSerialization
 			);
 		}
 
-		private void Start() => Serialize();
+		private void Start() { if (_serializeOnStart) Serialize(); }
 	}
 }

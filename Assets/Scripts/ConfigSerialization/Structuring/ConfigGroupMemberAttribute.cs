@@ -39,6 +39,8 @@ namespace ConfigSerialization.Structuring
 				CheckGroupIds();
 			}
 		}
+		public int SetDisplayIndex { get => DisplayIndex ?? 0; set => DisplayIndex = value; }
+		public int? DisplayIndex { get; protected set; }
 
 		private void CheckGroupIds()
 		{

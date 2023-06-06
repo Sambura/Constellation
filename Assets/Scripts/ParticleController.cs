@@ -110,6 +110,14 @@ public class ParticleController : MonoBehaviour
     }
     #endregion
 
+    [ConfigGroupMember] [ConfigMemberOrder(-1)]
+    [InvokableMethod("Restart simulation")]
+    public void ReinitializeParticles()
+    {
+        foreach (Particle particle in _particles)
+            SetRandomPositionAndVelocity(particle);
+    }
+
     private void SetRandomPositionAndVelocity(Particle particle)
     {
         particle.SetRandomVelocity();
@@ -154,13 +162,6 @@ public class ParticleController : MonoBehaviour
 
         if (_particles != null) DoFragmentation();
     }
-
-    [ConfigGroupMember] [InvokableMethod("Restart simulation")]
-    public void ReinitializeParticles()
-	{
-        foreach (Particle particle in _particles)
-            SetRandomPositionAndVelocity(particle);
-	}
 
 	private void Awake()
 	{

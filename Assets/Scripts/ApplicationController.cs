@@ -5,7 +5,7 @@ using ConfigSerialization.Structuring;
 
 public class ApplicationController : MonoBehaviour
 {
-	[ConfigGroupMember("Frames per second", GroupId = "AC+fps")]
+	[ConfigGroupMember("Frames per second", GroupId = "AC+fps", SetDisplayIndex = 0)]
 	[SliderProperty(30, 360, 0, name: "FPS limit")] public int TargetFrameRate
 	{
 		get => Application.targetFrameRate;
@@ -42,7 +42,7 @@ public class ApplicationController : MonoBehaviour
 		_pendingMode = Screen.fullScreenMode;
 	}
 
-	[ConfigGroupMember("Other", 2, GroupId = "Misc+other")]
+	[ConfigGroupMember("Other", 2, GroupId = "Misc+other", SetDisplayIndex = -1)]
 	[InvokableMethod("Exit")]
 	public void Quit()
 	{
