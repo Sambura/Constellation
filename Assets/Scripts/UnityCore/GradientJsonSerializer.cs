@@ -20,7 +20,7 @@ namespace UnityCore
 			JsonSerializerUtility.SerializeDefault(json, nameof(gradient.mode), gradient.mode);
 			JsonSerializerUtility.SerializeDefault(json, nameof(gradient.colorKeys), gradient.colorKeys);
 			JsonSerializerUtility.SerializeDefault(json, nameof(gradient.alphaKeys), gradient.alphaKeys);
-			JsonSerializerUtility.RemoveLastComma(json);
+			JsonSerializerUtility.RemoveLastIfComma(json);
 			json.Append('}');
 
 			return JsonSerializerUtility.Prettyfy(json.ToString(), prettyPrint);

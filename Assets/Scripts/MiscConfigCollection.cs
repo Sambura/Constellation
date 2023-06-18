@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using ConfigSerialization;
 using ConfigSerialization.Structuring;
+using UnityCore;
 
 public class MiscConfigCollection : MonoBehaviour
 {

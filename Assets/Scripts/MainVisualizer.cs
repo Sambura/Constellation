@@ -38,7 +38,7 @@ public class MainVisualizer : MonoBehaviour
     [SerializeField] private float _colorMaxFadeDuration = 4;
     [SerializeField] private Color _clearColor = Color.black;
     [SerializeField][Range(0, 1)] private float _triangleFillOpacity;
-    [SerializeField] private Texture _particleSprite;
+    [SerializeField] private Texture2D _particleSprite;
 
     [Header("Rendering")]
     [SerializeField] private int _renderQueueIndex = 0;
@@ -51,11 +51,6 @@ public class MainVisualizer : MonoBehaviour
         get => _showParticles;
         set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
     }
-    /*[ConfigProperty]*/ public Texture ParticleSprite
-	{
-        get => _particleSprite;
-        set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
-	}
     [ConfigGroupMember(2, 0)] [SliderProperty(0, 0.1f, 0, 10, name: "Size")] public float ParticleSize
     {
         get => _particlesSize;
@@ -66,6 +61,11 @@ public class MainVisualizer : MonoBehaviour
         get => _particlesColor;
         set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
     }
+    [ConfigGroupMember(2)] [ConfigProperty("Sprite")] public Texture2D ParticleSprite
+	{
+        get => _particleSprite;
+        set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
+	}
     [ConfigGroupToggle(3)]
     [ConfigGroupMember] [ConfigProperty] public bool ShowLines
     {
@@ -139,7 +139,7 @@ public class MainVisualizer : MonoBehaviour
     }
 
     public event System.Action<bool> ShowParticlesChanged;
-    public event System.Action<Texture> ParticleSpriteChanged;
+    public event System.Action<Texture2D> ParticleSpriteChanged;
     public event System.Action<float> ParticleSizeChanged;
     public event System.Action<Color> ParticleColorChanged;
     public event System.Action<bool> ShowLinesChanged;
@@ -251,7 +251,7 @@ public class MainVisualizer : MonoBehaviour
         foreach (Particle p in _particleController.Particles)
             p.Color = value;
     }
-    private void SetParticleSprite(Texture value)
+    private void SetParticleSprite(Texture2D value)
     {
         _particleSprite = value;
         _particleMaterial.mainTexture = value;

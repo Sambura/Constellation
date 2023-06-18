@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 namespace ConstellationUI
@@ -9,20 +8,14 @@ namespace ConstellationUI
     /// Message box has a title, icon, text message and buttons:
     /// `Ok` and (optionally) `Cancel`
     /// </summary>
-    public class MessageBox : MonoDialog
+    public class InputFieldDialog : MonoDialog
     {
-        [SerializeField] private TextMeshProUGUI _textField;
-        [SerializeField] private Image _icon;
+        [SerializeField] private TMP_InputField _inputField;
 
         /// <summary>
         /// Text message that is displayed in the message box
         /// </summary>
-        public string Text { get => _textField.text; set => _textField.text = value; }
-        /// <summary>
-        /// Icon that is displayed in the message box
-        /// Default icons are supposed to be defined in an instance of WindowsManager class
-        /// </summary>
-        public Sprite Icon { get => _icon.sprite; set => _icon.sprite = value; }
+        public string InputString { get => _inputField.text; set => _inputField.text = value; }
         /// <summary>
         /// Whether message box should have a `cancel` button. For this to work, _cancelButton
         /// (located in MonoDialog class) field should be assigned properly.
@@ -36,10 +29,9 @@ namespace ConstellationUI
         /// <summary>
         /// Shows a dialog, assigning title, text message and icon to message box
         /// </summary>
-        public void ShowDialog(string title, OnDialogClosingHandler onClose, string text, Sprite icon, bool cancelButton = false)
+        public void ShowDialog(string title, OnDialogClosingHandler onClose, string inputString, bool cancelButton = false)
         {
-            Text = text;
-            Icon = icon;
+            InputString = inputString;
             ShowCancelButton = cancelButton;
             ShowDialog(title, onClose);
         }

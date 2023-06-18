@@ -4,6 +4,7 @@ using System.IO;
 using System;
 using System.Text;
 using UnityCore;
+using ConstellationUI;
 
 public class ConfigSerializer : MonoBehaviour
 {
@@ -39,8 +40,10 @@ public class ConfigSerializer : MonoBehaviour
     /// </summary>
     public void SaveConfig()
     {
+        SetFileFilters();
         _fileDialog.FileName = "config.json";
         _fileDialog.ShowDialog("Select save location", TrySaveConfig);
+        _fileDialog.SyncCurrentDirectory(this);
     }
 
     /// <summary>
@@ -49,8 +52,19 @@ public class ConfigSerializer : MonoBehaviour
     /// </summary>
     public void LoadConfig()
 	{
+        SetFileFilters();
         _fileDialog.ShowDialog("Select config to load", TryLoadConfig);
+        _fileDialog.SyncCurrentDirectory(this);
     }
+
+    private void SetFileFilters()
+	{
+        _fileDialog.FileFilters = new List<FileDialog.FileFilter>()
+        {
+            new FileDialog.FileFilter() { Description = "Json files", Pattern = "*.json"},
+            new FileDialog.FileFilter() { Description = "All files", Pattern = "*"}
+        };
+	}
 
     /// <summary>
     /// Serializes config in json and saves it to the specified file
@@ -205,15 +219,15 @@ public class ConfigSerializer : MonoBehaviour
                 return true;
             }
         }
-        catch (JsonSerializerException)
+        catch (JsonSerializerException e)
         {
-            _fileDialog.Manager.ShowMessageBox("Error", "An error occured while parsing json. " +
-                "Make sure you selected the correct file.", StandardMessageBoxIcons.Error, _fileDialog);
+            _fileDialog.Manager.ShowMessageBox("Error", "Failed to parse json. " +
+                $"Message:\n<color=red>{e.Message}</color>", StandardMessageBoxIcons.Error, _fileDialog);
             return false;
         }
         catch (Exception ex)
         {
-            _fileDialog.Manager.ShowMessageBox("Error", $"An unknown error occured while parsing file. Message: {ex.Message}",
+            _fileDialog.Manager.ShowMessageBox("Error", $"An unknown error occured while parsing file. Message:\n<color=red>{ex.Message}</color>",
                 StandardMessageBoxIcons.Error, _fileDialog);
             return false;
         }

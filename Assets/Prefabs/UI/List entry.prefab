@@ -148,7 +148,7 @@ GameObject:
   - component: {fileID: 2659140176785523402}
   - component: {fileID: 3041303076233636592}
   m_Layer: 5
-  m_Name: FileEntry
+  m_Name: List entry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -265,9 +265,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1719984654264681482}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6fdabb5910c607489a7c6f09294b06a, type: 3}
+  m_Script: {fileID: 11500000, guid: bc9289d2e55f8004a8c6c08e1a14eb78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _icon: {fileID: 1719984655394706133}
+  _label: {fileID: 1719984653777774117}
   _highlight: {fileID: 8897140257809124521}
 --- !u!1 &1719984655394706134
 GameObject:

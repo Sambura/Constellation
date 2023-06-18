@@ -19,6 +19,7 @@ namespace ConfigSerialization
 		[SerializeField] private GameObject _minMaxSliderPrefab;
 		[SerializeField] private GameObject _radioButtonPrefab;
 		[SerializeField] private GameObject _buttonPrefab;
+		[SerializeField] private GameObject _textureButtonPrefab;
 		[SerializeField] private GameObject _dropdownPrefab;
 		[SerializeField] private GameObject _groupHeaderPrefab;
 
@@ -119,7 +120,8 @@ namespace ConfigSerialization
 		private enum ControlType
 		{
 			Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
-			Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader
+			Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader,
+			TexturePickerButton
 		}
 
 		private class UINode
@@ -475,6 +477,8 @@ namespace ConfigSerialization
 				return CreateGradientButton(property, container, parent);
 			if (type == typeof(AnimationCurve))
 				return CreateCurveButton(property, container, parent);
+			if (type == typeof(Texture2D))
+				return CreateTextureButton(property, container, parent);
 
 			Debug.LogError($"Failed to create control for {property} on {container} : not implemented!");
 
@@ -515,6 +519,18 @@ namespace ConfigSerialization
 					x.DialogTitle = z?.DialogTitle ?? $"Select {SplitCamelCase(property.Name)}";
 				},
 				nameof(ColorPickerButton.Color), ControlType.ColorPickerButton
+			);
+		}
+
+		private UINode CreateTextureButton(PropertyInfo property, object memberContainer, UINode parent)
+		{
+			return CreateUniversal<ConfigProperty, TexturePickerButton>(
+				property, _textureButtonPrefab, memberContainer, parent, (x, y, z) =>
+				{
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.DialogTitle = $"Select {SplitCamelCase(property.Name)}";
+				},
+				nameof(TexturePickerButton.Texture), ControlType.TexturePickerButton
 			);
 		}
 
@@ -577,7 +593,6 @@ namespace ConfigSerialization
 			V specificControl = newControl.GetComponent<V>();
 			initDelegate(specificControl, configProperty, specificAttribute);
 			var specificProperty = typeof(V).GetProperty(propertyName);
-			specificProperty.SetValue(specificControl, property.GetValue(memberContainer));
 			var controlEvent = GetEvent(specificProperty);
 			Delegate handler = (Delegate)GetType().GetMethod(nameof(GetUniversalHandler), BindingFlags.Static | BindingFlags.NonPublic)
 				.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl });
@@ -591,6 +606,9 @@ namespace ConfigSerialization
 				.MakeGenericMethod(specificProperty.PropertyType, property.PropertyType).Invoke(null, new object[] { property, memberContainer, ui2prop });
 
 				specificProperty.SetValue(specificControl, prop2ui.DynamicInvoke(property.GetValue(memberContainer)));
+			} else
+			{
+				specificProperty.SetValue(specificControl, property.GetValue(memberContainer));
 			}
 
 			controlEvent.AddEventHandler(specificControl, uiToPropHandler);

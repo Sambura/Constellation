@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using TMPro;
+using UnityCore;
 
 public class FPSLabel : MonoBehaviour
 {

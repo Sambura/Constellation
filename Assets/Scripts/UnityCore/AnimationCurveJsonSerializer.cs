@@ -18,7 +18,7 @@ namespace UnityCore
 			StringBuilder json = new StringBuilder(64); // pretty arbitrary
 			json.Append('{');
 			JsonSerializerUtility.SerializeDefault(json, nameof(curve.keys), curve.keys);
-			JsonSerializerUtility.RemoveLastComma(json);
+			JsonSerializerUtility.RemoveLastIfComma(json);
 			json.Append('}');
 
 			return JsonSerializerUtility.Prettyfy(json.ToString(), prettyPrint);
@@ -60,7 +60,7 @@ namespace UnityCore
 			JsonSerializerUtility.SerializeDefault(json, nameof(keyframe.outTangent), keyframe.outTangent);
 			JsonSerializerUtility.SerializeDefault(json, nameof(keyframe.inWeight), keyframe.inWeight);
 			JsonSerializerUtility.SerializeDefault(json, nameof(keyframe.outWeight), keyframe.outWeight);
-			JsonSerializerUtility.RemoveLastComma(json);
+			JsonSerializerUtility.RemoveLastIfComma(json);
 			json.Append('}');
 
 			return JsonSerializerUtility.Prettyfy(json.ToString(), prettyPrint);
