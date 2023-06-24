@@ -32,10 +32,12 @@ public class MiscConfigCollection : MonoBehaviour
 		set => _fpsCounter.TimeWindow = value;
 	}
 
+	[ConfigGroupMember("Save/Load configuration", 1, Layout = ConfigGroupLayout.Horizontal)]
+	[InvokableMethod("Save")] public void SaveConfig() => _configSerializer.SaveConfig();
 	[ConfigGroupMember("Save/Load configuration", 1)]
-	[InvokableMethod] public void SaveConfig() => _configSerializer.SaveConfig();
-	[ConfigGroupMember("Save/Load configuration", 1)]
-	[InvokableMethod] public void LoadConfig() => _configSerializer.LoadConfig();
+	[InvokableMethod("Load")] public void LoadConfig() => _configSerializer.LoadConfig();
+	[SetComponentProperty(typeof(UnityEngine.UI.Image), nameof(UnityEngine.UI.Image.color), typeof(Color), new object[] { 1, 0.94f, 0 }, "Border")]
+	[SetComponentProperty(typeof(TMPro.TextMeshProUGUI), nameof(TMPro.TextMeshProUGUI.color), typeof(Color), new object[] { 1, 0.26f, 0.26f })]
 	[ConfigGroupMember(2, GroupId = "Misc+other")] [ConfigMemberOrder(0)]
 	[InvokableMethod] public void MakeTransparent() => _transparentWindow.MakeTransparent();
 }

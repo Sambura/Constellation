@@ -51,6 +51,7 @@ public class MainVisualizer : MonoBehaviour
         get => _showParticles;
         set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
     }
+	[SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Compact")]
     [ConfigGroupMember(2, 0)] [SliderProperty(0, 0.1f, 0, 10, name: "Size")] public float ParticleSize
     {
         get => _particlesSize;
@@ -78,6 +79,7 @@ public class MainVisualizer : MonoBehaviour
         get => _meshLines;
         set { if (_meshLines != value) { _meshLines = value; MeshLinesChanged?.Invoke(value); }; }
     }
+    [SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Compact")]
     [ConfigGroupMember(4, 3)] [SliderProperty(0.001f, 0.05f, 0, 0.5f, "0.0000", name: "Width")] public float LineWidth
 	{
         get => _linesWidth;

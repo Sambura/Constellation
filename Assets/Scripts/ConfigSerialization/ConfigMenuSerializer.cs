@@ -5,6 +5,7 @@ using System.Reflection;
 using UnityEngine;
 using ConstellationUI;
 using ConfigSerialization.Structuring;
+using static Core.Utility;
 
 namespace ConfigSerialization
 {
@@ -39,16 +40,6 @@ namespace ConfigSerialization
 			public List<MonoBehaviour> ConfigSources;
 		}
 
-		private static readonly Type[] IntegralTypes = new[] { typeof(int), typeof(uint),
-													   typeof(short), typeof(ushort),
-													   typeof(long), typeof(ulong),
-													   typeof(byte) };
-
-		public static bool IsIntegral(Type type)
-		{
-			return IntegralTypes.Contains(type);
-		}
-
 		private class Orderable
 		{
 			public int? DisplayIndex { get; set; }
@@ -66,6 +57,7 @@ namespace ConfigSerialization
 			public string Id { get; set; }
 			public int? LocalIndex { get; set; }
 			public object DefiningContainer { get; set; }
+			public ConfigGroupLayout Layout { get; set; } = ConfigGroupLayout.Default;
 			public Group Parent { get; set; }
 			public string LastInvalidUpdatePropertyName { get; private set; }
 
@@ -89,6 +81,7 @@ namespace ConfigSerialization
 				LocalIndex ??= reference.LocalIndex;
 				DefiningContainer ??= reference.DefiningContainer;
 				DisplayIndex ??= reference.DisplayIndex;
+				if (Layout == ConfigGroupLayout.Default) Layout = reference.Layout;
 
 				if (Name != reference.Name && reference.Name != null)
 					LastInvalidUpdatePropertyName = nameof(Name);
@@ -100,6 +93,8 @@ namespace ConfigSerialization
 					LastInvalidUpdatePropertyName = nameof(DisplayIndex);
 				if (DefiningContainer != reference.DefiningContainer && reference.DefiningContainer != null)
 					LastInvalidUpdatePropertyName = nameof(DefiningContainer);
+				if (Layout != reference.Layout && reference.Layout != ConfigGroupLayout.Default)
+					LastInvalidUpdatePropertyName = nameof(Layout);
 
 				return LastInvalidUpdatePropertyName == null;
 			}
@@ -112,7 +107,8 @@ namespace ConfigSerialization
 					Id = groupAttribute.GroupId,
 					LocalIndex = groupAttribute.GroupIndex,
 					DefiningContainer = container,
-					DisplayIndex = groupAttribute.DisplayIndex
+					DisplayIndex = groupAttribute.DisplayIndex,
+					Layout = groupAttribute.Layout
 				};
 			}
 		}
@@ -167,6 +163,8 @@ namespace ConfigSerialization
 			var groupToggles = new Dictionary<Group, (PropertyInfo, bool)>();
 			// UINode without a real GameObject behind it. Used to collect all the tab's UINodes as children
 			UINode rootNode = new UINode();
+
+			// UI generation
 
 			foreach (ConfigTab tab in _tabs)
 			{
@@ -280,6 +278,7 @@ namespace ConfigSerialization
 					groupToggles.Add(idGroups[toggleInfo.Key], toggleInfo.Value);
 
 				FinilizeContainer(baseGroup, tabNode, tabTransform);
+				UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(tabTransform);
 			}
 
 			// Binding toggles to groups
@@ -365,12 +364,12 @@ namespace ConfigSerialization
 
 				foreach (Orderable orderable in orderedList)
 				{
-					if (orderable is Member member) CreateControl(member.MemberInfo, member.MemberContainer, containerNode);
+					if (orderable is Member member) DecorateControl(CreateControl(member.MemberInfo, member.MemberContainer, containerNode));
 					else if (orderable is Group subgroup) SerializeTree(subgroup, containerNode, parentExtraIndent);
 					else Debug.LogError("Somethings wrong I can feel it");
 				}
 
-				AddVerticalStack(groupTransform.gameObject);
+				ApplyLayout(groupTransform.gameObject, group.Layout);
 			}
 
 			void MergeGroups(Group baseGroup, Dictionary<int, Group> localGroups, List<Member> ungroupedMembers)
@@ -441,6 +440,49 @@ namespace ConfigSerialization
 
 			Debug.LogError($"Member {member} on {memberParent} was not serialized - unknown member kind");
 			return null;
+		}
+
+		/// <summary>
+		/// Looks for special attributes on the serialized member to decorate control, like SetComponentProperty, and
+		/// applies them to the created control
+		/// </summary>
+		private UINode DecorateControl(UINode control)
+		{
+			if (control == null) return null;
+
+			List<MemberInfo> members = control.SerializedMembers ?? new List<MemberInfo>() { control.Member };
+
+			foreach (MemberInfo member in members)
+			{
+				foreach (var attribute in member.GetCustomAttributes<SetComponentPropertyAttribute>())
+				{
+					GameObject controlObject = control.Control.gameObject;
+					if (attribute.ChildName != null)
+					{
+						controlObject = control.Control.Find(attribute.ChildName).gameObject;
+					}
+
+					Component component = controlObject.GetComponentInChildren(attribute.ComponentType, true);
+					PropertyInfo property = attribute.ComponentType.GetProperty(attribute.PropertyName);
+					property.SetValue(component, attribute.Value);
+				}
+			}
+
+			return control;
+		}
+
+		private void ApplyLayout(GameObject container, ConfigGroupLayout layout)
+		{
+			switch (layout)
+			{
+				case ConfigGroupLayout.Default:
+				case ConfigGroupLayout.Vertical:
+					AddVerticalStack(container);
+					break;
+				case ConfigGroupLayout.Horizontal:
+					AddHorizontalStack(container);
+					break;
+			}
 		}
 
 		private UINode CreateMethodControl(MethodInfo method, object container, UINode parent)
@@ -842,28 +884,16 @@ namespace ConfigSerialization
 			return verticalStack;
 		}
 
+		private HorizontalUIStack AddHorizontalStack(GameObject gameObject)
+		{
+			HorizontalUIStack horizontalStack = gameObject.AddComponent<HorizontalUIStack>();
+			horizontalStack.ControlContainerHeight = true;
+			horizontalStack.LeftMargin = 2;
+			horizontalStack.Spacing = 10;
+			return horizontalStack;
+		}
+
 		private static EventInfo GetEvent(PropertyInfo property) => property.DeclaringType.GetEvent(property.Name + "Changed");
-
-		public static string SplitAndLowerCamelCase(string str)
-		{
-			return str[0] + SplitCamelCase(str).ToLowerInvariant().Substring(1);
-		}
-
-		/*
-		 * https://stackoverflow.com/questions/5796383/insert-spaces-between-words-on-a-camel-cased-token
-		 */
-		public static string SplitCamelCase(string str)
-		{
-			return System.Text.RegularExpressions.Regex.Replace(
-				System.Text.RegularExpressions.Regex.Replace(
-					str,
-					@"(\P{Ll})(\P{Ll}\p{Ll})",
-					"$1 $2"
-				),
-				@"(\p{Ll})(\P{Ll})",
-				"$1 $2"
-			);
-		}
 
 		private void Start() { if (_serializeOnStart) Serialize(); }
 	}

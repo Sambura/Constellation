@@ -7,7 +7,11 @@ public class MonoEvents : MonoBehaviour
     public event Action OnObjectDisable;
     public event Action OnRectTransformChange;
 
-    private void OnEnable() => OnObjectEnable?.Invoke();
-    private void OnDisable() => OnObjectDisable?.Invoke();
-    private void OnRectTransformDimensionsChange() => OnRectTransformChange?.Invoke();
+    public void InvokeRectTransformChange() => OnRectTransformChange?.Invoke();
+    public void InvokeObjectEnable() => OnObjectEnable?.Invoke();
+    public void InvokeObjectDisable() => OnObjectDisable?.Invoke();
+
+    private void OnEnable() => InvokeObjectEnable();
+    private void OnDisable() => InvokeObjectDisable();
+    private void OnRectTransformDimensionsChange() => InvokeRectTransformChange();
 }

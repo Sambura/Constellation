@@ -49,9 +49,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ecc9a49171cee747b387471237173ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _label: {fileID: 2391697314037727065}
   _viewport: {fileID: 2391697314185345300}
   _curvePicker: {fileID: 0}
-  _label: {fileID: 2391697314037727065}
   _curvePickerOffset: {x: -190, y: 40}
   _curvePickerPivot: {x: 0, y: 0.5}
   _curvePickerTitle: Select curve
@@ -148,8 +148,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30
-  m_fontSizeBase: 30
+  m_fontSize: 36
+  m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

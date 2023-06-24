@@ -108,8 +108,9 @@ public class ParticleController : MonoBehaviour
         _boundMargins = value;
         RecalculateBounds();
     }
-    #endregion
+	#endregion
 
+	[SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Middle")]
     [ConfigGroupMember] [ConfigMemberOrder(-1)]
     [InvokableMethod("Restart simulation")]
     public void ReinitializeParticles()

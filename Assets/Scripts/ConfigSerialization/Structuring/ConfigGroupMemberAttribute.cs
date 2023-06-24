@@ -19,7 +19,6 @@ namespace ConfigSerialization.Structuring
 		{ 
 			get => _parentIndex;
 			private set => _parentIndex = value;
-
 		}
 		public string GroupId
 		{
@@ -41,6 +40,7 @@ namespace ConfigSerialization.Structuring
 		}
 		public int SetDisplayIndex { get => DisplayIndex ?? 0; set => DisplayIndex = value; }
 		public int? DisplayIndex { get; protected set; }
+		public ConfigGroupLayout Layout { get; set; } = ConfigGroupLayout.Default;
 
 		private void CheckGroupIds()
 		{
@@ -70,4 +70,6 @@ namespace ConfigSerialization.Structuring
 			CheckGroupIndices();
 		}
 	}
+
+	public enum ConfigGroupLayout { Default, Vertical, Horizontal }
 }

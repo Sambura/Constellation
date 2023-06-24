@@ -14,11 +14,15 @@ namespace ConstellationUI
 
 		private RectTransform _transform;
 
-		private void Start()
+		private void Awake()
 		{
 			_transform = GetComponent<RectTransform>();
 			MonoEvents events = _referenceChild.gameObject.GetOrAddComponent<MonoEvents>();
 			events.OnRectTransformChange += UpdateLayout;
+		}
+
+		private void OnEnable()
+		{
 			UpdateLayout();
 		}
 
@@ -26,9 +30,16 @@ namespace ConstellationUI
 		{
 			// This is kindof (?) a hack for it to work nicely with VerticalUILayout
 			float y = (_transform.offsetMin.y + _transform.offsetMax.y) / 2;
+			// ??????
+			float x = (_transform.offsetMin.x + _transform.offsetMax.x) / 2;
 
-			_transform.offsetMin = new Vector2(-_referenceChild.rect.width / 2 - _paddingLeft, y - _referenceChild.rect.height / 2 - _paddingBottom);
-			_transform.offsetMax = new Vector2(_referenceChild.rect.width / 2 + _paddingRight, y + _referenceChild.rect.height / 2 + _paddingTop);
+			_transform.offsetMin = new Vector2(x - _referenceChild.rect.width / 2 - _paddingLeft, y - _referenceChild.rect.height / 2 - _paddingBottom);
+			_transform.offsetMax = new Vector2(x + _referenceChild.rect.width / 2 + _paddingRight, y + _referenceChild.rect.height / 2 + _paddingTop);
+
+			// ?????????????????????????
+			GetComponent<MonoEvents>()?.InvokeRectTransformChange();
+
+			// they have played us for absolute fools
 		}
 
 		private void OnDestroy()

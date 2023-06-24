@@ -12,6 +12,7 @@ public class VerticalUIStack : MonoBehaviour
 	public float BottomMargin { get => _bottomMargin; set { _bottomMargin = value; RebuildLayout(); } }
 
 	private RectTransform _transform;
+	private bool _layoutLock = false;
 	protected RectTransform RectTransform => _transform ?? (_transform = GetComponent<RectTransform>());
 
 	private void Start() => RegisterNewChildren();
@@ -41,8 +42,9 @@ public class VerticalUIStack : MonoBehaviour
 
 	public void RebuildLayout()
 	{
+		if (_layoutLock) return;
 		float y = -_topMargin;
-;
+
 		foreach (RectTransform child in RectTransform)
 		{
 			if (child.gameObject.activeInHierarchy == false) continue;
@@ -53,6 +55,20 @@ public class VerticalUIStack : MonoBehaviour
 			y -= top;
 			child.anchoredPosition = new Vector2(child.anchoredPosition.x, y);
 			y += bottom - _spacing;
+
+			// if the element is not stretched horizontally, let's move it to the left
+			if (child.anchorMax.x == child.anchorMin.x && child.anchorMin.x == 0)
+			{
+				float leftExtent = -child.rect.width * child.pivot.x;
+				float rightExtent = child.rect.width * (1 - child.pivot.x);
+
+				child.anchoredPosition = new Vector2(-leftExtent, child.anchoredPosition.y);
+			}
+
+			_layoutLock = true;
+			child.gameObject.GetComponent<ConstellationUI.ChildWrapper>()?.UpdateLayout();
+			//child.gameObject.GetComponent<MonoEvents>()?.InvokeRectTransformChange();
+			_layoutLock = false;
 		}
 
 		y -= _bottomMargin;

@@ -1425,10 +1425,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5dc9cf6cf764e404289b56c452a835b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _label: {fileID: 7614142386898661446}
   _slider: {fileID: 7614142385977742584}
   _minInputField: {fileID: 1641938872401056514}
   _maxInputField: {fileID: 7614142385588041540}
-  _label: {fileID: 7614142386898661446}
   _lowerLabel: {fileID: 1641938874192741361}
   _higherLabel: {fileID: 1641938872669804974}
   _keepSliderConstraints: 1
@@ -1439,6 +1439,7 @@ MonoBehaviour:
   _inputFormatting: 0.000
   _inputRegex: ([-+]?[0-9]*\.?[0-9]+)
   _regexGroupIndex: 1
+  _minMaxSpacing: 0
 --- !u!1 &7614142386898661440
 GameObject:
   m_ObjectHideFlags: 0
@@ -1531,8 +1532,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30
-  m_fontSizeBase: 30
+  m_fontSize: 36
+  m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
