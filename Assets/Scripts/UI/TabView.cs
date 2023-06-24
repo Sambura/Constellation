@@ -137,7 +137,7 @@ namespace ConstellationUI
             SelectTab(index);
         }
 
-        private void Start()
+        private void Awake()
         {
             _tabButtonsGroup = _tabButtonsContainer.gameObject.AddComponent<ToggleGroup>();
             _tabButtonsGroup.allowSwitchOff = false;
