@@ -74,7 +74,7 @@ namespace UnityCore
 			FileTexture existing = FindTexture(texture.name);
 			if (existing != null)
 			{
-				if (existing.Texture.imageContentsHash == texture.imageContentsHash) return existing;
+				if (CompareTextures(existing.Texture, texture)) return existing;
 				throw new TextureAddException(TextureAddError.NameExists);
 			}
 			if (FindTexture(texture) != null) throw new TextureAddException(TextureAddError.TextureExists);
@@ -114,6 +114,32 @@ namespace UnityCore
 				if (string.IsNullOrWhiteSpace(fileTexture.Path))
 					fileTexture.Path = null;
 			}
+		}
+
+		/// <summary>
+		/// Compares two textures pixel by pixel.
+		/// Returns true if two textures have the same content
+		/// </summary>
+		public static bool CompareTextures(Texture2D a, Texture2D b)
+		{
+			if (a == b) return true;
+			if (a.width != b.width || a.height != b.height) return false;
+
+			var dataA = a.GetRawTextureData<byte>();
+			var dataB = a.GetRawTextureData<byte>();
+			//byte[] dataA = a.GetRawTextureData();
+			//byte[] dataB = b.GetRawTextureData();
+
+			if (dataA.Length != dataB.Length)
+			{
+				Debug.LogWarning("Textures with different data lengths encountered");
+				return false;
+			}
+
+			for (int i = 0; i < dataA.Length; i++)
+				if (dataA[i] != dataB[i]) return false;
+
+			return true;
 		}
 	}
 }
