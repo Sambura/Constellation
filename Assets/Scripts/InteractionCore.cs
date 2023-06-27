@@ -8,15 +8,13 @@ public class InteractionCore : MonoBehaviour
 {
 	[Header("Objects")]
 	[SerializeField] private ParticleController _particles;
-	[SerializeField] private Camera _camera;
+	[SerializeField] private MainVisualizer _mainVisualizer;
+	[SerializeField] private Viewport _viewport;
 
 	[Header("Parameters")]
 	[SerializeField] private float _attractionOrder = 2;
 	[SerializeField] private float _attractionStrength = 1;
 	[SerializeField] private float _attractionAssertion = 0.01f;
-	//[SerializeField] private float _driftStrength = 1;
-	//[SerializeField] private float _decelerationStrength = 0.01f;
-	//[SerializeField] private float _decelerationOrder = 0.5f;
 
 	[ConfigGroupMember("Attraction settings")]
 	[SliderProperty(-10, 6, inputFormatting: "0.00")] public float AttractionOrder
@@ -37,6 +35,17 @@ public class InteractionCore : MonoBehaviour
 		set { if (_attractionAssertion != value) { SetAttractionAssertion(value); AttractionAssertionChanged?.Invoke(value); } }
 	}
 
+	[ConfigGroupMember("Spiral attraction settings", 1)]
+	[SliderProperty(-10, 10, name: "Acceleration", hasEvent: false)] public float AccelerationS { get; set; } = 6;
+	[ConfigGroupMember(1)]
+	[SliderProperty(0, 1, 0, name:"Consume radius", hasEvent: false)] public float ConsumeRadiusS { get; set; } = 0.025f;
+	[ConfigGroupMember(1)]
+	[SliderProperty(name: "Attraction ratio", hasEvent: false)] public float AttractionRatioS { get; set; } = 0.01f;
+	[ConfigGroupMember(1)]
+	[SliderProperty(0, 10, 0, name: "Velocity limit", hasEvent: false)] public float VelocityLimitS { get; set; } = 6f;
+	[ConfigGroupMember(1)]
+	[SliderProperty(0, 10, name: "Constant attraction", hasEvent: false)] public float ConstantAttractionS { get; set; } = 5f;
+
 	public event System.Action<float> AttractionOrderChanged;
 	public event System.Action<float> AttractionStrengthChanged;
 	public event System.Action<float> AttractionAssertionChanged;
@@ -47,70 +56,81 @@ public class InteractionCore : MonoBehaviour
 
 	public void Update()
 	{
-		Vector3 mousePosition = _camera.ScreenToWorldPoint(Input.mousePosition);
+		Vector3 mousePosition = _viewport.Camera.ScreenToWorldPoint(Input.mousePosition);
 		mousePosition.z = 0;
+
+		if (Input.GetKey(KeyCode.S) || RawInput.IsKeyDown(RawKey.S))
+			InvokeSpiralAttractor(mousePosition);
+
+		if (Input.GetKey(KeyCode.A) || RawInput.IsKeyDown(RawKey.A))
+			InvokeAttractor(mousePosition);
+	}
+
+	public void InvokeSpiralAttractor(Vector2 point)
+	{
+		Vector3 mousePosition = point;
 		List<Particle> particles = _particles.Particles;
 
-		if (Input.GetKey(KeyCode.A) || RawInput.IsKeyDown(RawKey.A)) // attract
+		float escapeRadius = _viewport.Radius + _mainVisualizer.ParticleSize / 2 + 0.05f;
+
+		foreach (Particle p in particles)
 		{
-			foreach (Particle p in particles)
+			Vector3 direction = mousePosition - p.Position;
+			float magnitude = direction.magnitude;
+
+			if (AccelerationS > 0)
 			{
-				Vector3 direction = mousePosition - p.Position;
-				float magnitude = direction.magnitude;
-				direction /= magnitude;
+				if (magnitude < ConsumeRadiusS)
+				{
+					float escapeDistance = escapeRadius + Random.Range(0, _viewport.Radius);
 
-				float acceleration = _attractionStrength * Mathf.Pow(magnitude, _attractionOrder);
-
-				p.Velocity *= 1 - _attractionAssertion * Time.deltaTime;
-				p.Velocity += Time.deltaTime * acceleration * direction;
+					Vector2 newPosition = Random.insideUnitCircle.normalized * escapeDistance;
+					p.Position = newPosition;
+					p.Velocity = Vector3.zero;
+					continue;
+				}
 			}
+			else
+			{
+				if (magnitude > escapeRadius && Random.value < Time.deltaTime)
+				{
+					p.Position = mousePosition + (Vector3)Random.insideUnitCircle * ConsumeRadiusS;
+					p.Velocity = Random.insideUnitCircle.normalized * ConstantAttractionS;
+					continue;
+				}
+			}
+
+			direction /= magnitude;
+
+			float normalVelocityLimit = magnitude * VelocityLimitS;
+
+			// *Target* normal direction
+			Vector3 normalDirection = new Vector3(direction.y, -direction.x);
+			// Does particle's normal velocity align with target normal direction?
+			float normalSign = Mathf.Sign(Vector2.Dot(p.Velocity, normalDirection));
+
+			Vector3 normalComponent = normalDirection * Vector2.Dot(p.Velocity, normalDirection);
+			normalComponent = Vector3.ClampMagnitude(normalComponent, normalVelocityLimit);
+			Vector3 attractionComponent = direction * normalSign * (ConstantAttractionS + normalComponent.magnitude * normalComponent.magnitude * AttractionRatioS);
+
+			p.Velocity = normalComponent + attractionComponent + Time.deltaTime * normalDirection * AccelerationS;
 		}
+	}
 
-		/*if (Input.GetMouseButton(0))
+	public void InvokeAttractor(Vector2 point)
+	{
+		List<Particle> particles = _particles.Particles;
+
+		foreach (Particle p in particles)
 		{
-			foreach (Particle p in particles)
-			{
-				Vector3 direction = mousePosition - p.Position;
-				float magnitude = direction.magnitude;
-				direction /= magnitude;
-				Vector3 normal = new Vector3(-direction.y, direction.x);
+			Vector2 direction = point - (Vector2)p.Position;
+			float magnitude = direction.magnitude;
+			direction /= magnitude;
 
-				// float acceleration = Time.deltaTime / Mathf.Pow(magnitude, _attractionOrder);
-				//p.Velocity += acceleration * _attractionStrength * direction + acceleration * _driftStrength * normal;
+			float acceleration = _attractionStrength * Mathf.Pow(magnitude, _attractionOrder);
 
-				float acceleration = Time.deltaTime * Mathf.Pow(Vector2.Dot(normal, p.Velocity), 2) / magnitude;
-				// p.Velocity += acceleration * _attractionStrength * direction / (magnitude * magnitude);
-				p.Velocity += Time.deltaTime * _attractionStrength * direction * Mathf.Pow(magnitude, _attractionOrder);
-				p.Velocity -= p.Velocity * _decelerationStrength * Mathf.Clamp01(Mathf.Pow(magnitude, _decelerationOrder)) * Time.deltaTime;
-			}
+			p.Velocity *= 1 - _attractionAssertion * Time.deltaTime;
+			p.Velocity += (Vector3)(Time.deltaTime * acceleration * direction);
 		}
-
-		if (Input.GetMouseButton(1))
-		{
-			foreach (Particle p in particles)
-			{
-				Vector3 direction = mousePosition - p.Position;
-				float magnitude = direction.magnitude;
-				direction /= magnitude;
-				Vector3 normal = new Vector3(-direction.y, direction.x);
-
-				p.Velocity += Time.deltaTime * normal * _driftStrength + Time.deltaTime * direction * _driftStrength * 5;
-			}
-		}
-
-		if (Input.GetMouseButton(2))
-		{
-			foreach (Particle p in particles)
-			{
-				Vector3 direction = mousePosition - p.Position;
-				float magnitude = direction.magnitude;
-				direction /= magnitude;
-				Vector3 normal = new Vector3(-direction.y, direction.x);
-
-				float value = Vector2.Dot(direction, p.Velocity);
-
-				p.Velocity -= Time.deltaTime * direction * value * _decelerationStrength;
-			}
-		}*/
 	}
 }

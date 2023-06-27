@@ -38,6 +38,7 @@ public class UIArranger : MonoBehaviour
 			rt.anchorMax = element.AnchorMax;
 			rt.offsetMin = element.OffsetMin;
 			rt.offsetMax = element.OffsetMax;
+			rt.localRotation = element.LocalRotation;
 		}
 	}
 
@@ -67,6 +68,7 @@ public class UIArranger : MonoBehaviour
 		public Vector2 AnchorMax;
 		public Vector2 OffsetMin;
 		public Vector2 OffsetMax;
+		public Quaternion LocalRotation = Quaternion.identity;
 
 		public void RewriteFromObject(RectTransform obj)
 		{
@@ -76,6 +78,7 @@ public class UIArranger : MonoBehaviour
 			AnchorMax = obj.anchorMax;
 			OffsetMin = obj.offsetMin;
 			OffsetMax = obj.offsetMax;
+			LocalRotation = obj.localRotation;
 		}
 
 		public void SyncWithObject() =>	RewriteFromObject(Object);

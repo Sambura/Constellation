@@ -15,6 +15,7 @@ public class ParticleController : MonoBehaviour
     [SerializeField] private float _minParticleVelocity = 0;
     [SerializeField] private float _maxParticleVelocity = 1;
     [SerializeField] private float _boundMargins = 0;
+    [SerializeField] private BoundsShapes _boundsShape = BoundsShapes.Viewport;
     //[SerializeField] private bool _warp = true;
 
     public event System.Action<Particle> ParticleCreated;
@@ -46,11 +47,20 @@ public class ParticleController : MonoBehaviour
         get => _boundMargins;
         set { if (_boundMargins != value) { SetBoundMargins(value); BoundMarginsChanged?.Invoke(value); }; }
     }
+    [ConfigGroupMember]
+    [ConfigProperty] public BoundsShapes BoundsShape
+	{
+        get => _boundsShape;
+        set { if (_boundsShape != value) { SetBoundsShape(value); BoundsShapeChanged?.Invoke(value); }; }
+    }
+
+    public enum BoundsShapes { Viewport, Square, /* Circle, Custom */ }
 
     public event System.Action<int> ParticleCountChanged;
     public event System.Action<float> MinParticleVelocityChanged;
     public event System.Action<float> MaxParticleVelocityChanged;
     public event System.Action<float> BoundMarginsChanged;
+    public event System.Action<BoundsShapes> BoundsShapeChanged;
 
     private void SetParticlesCount(int value)
     {
@@ -108,9 +118,14 @@ public class ParticleController : MonoBehaviour
         _boundMargins = value;
         RecalculateBounds();
     }
-	#endregion
+    private void SetBoundsShape(BoundsShapes value)
+    {
+        _boundsShape = value;
+        RecalculateBounds();
+    }
+    #endregion
 
-	[SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Middle")]
+    [SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Middle")]
     [ConfigGroupMember] [ConfigMemberOrder(-1)]
     [InvokableMethod("Restart simulation")]
     public void ReinitializeParticles()
@@ -156,6 +171,10 @@ public class ParticleController : MonoBehaviour
             OnViewportChanged();
         }
     }
+    public float BoundLeft => _left;
+    public float BoundRight => _right;
+    public float BoundBottom => _bottom;
+    public float BoundTop => _top;
 
     public void SetConnectionDistance(float value)
 	{
@@ -183,8 +202,10 @@ public class ParticleController : MonoBehaviour
 	{
 		_left = -_viewport.MaxX + _boundMargins;
 		_right = _viewport.MaxX - _boundMargins;
-		_bottom = -_viewport.MaxY + _boundMargins;
-		_top = _viewport.MaxY - _boundMargins;
+
+        float verticalMax = BoundsShape == BoundsShapes.Viewport ? _viewport.MaxY : _viewport.MaxX;
+		_bottom = -verticalMax + _boundMargins;
+		_top = verticalMax - _boundMargins;
 	}
 
 	private void DoFragmentation()

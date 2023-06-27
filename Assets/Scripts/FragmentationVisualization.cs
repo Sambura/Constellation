@@ -8,7 +8,7 @@ using ConfigSerialization.Structuring;
 public class FragmentationVisualization : MonoBehaviour
 {
     [Header("Objects")]
-    [SerializeField] private ImmediateBatchRenderer _drawer;
+    [SerializeField] private ImmediateBatchRenderer _renderer;
     [SerializeField] private ParticleController _fragmentator;
     [SerializeField] private int _renderQueueIndex = 1000;
 
@@ -17,8 +17,11 @@ public class FragmentationVisualization : MonoBehaviour
     [SerializeField] private Color _cellBorderColor = Color.red;
     [SerializeField] private bool _showCells = false;
     [SerializeField] private Color _cellColor = Color.yellow;
+    [SerializeField] private bool _showBounds = false;
+    [SerializeField] private Color _boundsColor = Color.blue;
 
     private SimpleDrawBatch _renderBatch;
+    // Is _renderBatch added to the renderer?
     private bool _isRendered = false;
 
 	[ConfigGroupToggle(1)] [ConfigGroupMember("Fragmentation visualization")]
@@ -49,11 +52,27 @@ public class FragmentationVisualization : MonoBehaviour
         get => _cellColor;
         set { if (_cellColor != value) { _cellColor = value; CellColorChanged?.Invoke(value); }; }
     }
+    [ConfigGroupToggle(3)] [ConfigGroupMember]
+    [ConfigProperty]
+    public bool ShowBounds
+    {
+        get => _showBounds;
+        set { if (_showBounds != value) { SetShowBounds(value); ShowBoundsChanged?.Invoke(value); }; }
+    }
+    [ConfigGroupMember(3, 0)]
+    [ColorPickerButtonProperty(true, "Select color", "Color")]
+    public Color BoundsColor
+    {
+        get => _boundsColor;
+        set { if (_boundsColor != value) { _boundsColor = value; BoundsColorChanged?.Invoke(value); }; }
+    }
 
     public event Action<bool> ShowCellBordersChanged;
     public event Action<Color> CellBorderColorChanged;
     public event Action<bool> ShowCellsChanged;
     public event Action<Color> CellColorChanged;
+    public event Action<bool> ShowBoundsChanged;
+    public event Action<Color> BoundsColorChanged;
 
     private void SetShowCellBorders(bool value)
 	{
@@ -67,18 +86,26 @@ public class FragmentationVisualization : MonoBehaviour
         UpdateRenderBatch();
     }
 
+    private void SetShowBounds(bool value)
+    {
+        _showBounds = value;
+        UpdateRenderBatch();
+    }
+
     private void UpdateRenderBatch()
 	{
-        if ((_showCellBorders || _showCells) && _isRendered == false)
+        bool needsRendering = _showCellBorders || _showCells || _showBounds;
+
+        if (needsRendering && !_isRendered)
         {
             _isRendered = true;
-            _drawer.AddBatch(_renderQueueIndex, _renderBatch);
+            _renderer.AddBatch(_renderQueueIndex, _renderBatch);
         }
 
-        if (!(_showCellBorders || _showCells) && _isRendered)
+        if (!needsRendering && _isRendered)
 		{
             _isRendered = false;
-            _drawer.RemoveBatch(_renderQueueIndex, _renderBatch);
+            _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
         }
     }
 
@@ -93,7 +120,8 @@ public class FragmentationVisualization : MonoBehaviour
 
 	private void Update()
     {
-        if (_showCellBorders == false && _showCells == false) return;
+        if (!_isRendered) return;
+
         _renderBatch.lines.PseudoClear();
         _renderBatch.quads.PseudoClear();
 
@@ -141,5 +169,14 @@ public class FragmentationVisualization : MonoBehaviour
                 _renderBatch.lines.Add(new LineEntry(-maxX, y, maxX, y, _cellBorderColor));
             }
         }
+
+        if (_showBounds)
+		{
+            (float left, float right, float bottom, float top) = (_fragmentator.BoundLeft, _fragmentator.BoundRight, _fragmentator.BoundBottom, _fragmentator.BoundTop);
+            _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
+            _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
+            _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
+            _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
+		}
     }
 }

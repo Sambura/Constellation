@@ -22,7 +22,7 @@ namespace UnityCore
         void Update()
         {
             float currentTime = Time.time;
-            float currentDelta = Time.deltaTime;
+            float currentDelta = Time.unscaledDeltaTime;
             float oldestAllowed = currentTime - _timeWindow;
 
             while (_frameTimings.Count > 0 && _frameTimings.Peek().Item1 < oldestAllowed)

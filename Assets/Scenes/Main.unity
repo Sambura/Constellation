@@ -1188,13 +1188,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9d52ee9c5681a74fbf7dcfc66553a48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _drawer: {fileID: 519420030}
+  _renderer: {fileID: 519420030}
   _fragmentator: {fileID: 144636867}
   _renderQueueIndex: 1000
   _showCellBorders: 0
   _cellBorderColor: {r: 1, g: 0, b: 0, a: 0.4627451}
   _showCells: 0
   _cellColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 0.18431373}
+  _showBounds: 0
+  _boundsColor: {r: 0, g: 0.4584198, b: 1, a: 1}
 --- !u!114 &144636867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1212,6 +1214,7 @@ MonoBehaviour:
   _minParticleVelocity: 0.1
   _maxParticleVelocity: 1
   _boundMargins: 0
+  _boundsShape: 0
 --- !u!114 &144636868
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1247,7 +1250,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _particles: {fileID: 144636867}
-  _camera: {fileID: 519420031}
+  _mainVisualizer: {fileID: 144636865}
+  _viewport: {fileID: 519420034}
   _attractionOrder: 0
   _attractionStrength: 40
   _attractionAssertion: 0.6
@@ -7191,6 +7195,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0690b0b68b89ca94d834c717352d5009, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _groupHeaderPrefab: {fileID: 9203055433040285812, guid: 71da2459154ceb54d855e69a80f85c83, type: 3}
+  _collapsableHeaderPrefab: {fileID: 9203055433040285812, guid: a5d0535cb1072b547a4c0dad663af467, type: 3}
   _sliderPrefab: {fileID: 2712113876615970801, guid: 379b89f8fff5a1448af773591bb17640, type: 3}
   _togglePrefab: {fileID: 6718685849855497418, guid: be5794c57cbe51f4bb49ba64bef15200, type: 3}
   _colorButtonPrefab: {fileID: 2297000100298189878, guid: da1176b08c3aecc45a036bb71dacef88, type: 3}
@@ -7201,7 +7207,6 @@ MonoBehaviour:
   _buttonPrefab: {fileID: 3877502789024712507, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
   _textureButtonPrefab: {fileID: 2879123473745067015, guid: 4012920da8b438f4fb04b717926e25a2, type: 3}
   _dropdownPrefab: {fileID: 6080415379645549204, guid: f6539bbd80a7cfa48ac5ee6ed25b838e, type: 3}
-  _groupHeaderPrefab: {fileID: 9203055433040285812, guid: 71da2459154ceb54d855e69a80f85c83, type: 3}
   _tabs:
   - Name: Debug
     ConfigSources:

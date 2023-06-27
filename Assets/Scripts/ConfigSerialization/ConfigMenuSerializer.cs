@@ -12,6 +12,8 @@ namespace ConfigSerialization
 	public class ConfigMenuSerializer : MonoBehaviour
 	{
 		[Header("Prefabs")]
+		[SerializeField] private GameObject _groupHeaderPrefab;
+		[SerializeField] private GameObject _collapsableHeaderPrefab;
 		[SerializeField] private GameObject _sliderPrefab;
 		[SerializeField] private GameObject _togglePrefab;
 		[SerializeField] private GameObject _colorButtonPrefab;
@@ -22,7 +24,6 @@ namespace ConfigSerialization
 		[SerializeField] private GameObject _buttonPrefab;
 		[SerializeField] private GameObject _textureButtonPrefab;
 		[SerializeField] private GameObject _dropdownPrefab;
-		[SerializeField] private GameObject _groupHeaderPrefab;
 
 		[Header("Tabs to generate")]
 		[SerializeField] private List<ConfigTab> _tabs;
@@ -179,8 +180,6 @@ namespace ConfigSerialization
 				foreach (var container in tab.ConfigSources)
 				{
 					Type type = container.GetType();
-					PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-					EventInfo[] events = type.GetEvents(BindingFlags.Instance | BindingFlags.Public);
 					// index -> (id, name)
 					Dictionary<int, Group> localGroups = new Dictionary<int, Group>();
 					List<Member> ungroupedMembers = new List<Member>();
@@ -290,7 +289,8 @@ namespace ConfigSerialization
 				Group targetGroup = toggleInfo.Key;
 				UINode groupNode = uiNodes.Find(x => x.Type == ControlType.Container && x.Group == targetGroup);
 				UINode toggleNode = uiNodes.Find(x => x.Member == toggleInfo.Value.Item1);
-				BindToggleAndGroup(toggleInfo.Value.Item1, toggleNode, groupNode, toggleInfo.Value.Item2);
+				BindBoolToObject(toggleInfo.Value.Item1, toggleNode.MemberContainer, groupNode.Control, toggleInfo.Value.Item2);
+				PlaceAfterInHierarchy(toggleNode.Control, groupNode.Control);
 			}
 
 			_tabView.SelectTab(_selectedTab);
@@ -316,19 +316,9 @@ namespace ConfigSerialization
 
 			void SerializeTree(Group group, UINode parent, float parentExtraIndent = 20)
 			{
-				if (group.Name != null)
-				{
-					GameObject newObject = Instantiate(_groupHeaderPrefab, parent.Control);
-					LabeledUIElement label = newObject.GetComponent<LabeledUIElement>();
-					label.LabelText = group.Name;
-				}
+				UINode node = CreateGroupContainer(group, parent, parentExtraIndent + 20);
 
-				UINode containerNode = CreateContainer(parent);
-				containerNode.Group = group;
-				RectTransform groupTransform = containerNode.Control;
-				groupTransform.offsetMin = new Vector2(parentExtraIndent + 20, groupTransform.offsetMin.y);
-
-				FinilizeContainer(group, containerNode, groupTransform, 0);
+				FinilizeContainer(group, node, node.Control, 0);
 			}
 
 			void FinilizeContainer(Group group, UINode containerNode, RectTransform groupTransform, float parentExtraIndent = 20)
@@ -400,28 +390,60 @@ namespace ConfigSerialization
 			}
 		}
 
-		private void BindToggleAndGroup(PropertyInfo toggle, UINode toggleNode, UINode groupNode, bool invertToggle, bool repositionGroup = true)
+		private UINode CreateGroupContainer(Group group, UINode parent, float indent, bool collapsable = true)
 		{
-			RectTransform toggleTransform = toggleNode.Control;
-			RectTransform groupTransform = groupNode.Control;
+			GameObject header = null;
 
-			GetEvent(toggle).AddEventHandler(toggleNode.MemberContainer, (Action<bool>)(x =>
+			if (group.Name != null)
 			{
-				groupTransform.gameObject.SetActive(invertToggle ^ x);
-			}));
+				header = Instantiate(collapsable ? _collapsableHeaderPrefab : _groupHeaderPrefab, parent.Control);
+				LabeledUIElement label = header.GetComponent<LabeledUIElement>();
+				label.LabelText = group.Name;
+			}
 
-			groupTransform.gameObject.SetActive(invertToggle ^ (bool)toggle.GetValue(toggleNode.MemberContainer));
+			UINode containerNode = CreateContainer(parent);
+			containerNode.Group = group;
+			RectTransform groupTransform = containerNode.Control;
+			groupTransform.offsetMin = new Vector2(indent, groupTransform.offsetMin.y);
 
-			if (repositionGroup == false) return;
+			if (header is { } && collapsable)
+				BindToggleToObject(header, groupTransform, false);
 
+			return containerNode;
+		}
 
-			if (toggleTransform.parent != groupTransform.parent)
+		private void BindToggleToObject(GameObject toggleObject, Transform gameObject, bool invertToggle)
+		{
+			Toggle toggle = toggleObject.GetComponent<Toggle>();
+			if (toggle is null) throw new ArgumentException("Provided toggleNode does not contain a toggle Component");
+
+			PropertyInfo isChecked = typeof(Toggle).GetProperty(nameof(Toggle.IsChecked));
+			BindBoolToObject(isChecked, toggle, gameObject, invertToggle);
+		}
+
+		private void BindBoolToObject(PropertyInfo toggleProperty, object propertyObject, Transform gameObject, bool invertToggle)
+		{
+			EventInfo toggleEvent = GetEvent(toggleProperty);
+			bool initialValue = (bool)toggleProperty.GetValue(propertyObject);
+
+			BindBoolToObjectImplementation(toggleEvent, propertyObject, initialValue, gameObject, invertToggle);
+		}
+
+		private void BindBoolToObjectImplementation(EventInfo toggleEvent, object eventObject, bool initialValue, Transform gameObject, bool invertToggle)
+		{
+			toggleEvent.AddEventHandler(eventObject, (Action<bool>)(x => gameObject.gameObject.SetActive(invertToggle ^ x)));
+			gameObject.gameObject.SetActive(invertToggle ^ initialValue);
+		}
+
+		private void PlaceAfterInHierarchy(Transform baseObject, Transform targetObject)
+		{
+			if (baseObject.parent != targetObject.parent)
 			{
-				Debug.LogWarning($"Could not bind toggle {toggle} and group {groupNode.Group}");
+				Debug.LogWarning($"Could not reposition {targetObject} to {baseObject}");
 				return;
 			}
 
-			groupTransform.SetSiblingIndex(toggleTransform.GetSiblingIndex() + 1);
+			targetObject.SetSiblingIndex(baseObject.GetSiblingIndex() + 1);
 		}
 
 		/// <summary>
@@ -584,16 +606,16 @@ namespace ConfigSerialization
 				property, _dropdownPrefab, memberContainer, parent, (x, y, z) =>
 				{
 					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
-					string[] names = z.DisplayedOptions == null ? null : new string[z.DisplayedOptions.Length];
-					for (int i = 0; i < (z.DisplayedOptions?.Length ?? 0); i++) names[i] = SplitAndLowerCamelCase(z.DisplayedOptions[i].ToString());
-					x.SetOptions(new List<string>(z.OptionNames ?? names ?? property.PropertyType.GetEnumNames()));
+					string[] names = z?.DisplayedOptions == null ? null : new string[z.DisplayedOptions.Length];
+					for (int i = 0; i < (z?.DisplayedOptions?.Length ?? 0); i++) names[i] = SplitAndLowerCamelCase(z.DisplayedOptions[i].ToString());
+					x.SetOptions(new List<string>(z?.OptionNames ?? names ?? property.PropertyType.GetEnumNames()));
 				},
 				nameof(DropdownList.SelectedValue), ControlType.DropdownList, (x, z) =>
 				{
 					List<int> mapping = new List<int>();
 					for (int i = 0; i < x.Options.Count; i++) mapping.Add(i);
 
-					for (int i = 0; i < (z.DisplayedOptions?.Length ?? 0); i++)
+					for (int i = 0; i < (z?.DisplayedOptions?.Length ?? 0); i++)
 					{
 						if (z.DisplayedOptions[i].GetType() != property.PropertyType)
 							throw new ArgumentException("Dropdown displayed options contain invalid types");
