@@ -10,8 +10,8 @@ namespace ConstellationUI
 
 		public string LabelText
 		{
-			get => _label == null ? null : _label.text;
-			set { if (_label != null) _label.text = value; }
+			get => _label?.text;
+			set { if (_label is { }) _label.text = value; }
 		}
 	}
 }

@@ -88,8 +88,8 @@ public class VerticalUIStack : MonoBehaviour
 
 	private void CalculateExtents(RectTransform obj, out float topExtent, out float bottomExtent)
 	{
-		float top = obj.rect.height * (1 - obj.pivot.y);
-		float bottom = -obj.rect.height * obj.pivot.y;
+		topExtent = obj.rect.height * (1 - obj.pivot.y);
+		bottomExtent = -obj.rect.height * obj.pivot.y;
 
 		foreach (RectTransform child in obj)
 		{
@@ -99,11 +99,8 @@ public class VerticalUIStack : MonoBehaviour
 			float localTop = localY + child.rect.height * (1 - child.pivot.y);
 			float localBottom = localY - child.rect.height * child.pivot.y;
 
-			top = Mathf.Max(top, localTop);
-			bottom = Mathf.Min(bottom, localBottom);
+			topExtent = Mathf.Max(topExtent, localTop);
+			bottomExtent = Mathf.Min(bottomExtent, localBottom);
 		}
-
-		topExtent = top;
-		bottomExtent = bottom;
 	}
 }

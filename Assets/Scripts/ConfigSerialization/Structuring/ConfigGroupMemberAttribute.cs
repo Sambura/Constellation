@@ -41,6 +41,8 @@ namespace ConfigSerialization.Structuring
 		public int SetDisplayIndex { get => DisplayIndex ?? 0; set => DisplayIndex = value; }
 		public int? DisplayIndex { get; protected set; }
 		public ConfigGroupLayout Layout { get; set; } = ConfigGroupLayout.Default;
+		public bool? Indent { get; set; }
+		public bool SetIndent { get => Indent ?? true; set => Indent = value; }
 
 		private void CheckGroupIds()
 		{

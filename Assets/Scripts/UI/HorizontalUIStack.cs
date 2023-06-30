@@ -81,10 +81,13 @@ public class HorizontalUIStack : MonoBehaviour
 		}
 	}
 
-	private void CalculateExtents(RectTransform obj, out float leftExtent, out float rightExtent)
+	// Depth parameter is not implemented properly, and only works for values of 0 or 1. 
+	private void CalculateExtents(RectTransform obj, out float leftExtent, out float rightExtent, int depth = 0)
 	{
 		leftExtent = -obj.rect.width * obj.pivot.x;
 		rightExtent = obj.rect.width * (1 - obj.pivot.x);
+
+		if (depth == 0) return;
 
 		foreach (RectTransform child in obj)
 		{

@@ -1,0 +1,22 @@
+To-do list:
+	- Add the ability to view unity error logs from UI
+	- Try to implement circular bounds
+	- Add custom rectangular bounds
+	- Add more default particle sprites
+	- Try to switch to fields from properties in Particle class, and measure performance effect
+	- Add ability to turn off debug & interaction scripts to boost performance
+	- Implement more analytic visualizers to better measure performance
+	- Try to split particle class to a bunch of native arrays and measure performance effect [data oriented approach at max]
+	- try switching to il2cpp (if not already)
+	- fix fragmentation : when a lot of particles are off-screen they are gathered in a small subset of fragments, which makes performance worse. Proposed solution: add another set of fragments that are completely off-screen and ignore these fragments when calculating lines/triangles
+	- try making spiral attracter fully acceleration-based
+	- fix issue with transparency, when low framerate causes events from mouse/keyboard to be significantly delayed
+	- implement random color configuration (HSV limits at least)
+	- add option to make particles change color over time (randomly)
+	- menu should become transparent/hide when the cursor is not over it for long enough time.
+
+Other ideas:
+	- Implement `effectors`: entities which can be created/destroyed, and which will alter the particle's behaviour in some way. For example, currently implemented interaction modes can be used as effectors: e.g. spiraler attractor with fixed position that is always turned on
+	- Add color/size/etc. dependencies on other factors (speed/number of lines/etc.) e.g. particle becomes red when it is very fast, or blue when it is very slow.
+	- make it possible for particles to have different sizes / colors
+	- make dynamic backgrounds (?) standard presets (gradient flow) / custom videos/gifs/images / etc.

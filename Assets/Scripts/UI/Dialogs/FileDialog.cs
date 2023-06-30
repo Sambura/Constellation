@@ -51,8 +51,6 @@ namespace ConstellationUI
 			}
 		}
 
-		public bool DialogActive => gameObject.activeInHierarchy;
-
 		public DirectoryInfo CurrentDirectory
 		{
 			get => _currentDirectory;

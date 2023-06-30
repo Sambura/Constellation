@@ -11,6 +11,7 @@ namespace UnityCore
 {
     /// <summary>
     /// Serializes objects, using ConfigProperty attributes as metadata
+    /// If a property does not have a getter/setter or both, it is ignored
     /// All subobjects are serialized using implementations of IJsonPropertySerializer's
     /// </summary>
     public static class ConfigJsonSerializer
@@ -24,7 +25,8 @@ namespace UnityCore
 
             foreach (PropertyInfo property in obj.GetType().GetProperties())
             {
-                if (property.GetCustomAttribute<ConfigProperty>() == null) continue;
+                if (property.GetCustomAttribute<ConfigProperty>() is null) continue;
+                if (!property.CanWrite || !property.CanRead) continue;
                 JsonSerializerUtility.SerializeDefault(json, property.Name, property.GetValue(obj));
             }
 

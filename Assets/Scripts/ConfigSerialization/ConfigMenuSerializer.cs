@@ -11,19 +11,24 @@ namespace ConfigSerialization
 {
 	public class ConfigMenuSerializer : MonoBehaviour
 	{
-		[Header("Prefabs")]
-		[SerializeField] private GameObject _groupHeaderPrefab;
-		[SerializeField] private GameObject _collapsableHeaderPrefab;
+		[Header("Property control prefabs")]
 		[SerializeField] private GameObject _sliderPrefab;
 		[SerializeField] private GameObject _togglePrefab;
+		[SerializeField] private GameObject _minMaxSliderPrefab;
 		[SerializeField] private GameObject _colorButtonPrefab;
 		[SerializeField] private GameObject _gradientButtonPrefab;
 		[SerializeField] private GameObject _curveButtonPrefab;
-		[SerializeField] private GameObject _minMaxSliderPrefab;
 		[SerializeField] private GameObject _radioButtonPrefab;
-		[SerializeField] private GameObject _buttonPrefab;
-		[SerializeField] private GameObject _textureButtonPrefab;
 		[SerializeField] private GameObject _dropdownPrefab;
+		[SerializeField] private GameObject _textureButtonPrefab;
+
+		[Header("Readonly property control prefabs")]
+		[SerializeField] private GameObject _colorIndicatorPrefab;
+
+		[Header("Other prefabs")]
+		[SerializeField] private GameObject _collapsableHeaderPrefab;
+		[SerializeField] private GameObject _groupHeaderPrefab;
+		[SerializeField] private GameObject _buttonPrefab;
 
 		[Header("Tabs to generate")]
 		[SerializeField] private List<ConfigTab> _tabs;
@@ -34,6 +39,9 @@ namespace ConfigSerialization
 		[Header("Parameters")]
 		[SerializeField] private int _selectedTab;
 		[SerializeField] private bool _serializeOnStart = false;
+
+		private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _propertyControlCreators;
+		private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _readonlyPropertyControlCreators;
 
 		[Serializable] private class ConfigTab
 		{
@@ -59,11 +67,14 @@ namespace ConfigSerialization
 			public int? LocalIndex { get; set; }
 			public object DefiningContainer { get; set; }
 			public ConfigGroupLayout Layout { get; set; } = ConfigGroupLayout.Default;
+			public bool? Indent { get; set; }
 			public Group Parent { get; set; }
 			public string LastInvalidUpdatePropertyName { get; private set; }
 
 			public List<Group> Subgroups { get; } = new List<Group>();
 			public List<Member> Members { get; } = new List<Member>();
+
+			public bool GetIndent() => Indent ?? true;
 
 			public void AddSubgroup(Group group)
 			{
@@ -83,6 +94,7 @@ namespace ConfigSerialization
 				DefiningContainer ??= reference.DefiningContainer;
 				DisplayIndex ??= reference.DisplayIndex;
 				if (Layout == ConfigGroupLayout.Default) Layout = reference.Layout;
+				Indent ??= reference.Indent;
 
 				if (Name != reference.Name && reference.Name != null)
 					LastInvalidUpdatePropertyName = nameof(Name);
@@ -96,6 +108,8 @@ namespace ConfigSerialization
 					LastInvalidUpdatePropertyName = nameof(DefiningContainer);
 				if (Layout != reference.Layout && reference.Layout != ConfigGroupLayout.Default)
 					LastInvalidUpdatePropertyName = nameof(Layout);
+				if (Indent != reference.Indent && reference.Indent is { })
+					LastInvalidUpdatePropertyName = nameof(Indent);
 
 				return LastInvalidUpdatePropertyName == null;
 			}
@@ -109,7 +123,8 @@ namespace ConfigSerialization
 					LocalIndex = groupAttribute.GroupIndex,
 					DefiningContainer = container,
 					DisplayIndex = groupAttribute.DisplayIndex,
-					Layout = groupAttribute.Layout
+					Layout = groupAttribute.Layout,
+					Indent = groupAttribute.Indent
 				};
 			}
 		}
@@ -118,7 +133,7 @@ namespace ConfigSerialization
 		{
 			Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
 			Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader,
-			TexturePickerButton
+			TexturePickerButton, ColorIndicator
 		}
 
 		private class UINode
@@ -316,7 +331,7 @@ namespace ConfigSerialization
 
 			void SerializeTree(Group group, UINode parent, float parentExtraIndent = 20)
 			{
-				UINode node = CreateGroupContainer(group, parent, parentExtraIndent + 20);
+				UINode node = CreateGroupContainer(group, parent, parentExtraIndent + (group.GetIndent() ? 20 : 0));
 
 				FinilizeContainer(group, node, node.Control, 0);
 			}
@@ -527,26 +542,26 @@ namespace ConfigSerialization
 
 		private UINode CreatePropertyControl(PropertyInfo property, object container, UINode parent)
 		{
-			Type type = property.PropertyType;
+			if (!property.CanRead) { Debug.LogWarning("Unreadable properties are not serialized"); return null; }
+			var controlCreators = property.CanWrite ? _propertyControlCreators : _readonlyPropertyControlCreators;
 
-			if (type.IsEnum)
-				return CreateDropdownList(property, container, parent);
-			if (IsIntegral(type) || type == typeof(float))
-				return CreateSlider(property, container, parent);
-			if (type == typeof(bool))
-				return CreateToggle(property, container, parent);
-			if (type == typeof(Color))
-				return CreateColorButton(property, container, parent);
-			if (type == typeof(Gradient))
-				return CreateGradientButton(property, container, parent);
-			if (type == typeof(AnimationCurve))
-				return CreateCurveButton(property, container, parent);
-			if (type == typeof(Texture2D))
-				return CreateTextureButton(property, container, parent);
+			foreach (var creator in controlCreators)
+				if (creator.Key(property.PropertyType)) return creator.Value(property, container, parent);
 
 			Debug.LogError($"Failed to create control for {property} on {container} : not implemented!");
 
 			return null;
+		}
+
+		private UINode CreateColorIndicator(PropertyInfo property, object memberContainer, UINode parent)
+		{
+			return CreateUniversal<ConfigProperty, ColorIndicator>(
+				property, _colorIndicatorPrefab, memberContainer, parent, (x, y, z) =>
+				{
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
+				},
+				nameof(ColorIndicator.Color), ControlType.ColorIndicator, readonlyProperty: true
+			);
 		}
 
 		private UINode CreateGradientButton(PropertyInfo property, object memberContainer, UINode parent)
@@ -641,7 +656,7 @@ namespace ConfigSerialization
 		/// </summary>
 		private UINode CreateUniversal<T, V>(PropertyInfo property, GameObject prefab, object memberContainer,
 			UINode parent, Action<V, ConfigProperty, T> initDelegate, string propertyName, ControlType controlType,
-			Func<V, T, (Delegate, Delegate)> converterGenerator = null) where T : ConfigProperty where V : Component
+			Func<V, T, (Delegate, Delegate)> converterGenerator = null, bool readonlyProperty = false) where T : ConfigProperty where V : Component
 		{
 			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
 			T specificAttribute = configProperty as T;
@@ -658,11 +673,18 @@ namespace ConfigSerialization
 			initDelegate(specificControl, configProperty, specificAttribute);
 			var specificProperty = typeof(V).GetProperty(propertyName);
 			var controlEvent = GetEvent(specificProperty);
-			Delegate handler = (Delegate)GetType().GetMethod(nameof(GetUniversalHandler), BindingFlags.Static | BindingFlags.NonPublic)
-				.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl });
+			Delegate handler = (Delegate)(
+				readonlyProperty
+				? 
+				GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
+				.MakeGenericMethod(property.PropertyType, specificProperty.PropertyType).Invoke(null, new object[] { specificProperty, specificControl, null })
+				: 
+				GetType().GetMethod(nameof(GetUniversalHandler), BindingFlags.Static | BindingFlags.NonPublic)
+				.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl })
+			);
 			Delegate propToUiHandler = handler, uiToPropHandler = handler;
 			if (converterGenerator != null)
-			{
+			{ // TODO: check that this works for readonlyProperty == true (or fix)
 				(Delegate prop2ui, Delegate ui2prop) = converterGenerator(specificControl, specificAttribute);
 				propToUiHandler = (Delegate)GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
 				.MakeGenericMethod(property.PropertyType, specificProperty.PropertyType).Invoke(null, new object[] { specificProperty, specificControl, prop2ui });
@@ -675,7 +697,7 @@ namespace ConfigSerialization
 				specificProperty.SetValue(specificControl, property.GetValue(memberContainer));
 			}
 
-			controlEvent.AddEventHandler(specificControl, uiToPropHandler);
+			if (!readonlyProperty) controlEvent.AddEventHandler(specificControl, uiToPropHandler);
 			if (configProperty.HasEvent)
 			{
 				var parentEvent = GetEvent(property);
@@ -709,6 +731,12 @@ namespace ConfigSerialization
 		/// </summary>
 		private static Delegate GetDirectionalHandler<T, S>(PropertyInfo property, object container, Delegate converter)
 		{
+			if (converter == null)
+			{
+				if (typeof(T) == typeof(S)) return (Action<T>)(x => property.SetValue(container, x));
+				throw new ArgumentNullException(nameof(converter), "Cannot automatically create a converter");
+			}
+
 			Func<T, S> t2o = (Func<T, S>)converter;
 			return (Action<T>)(x => property.SetValue(container, t2o(x)));
 		}
@@ -918,5 +946,23 @@ namespace ConfigSerialization
 		private static EventInfo GetEvent(PropertyInfo property) => property.DeclaringType.GetEvent(property.Name + "Changed");
 
 		private void Start() { if (_serializeOnStart) Serialize(); }
+
+		public ConfigMenuSerializer() : base()
+		{
+			_propertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
+			{
+				{ x => x.IsEnum, CreateDropdownList },
+				{ x => IsIntegral(x) || x == typeof(float), CreateSlider },
+				{ x => x == typeof(bool), CreateToggle },
+				{ x => x == typeof(Color), CreateColorButton },
+				{ x => x == typeof(Gradient), CreateGradientButton },
+				{ x => x == typeof(AnimationCurve), CreateCurveButton },
+				{ x => x == typeof(Texture2D), CreateTextureButton },
+			};
+			_readonlyPropertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
+			{
+				{ x => x == typeof(Color), CreateColorIndicator },
+			};
+		}
 	}
 }

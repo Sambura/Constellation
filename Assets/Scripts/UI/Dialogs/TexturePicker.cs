@@ -28,8 +28,6 @@ namespace ConstellationUI
 			}
 		}
 
-		public bool DialogActive => gameObject.activeInHierarchy;
-
 		private readonly List<GameObject> _listEntryObjects = new List<GameObject>();
 		private ListEntry _selected;
 		private Texture2D _texture;
