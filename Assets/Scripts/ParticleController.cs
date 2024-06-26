@@ -127,8 +127,8 @@ public class ParticleController : MonoBehaviour
 
     [SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Middle")]
     [ConfigGroupMember] [ConfigMemberOrder(-1)]
-    [InvokableMethod("Restart simulation")]
-    public void ReinitializeParticles()
+    [InvokableMethod]
+    public void RestartSimulation()
     {
         foreach (Particle particle in _particles)
             SetRandomPositionAndVelocity(particle);

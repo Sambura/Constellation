@@ -94,7 +94,7 @@ public class ConfigSerializer : MonoBehaviour
         deserealized = MultipleObjectOverwriteFromJson(json, _names, _objects);
 
         // Restard the simulation
-        _particleController.ReinitializeParticles();
+        _particleController.RestartSimulation();
         return deserealized;
     }
 

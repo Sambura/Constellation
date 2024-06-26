@@ -19,6 +19,7 @@ public class MiscConfigCollection : MonoBehaviour
 		{
 			if (_fpsCounterObject.activeSelf == value) return;
 			_fpsCounterObject.SetActive(value);
+			_fpsCounter.enabled = value;
 			ShowFPSChanged?.Invoke(value);
 		}
 	}

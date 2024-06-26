@@ -1,5 +1,4 @@
 To-do list:
-	- Add the ability to view unity error logs from UI
 	- Try to implement circular bounds
 	- Add custom rectangular bounds
 	- Add more default particle sprites
@@ -14,6 +13,8 @@ To-do list:
 	- implement random color configuration (HSV limits at least)
 	- add option to make particles change color over time (randomly)
 	- menu should become transparent/hide when the cursor is not over it for long enough time.
+	- Upgrade unity and c# versions
+	- Try making a new version of UILineRenderer with prettier rendering (add smoothing / antialiasing?)
 
 Other ideas:
 	- Implement `effectors`: entities which can be created/destroyed, and which will alter the particle's behaviour in some way. For example, currently implemented interaction modes can be used as effectors: e.g. spiraler attractor with fixed position that is always turned on

@@ -28,6 +28,8 @@ namespace ConstellationUI
 
 		public void UpdateLayout()
 		{
+			if (!enabled) return;
+
 			// This is kindof (?) a hack for it to work nicely with VerticalUILayout
 			float y = (_transform.offsetMin.y + _transform.offsetMax.y) / 2;
 			// ??????

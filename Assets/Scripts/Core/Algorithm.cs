@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Core
 {
@@ -26,6 +27,11 @@ namespace Core
 
                 if (swapped == false) break;
             }
+        }
+
+        public static float CalculateStandardDeviation(IEnumerable<float> values, float averageValue)
+        {
+            return (float)Math.Sqrt(values.Average(v => (float)Math.Pow(v - averageValue, 2)));
         }
     }
 }

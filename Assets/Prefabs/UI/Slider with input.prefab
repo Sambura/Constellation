@@ -83,24 +83,28 @@ MonoBehaviour:
       AnchorMax: {x: 0.7, y: 1}
       OffsetMin: {x: 0, y: 0}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: -0, y: -0, z: -0, w: 1}
     - Object: {fileID: 2712113877822587865}
       Pivot: {x: 0.5, y: 0.5}
       AnchorMin: {x: 0, y: 0}
       AnchorMax: {x: 0.7, y: 0.56}
       OffsetMin: {x: 15, y: 0}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: -0, y: -0, z: -0, w: 1}
     - Object: {fileID: 2712113877676417120}
       Pivot: {x: 0.5, y: 0.5}
       AnchorMin: {x: 0.7, y: 0}
       AnchorMax: {x: 1, y: 0.56}
       OffsetMin: {x: 20, y: 2}
       OffsetMax: {x: -15, y: -2}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 2712113876615970800}
       Pivot: {x: 0.5, y: 1}
       AnchorMin: {x: 0, y: 1}
       AnchorMax: {x: 1, y: 1}
       OffsetMin: {x: 0, y: -90}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   - Name: Compact
     UIElements:
     - Object: {fileID: 2712113876901685094}
@@ -109,24 +113,28 @@ MonoBehaviour:
       AnchorMax: {x: 0.13, y: 1}
       OffsetMin: {x: 0, y: 0}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 2712113877822587865}
       Pivot: {x: 0.5, y: 0.5}
       AnchorMin: {x: 0.13, y: 0}
       AnchorMax: {x: 0.75, y: 1}
       OffsetMin: {x: 10, y: 0}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 2712113877676417120}
       Pivot: {x: 0.5, y: 0.5}
       AnchorMin: {x: 0.75, y: 0}
       AnchorMax: {x: 1, y: 1}
       OffsetMin: {x: 20, y: 2}
       OffsetMax: {x: -15, y: -2}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 2712113876615970800}
       Pivot: {x: 0.5, y: 1}
       AnchorMin: {x: 0, y: 1}
       AnchorMax: {x: 1, y: 1}
       OffsetMin: {x: 0, y: -50}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   _selectedConfiguration: 0
 --- !u!1 &2712113876901685095
 GameObject:
@@ -683,10 +691,10 @@ RectTransform:
   m_Father: {fileID: 2712113877832131863}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: -24}
+  m_SizeDelta: {x: 26.400002, y: -24}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2712113878489120576
 CanvasRenderer:

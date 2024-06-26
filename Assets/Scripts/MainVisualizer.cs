@@ -43,7 +43,7 @@ public class MainVisualizer : MonoBehaviour
     [Header("Rendering")]
     [SerializeField] private int _renderQueueIndex = 0;
 
-	#region Config properties
+    #region Config properties
 
 	[ConfigGroupToggle(2)]
     [ConfigGroupMember("General appearance")] [ConfigProperty] public bool ShowParticles

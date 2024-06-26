@@ -21,6 +21,7 @@ namespace ConfigSerialization
 		[SerializeField] private GameObject _radioButtonPrefab;
 		[SerializeField] private GameObject _dropdownPrefab;
 		[SerializeField] private GameObject _textureButtonPrefab;
+		[SerializeField] private GameObject _numericInputField;
 
 		[Header("Readonly property control prefabs")]
 		[SerializeField] private GameObject _colorIndicatorPrefab;
@@ -133,7 +134,7 @@ namespace ConfigSerialization
 		{
 			Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
 			Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader,
-			TexturePickerButton, ColorIndicator
+			TexturePickerButton, ColorIndicator, InputField
 		}
 
 		private class UINode
@@ -500,12 +501,33 @@ namespace ConfigSerialization
 					}
 
 					Component component = controlObject.GetComponentInChildren(attribute.ComponentType, true);
-					PropertyInfo property = attribute.ComponentType.GetProperty(attribute.PropertyName);
-					property.SetValue(component, attribute.Value);
+					HandleNestedProperty(attribute.PropertyName, attribute.Value, component);
 				}
 			}
 
 			return control;
+
+			static void HandleNestedProperty(string propertyName, object value, object container)
+			{
+				int dotIndex = propertyName.IndexOf('.');
+				Type type = container.GetType();
+
+				if (dotIndex < 0)
+				{
+					PropertyInfo property = type.GetProperty(propertyName);
+					property.SetValue(container, value);
+					return;
+				}
+
+				string topLevel = propertyName.Substring(0, dotIndex);
+				PropertyInfo topLevelProperty = type.GetProperty(topLevel);
+				object topLevelValue = topLevelProperty.GetValue(container);
+
+				HandleNestedProperty(propertyName.Substring(dotIndex + 1), value, topLevelValue);
+
+				if (topLevelValue.GetType().IsValueType)
+					topLevelProperty.SetValue(container, topLevelValue);
+			}
 		}
 
 		private void ApplyLayout(GameObject container, ConfigGroupLayout layout)
@@ -684,7 +706,7 @@ namespace ConfigSerialization
 			);
 			Delegate propToUiHandler = handler, uiToPropHandler = handler;
 			if (converterGenerator != null)
-			{ // TODO: check that this works for readonlyProperty == true (or fix)
+			{
 				(Delegate prop2ui, Delegate ui2prop) = converterGenerator(specificControl, specificAttribute);
 				propToUiHandler = (Delegate)GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
 				.MakeGenericMethod(property.PropertyType, specificProperty.PropertyType).Invoke(null, new object[] { specificProperty, specificControl, prop2ui });
@@ -755,11 +777,41 @@ namespace ConfigSerialization
 			);
 		}
 
-		private UINode CreateSlider(PropertyInfo property, object memberContainer, UINode parent)
+		private UINode CreateNumericPropertyControl(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			if (property.GetCustomAttribute<MinMaxSliderProperty>() != null)
+			if (property.GetCustomAttribute<MinMaxSliderProperty>() is { })
 				return CreateMinMaxSlider(property, memberContainer, parent);
 
+			if (property.GetCustomAttribute<InputFieldPropertyAttribute>() is { })
+				return CreateNumericInputField(property, memberContainer, parent);
+
+			return CreateSlider(property, memberContainer, parent);
+		}
+
+		private UINode CreateNumericInputField(PropertyInfo property, object memberContainer, UINode parent)
+		{
+			bool isInt = IsIntegral(property.PropertyType);
+
+			return CreateUniversal<InputFieldPropertyAttribute, NumericInputField>(
+				property, _numericInputField, memberContainer, parent, (x, y, z) =>
+				{
+					int intValue = isInt ? (int)property.GetValue(memberContainer) : 0;
+					float floatValue = isInt ? intValue : (float)property.GetValue(memberContainer);
+
+					x.MinValue = z?.MinValue ?? float.MinValue;
+					x.MaxValue = z?.MaxValue ?? float.MaxValue;
+					x.InputFormatting = z?.InputFormatting ?? (isInt ? "0" : "0.000");
+					x.InputRegex = z?.InputRegex ?? @"([-+]?[0-9]*\.?[0-9]+)";
+					x.RegexGroupIndex = z?.RegexGroupIndex ?? 1;
+					x.WholeNumbers = isInt;
+					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
+				},
+				isInt ? nameof(NumericInputField.IntValue) : nameof(NumericInputField.Value), ControlType.InputField
+			);
+		}
+
+		private UINode CreateSlider(PropertyInfo property, object memberContainer, UINode parent)
+		{
 			bool isInt = IsIntegral(property.PropertyType);
 
 			return CreateUniversal<SliderProperty, Slider>(
@@ -952,7 +1004,7 @@ namespace ConfigSerialization
 			_propertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
 			{
 				{ x => x.IsEnum, CreateDropdownList },
-				{ x => IsIntegral(x) || x == typeof(float), CreateSlider },
+				{ x => IsIntegral(x) || x == typeof(float) || x == typeof(double), CreateNumericPropertyControl },
 				{ x => x == typeof(bool), CreateToggle },
 				{ x => x == typeof(Color), CreateColorButton },
 				{ x => x == typeof(Gradient), CreateGradientButton },
