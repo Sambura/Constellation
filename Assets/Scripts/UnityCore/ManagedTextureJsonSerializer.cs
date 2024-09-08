@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Core;
+using Core.Json;
 
 namespace UnityCore
 {
@@ -39,13 +39,13 @@ namespace UnityCore
 			// to survive another code refactoring (i guess)
 			JsonSerializerUtility.SerializeDefault(json, NamePropertyName, fileTexture.Texture.name);
 			JsonSerializerUtility.SerializeDefault(json, PathPropertyName, fileTexture.Path);
-			JsonSerializerUtility.RemoveLastIfComma(json);
+			JsonSerializerUtility.StripComma(json);
 			json.Append('}');
 
-			return JsonSerializerUtility.Prettyfy(json.ToString(), prettyPrint);
+			return JsonSerializerUtility.Prettify(json.ToString(), prettyPrint);
 		}
 
-		public object FromJson(string json, Type type)
+		public object FromJson(string json, Type type, bool ignoreUnknownProperties = false)
 		{
 			if (type != typeof(Texture2D)) throw new ArgumentException("Type should be Texture2D");
 
@@ -59,7 +59,7 @@ namespace UnityCore
 			return fileTexture.Texture;
 		}
 
-		public void FromJsonOverwrite(string json, object obj)
+		public void FromJsonOverwrite(string json, object obj, bool ignoreUnknownProperties = false)
 		{
 			throw new NotImplementedException();
 		}

@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using UnityCore;
 using ConstellationUI;
+using Core.Json;
 
 public class ConfigSerializer : MonoBehaviour
 {
@@ -84,6 +85,7 @@ public class ConfigSerializer : MonoBehaviour
     /// The simulation gets restarted
     /// </summary>
     /// <param name="path">Path to a file to read config from</param>
+    /// <returns>Non-negative number of loaded properties</returns>
     public int DeserializeConfig(string path)
     {
         string json = File.ReadAllText(path);
@@ -122,7 +124,7 @@ public class ConfigSerializer : MonoBehaviour
 		}
         json.Append('}');
 
-        return JsonSerializerUtility.Prettyfy(json.ToString(), prettyPrint);
+        return JsonSerializerUtility.Prettify(json.ToString(), prettyPrint);
 	}
 
     public int MultipleObjectOverwriteFromJson(string json, string[] names, object[] objects)

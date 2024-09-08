@@ -17,11 +17,11 @@ My personal fun Unity project. Constellation is a program that visualizes a simp
 * Built-in benchmarks: set up the simulation and capture frame timings using in-game UI to see and export performance report.
 
 **Constellation settings view**
-![Main constellation view](Docs/Screenshots/SettingsView.png "Basic simulation in \"Constellation\"")
+![image](Docs/Screenshots/SettingsView.png "Settings view")
 **Another example of Constellation simulation**
-![Main constellation view](Docs/Screenshots/FancySimulation.png "Basic simulation in \"Constellation\"")
+![image](Docs/Screenshots/FancySimulation.png "Fancy simulation"")
 **Transparent mode**
-![Main constellation view](Docs/Screenshots/TransparentView.png "Basic simulation in \"Constellation\"")
+![image](Docs/Screenshots/TransparentView.png "Showcase of transparent mode")
 
 You can find more screenshots in [screenshots directory](Docs/Screenshots/)
 
@@ -30,7 +30,7 @@ You can find more screenshots in [screenshots directory](Docs/Screenshots/)
 * The project is done almost entirely by me, with very little 3rd party code (excluding TextMeshPro and UnityRawInput packages, and possibly small code snippets in other scripts);
 * One of my main goals in this project is to eventually achieve the highest performance possible with simulations. I am still experimenting with various approaches to both simulation and visualization to maximize performance, which is also why I decided to implement a built-in benchmark tool; 
 * Currently simulation is rendered using low level Unity rendering API (UnityEngine.GL), since it showed best performance so far, although the rendering can potentially be further improved in the future if I find better alternatives;
-* For this projects I have developed a whole framework for automatic script properties serialization as in-game UI. As such, the UI displayed in the settings is entirely automatically generated (dialogs excluded). Examples of automatically serialized property in the script:
+* For this project I have developed a whole framework for automatic script properties serialization as in-game UI. As such, the UI displayed in the settings is entirely automatically generated (dialogs excluded). Examples of automatically serialized property in the script:
 
     ```C#
     public class ExampleClass : MonoBehaviour {

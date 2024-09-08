@@ -1,23 +1,64 @@
+Current bugs:
+	- Sometimes when opening color picker the alpha slider is in incorrect position (prob. when opening color picker the first time)
+	- Curve picker: when editing a curve and deselecting a node, handle lines do not disappear (sometimes - do not appear when selecting node)
+	- Transparency: when low framerate causes events from mouse/keyboard also become "frame limited"
+
+Minor bugs:
+	- Dropdown list: is larger than needed (especially bad when dropdown appears at the top)
+	- Minmax slider: when clicking a knob, only a left one actually changes color in response to click, regardless of which one is actually pressed
+	- File dialog: cannot switch to other disks
+
 To-do list:
 	- Try to implement circular bounds
 	- Add custom rectangular bounds
-	- Add more default particle sprites
+	- Add more default particle sprites (new soft circle!!!)
 	- Try to switch to fields from properties in Particle class, and measure performance effect
 	- Add ability to turn off debug & interaction scripts to boost performance
 	- Implement more analytic visualizers to better measure performance
 	- Try to split particle class to a bunch of native arrays and measure performance effect [data oriented approach at max]
 	- try switching to il2cpp (if not already)
 	- fix fragmentation : when a lot of particles are off-screen they are gathered in a small subset of fragments, which makes performance worse. Proposed solution: add another set of fragments that are completely off-screen and ignore these fragments when calculating lines/triangles
-	- try making spiral attracter fully acceleration-based
-	- fix issue with transparency, when low framerate causes events from mouse/keyboard to be significantly delayed
+	- try making spiral attracter fully acceleration-based (right now it works weird when active and cursor moving around)
 	- implement random color configuration (HSV limits at least)
 	- add option to make particles change color over time (randomly)
 	- menu should become transparent/hide when the cursor is not over it for long enough time.
 	- Upgrade unity and c# versions
 	- Try making a new version of UILineRenderer with prettier rendering (add smoothing / antialiasing?)
+	- Performance ideas: utilize multithreading to calculate lines / triangles; look into shaders / compute
+	- Performance report: add timings distribution histogram? add averaged line to existing plot, add checkboxes to trigger lines on/off, add switch from "frame duration vs. frames" to "FPS vs. time" plot.
+		+ LinePlot: improve the model, allow to add several different plots to a single LinePlot instance
+		+ Adjust averaged plot's averaging parameters
+		+ Add color pickers for plots
+	- Benchmark: ability to export all info: simulation config, report summary AND raw timings
+	- Benchmark: add presets (possibly hardcoded) and benchmark suites (a number of different simul. configs simulated one after another automatically)
+	- Config properties: Add `default value` to config properties (or any other way to add backward compatibility to older simulation configs)
+		+ when loading a config and some properties are missing: ask whether to apply default values or leave unchanged
+	- Scale particles depending on velocity
+	- Implement particles warping when hitting the bounds instead of redirecting
+	- Add ability to create collapsable groups of config properties to be collapsed on UI generation (if not already available)
+	- Config: when saving a configuration, add switch for absolute/relative paths (e.g., for particle sprites)
+	- Add real particle trails? i.e., rendered separately as a triangle or other polygon with fading shader
+	- Allow dialogs to be off-screen, but return to their place by clicking on button that spawned them (already funcitonal) or maybe double-triple click on dialog brings it fully into viewport?
+	- Add particle rotation
+
+New interactors ideas:
+	- Brush: when enabled, particles nearby the cursor react to the cursor's movement, and do not react to stationary cursor
+	- Orbiter: similar to spiral attractor, but instead pushes all particles into some "orbit" (possibly elliptical) around cursor. Faraway particles are attracted, and nearby - repulsed. The size and "width" of the orbit are adjustable
+	- Repulsor(?): opposite of attractor, but also teleports particles beyond viewport to the cursor location (idk about that, also could be built-in negative attractor)
+	- Linear: all the particles gradually accelerate to some constant speed and travel in the last (averaged?) "swipe" direction of the cursor. Possibly add configuration for speed scaling depending on *normal distance* from cursor
+	- Chaos: generate a random vector field to affect particles. Field may "evolve" over time. Position of cursor? maybe irrelevant, idk
+	- Regulator(?): force particles to move away from particle groups to "de-group" particles, spreading them evenly within the bounds
 
 Other ideas:
 	- Implement `effectors`: entities which can be created/destroyed, and which will alter the particle's behaviour in some way. For example, currently implemented interaction modes can be used as effectors: e.g. spiraler attractor with fixed position that is always turned on
 	- Add color/size/etc. dependencies on other factors (speed/number of lines/etc.) e.g. particle becomes red when it is very fast, or blue when it is very slow.
 	- make it possible for particles to have different sizes / colors
 	- make dynamic backgrounds (?) standard presets (gradient flow) / custom videos/gifs/images / etc.
+	- add a couple of "hardcoded" ways particles can change depending on the proximity to cursor when interaction is on? e.g., when using attractor, add an option to shrink particles close to cursor
+	- Add "post processing" effects
+		+ regular old screen space shaders? bloom, color cor, blur, etc.
+		+ scripted: e.g., when a lot of particles are detected in a same place moving in roughly same direction with high enough velocity, draw "speed lines" on top of these particles (i.e. spawn effect particles that move roughly with the same speed as the group, with limited lifetime, and that leave trail)
+	- Add minimum FPS limiter? i.e., if frame rendering exceeds specific threshold, stop rendering and immediately display frame. Could be really useful for working with interaction, since some interactors tend to bunch up particles which causes huge FPS drops while not being exactly pretty
+	- Benchmark: measure system resources? CPU/GPU/RAM (REALLY don't know about that, but could be interesting i guess)
+	- Color picker: add swatches?
+	
