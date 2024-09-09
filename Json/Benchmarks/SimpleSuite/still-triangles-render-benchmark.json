@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Still triangle render benchmark",
+    "Description": "Benchmark for gauging performance of triangle rendering",
+    "BenchmarkDuration": 10.0
+}

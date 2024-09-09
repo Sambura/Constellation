@@ -1,0 +1,5 @@
+{
+    "BenchmarkSuiteVersion": "1.0.0",
+    "Name": "Simple suite",
+    "Description": "Basic performance benchmarks"
+}

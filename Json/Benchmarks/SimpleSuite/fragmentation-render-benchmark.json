@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Fragmentation render benchmark",
+    "Description": "Benchmark for gauging performance of debug rendering for fragmentation",
+    "BenchmarkDuration": 10.0
+}
