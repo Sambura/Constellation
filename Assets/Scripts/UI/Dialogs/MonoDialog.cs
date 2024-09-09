@@ -91,7 +91,11 @@ namespace ConstellationUI
         /// Shows this dialog window, by making its gameObject active
         /// </summary>
         /// <param name="title">The title for the dialog. Value of null means the default title</param>
-        /// <param name="onClose">Callback that is assigned to `OnDialogClosed` property</param>
+        /// <param name="onClose">Callback that is assigned to `OnDialogClosed` property. 
+        ///     The callback gets two arguments - sender MonoDialog, and the result bool. The result bool is 
+        ///     specific for each dialog, but generally result is false when a 'Cancel' button is clicked
+        ///     on dialog, and true when 'Ok' is clicked. The callback should return true if the dialog can
+        ///     be closed, and false if dialog should stay active </param>
         public virtual void ShowDialog(string title = null, OnDialogClosingHandler onClose = null)
         {
             gameObject.SetActive(true);

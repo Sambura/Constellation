@@ -5,11 +5,8 @@ using TMPro;
 
 namespace ConstellationUI
 {
-	public class NumericInputField : LabeledUIElement
+	public class NumericInputField : InputField
 	{
-		[Header("Objects")]
-		[SerializeField] private TMP_InputField _inputField;
-
 		[Header("Input field parameters")]
 		[SerializeField] private float _value;
 		[SerializeField] private float _minValue = float.MinValue;
@@ -114,8 +111,9 @@ namespace ConstellationUI
 
 		private float Clamp(float value) => Mathf.Clamp(value, _minValue, _maxValue);
 
-		private void OnInputFieldValueChanged(string text)
+		protected override void OnInputFieldTextChanged(string text)
 		{
+			base.OnInputFieldTextChanged(text);
 			Match match = _regex.Match(text);
 			if (match.Success == false) return;
 			if (float.TryParse(match.Groups[_regexGroupIndex].Value, out float value))
@@ -124,20 +122,20 @@ namespace ConstellationUI
 
 		private void OnInputFieldSubmit(string text) => UpdateInputFieldValue(true);
 
-		protected virtual void Start()
+		protected override void Start()
 		{
 			SetWholeNumbers(_wholeNumbers);
 			SetInputRegex(_inputRegex);
 			SetValueWithoutNotify(_value);
 
-			_inputField.onValueChanged.AddListener(OnInputFieldValueChanged);
+			base.Start();
 			_inputField.onDeselect.AddListener(OnInputFieldSubmit);
 			_inputField.onSubmit.AddListener(OnInputFieldSubmit);
 		}
 
-		protected virtual void OnDestroy()
+		protected override void OnDestroy()
 		{
-			_inputField?.onValueChanged.RemoveListener(OnInputFieldValueChanged);
+			base.OnDestroy();
 			_inputField?.onDeselect.RemoveListener(OnInputFieldSubmit);
 			_inputField?.onSubmit.RemoveListener(OnInputFieldSubmit);
 		}

@@ -3,6 +3,10 @@ using UnityCore;
 
 namespace ConstellationUI
 {
+	/// <summary>
+	/// Scales this component so that it wraps the referenced child object with specified padding
+	/// E.g. put this on a button and set reference child to button text to scale button to text size
+	/// </summary>
 	[RequireComponent(typeof(RectTransform))]
 	public class ChildWrapper : MonoBehaviour
 	{

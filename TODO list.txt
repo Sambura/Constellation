@@ -2,6 +2,9 @@ Current bugs:
 	- Sometimes when opening color picker the alpha slider is in incorrect position (prob. when opening color picker the first time)
 	- Curve picker: when editing a curve and deselecting a node, handle lines do not disappear (sometimes - do not appear when selecting node)
 	- Transparency: when low framerate causes events from mouse/keyboard also become "frame limited"
+	- Gradient picker: when loading config with 3-stop gradient and opening editor for the first time, only 2 stops are displayed
+	- Connection distance 0 causes application to hang
+	- After benchmark suite is complete, fps counter stop working (turning off/on fixes it)
 
 Minor bugs:
 	- Dropdown list: is larger than needed (especially bad when dropdown appears at the top)

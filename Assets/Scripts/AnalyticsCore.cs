@@ -6,6 +6,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using ConstellationUI;
+using Core;
+using Core.Json;
+using System.IO;
 
 // Consider using Unity's FrameTimingManager
 public class AnalyticsCore : MonoBehaviour
@@ -16,16 +19,112 @@ public class AnalyticsCore : MonoBehaviour
 	[SerializeField] private StaticTimeFPSCounter _fpsCounter;
 	[SerializeField] private Viewport _viewport;
 	[SerializeField] private PerformanceReportDialog _perfDialog;
+	[SerializeField] private ConfigSerializer _configSerializer;
 
 	private FrameTimingTracker _tracker;
+	private StaticTimeFPSCounter _helperFpsCounter;
+	private bool _wasFpsCounterEnabled;
+
+	private BenchmarkMode _benchmarkMode = BenchmarkMode.Custom;
 	private float _benchmarkDuration = 10;
 	private bool _automaticBufferSize = true;
 	private float _autoBufferSizeMargin = 2f;
 	private int _frameTimingBufferSize = 500000;
-	private bool _fpsCounterPreviousState;
-	private StaticTimeFPSCounter _helperFpsCounter;
+	private string _benchmarkFilePath = null;
+	private string _benchmarkSuiteFilePath = null;
+
+	private BenchmarkConfig _currentBenchmarkConfig;
+	private BenchmarkSuiteConfig _currentBenchmarkSuiteConfig;
+	private string _currentTimingExportPath;
+	private int _currentSuiteIndex;
+	private int _successfulSuiteRuns;
 
 	[ConfigGroupMember("Performance analysis")]
+	// [ConfigGroupToggle(groupIndex: 1)]
+	[ConfigProperty]
+	public BenchmarkMode BenchmarkMode
+	{
+		get => _benchmarkMode;
+		set
+		{
+			if (_benchmarkMode == value) return;
+			_benchmarkMode = value;
+			BenchmarkModeChanged?.Invoke(value);
+        }
+	}
+
+    [ConfigGroupMember(groupIndex: 1, parentIndex: 0, SetDisplayIndex = 1)]
+    [FilePathProperty("Select benchmark config file", true, new string[] { "Json files", "*.json", "All files",  "*" }, typeof(BenchmarkNameGetter), name: "Benchmark:")]
+    public string BenchmarkFilePath
+    {
+        get => _benchmarkFilePath;
+		set
+		{
+			if (_benchmarkFilePath == value) return;
+            if (value is null) {
+                _currentBenchmarkConfig = null;
+            }
+            else {
+                try {
+                    _currentBenchmarkConfig = BenchmarkConfig.FromFile(value);
+                    _benchmarkFilePath = value;
+					BenchmarkDuration = _currentBenchmarkConfig.BenchmarkDuration;
+                }
+                catch (JsonSerializerException e) {
+                    _fileDialog.Manager.ShowMessageBox("Error", $"Couldn't load benchmark config: {e.Message}", StandardMessageBoxIcons.Error);
+                }
+                catch (FileNotFoundException) {
+                    _fileDialog.Manager.ShowMessageBox("Error", $"Couldn't find benchmark config file at: {value}", StandardMessageBoxIcons.Error);
+                } // in case of exception an event will still be generated to notify that the setter has declined the operation
+				catch (Exception e) {
+                    _fileDialog.Manager.ShowMessageBox("Error", $"Encountered error while reading benchmark config: {e.Message}", StandardMessageBoxIcons.Error);
+                }
+            }
+
+            BenchmarkFilePathChanged?.Invoke(_benchmarkFilePath);
+        }
+    }
+
+    [ConfigGroupMember(groupIndex: 2, parentIndex: 0, SetDisplayIndex = 2)]
+    [SetComponentProperty(typeof(TMPro.TextMeshProUGUI), "color", typeof(Color), new object[] { 0.972549f, 0.9294117647f, 0.56470588f, 0.5f }, childName: "Labels/FilenameLabel")]
+    [FilePathProperty("Select benchmark suite config file", true, new string[] { "Json files", "*.json", "All files", "*" }, typeof(BenchmarkSuiteNameGetter), name: "Benchmark suite:")]
+    public string BenchmarkSuiteFilePath
+    {
+        get => _benchmarkSuiteFilePath;
+        set
+        {
+            if (_benchmarkSuiteFilePath == value) return;
+            if (value is null) {
+                _currentBenchmarkSuiteConfig = null;
+            }
+            else
+            {
+                try
+                {
+                    var newSuite = BenchmarkSuiteConfig.FromFile(value);
+					if (newSuite.Configs.Count == 0) throw new Exception("Could not find any valid benchmark configs for this suite");
+                    _currentBenchmarkSuiteConfig = newSuite;
+                    _benchmarkSuiteFilePath = value;
+                }
+                catch (JsonSerializerException e)
+                {
+                    _fileDialog.Manager.ShowMessageBox("Error", $"Couldn't load benchmark suite config: {e.Message}", StandardMessageBoxIcons.Error);
+                }
+                catch (FileNotFoundException)
+                {
+                    _fileDialog.Manager.ShowMessageBox("Error", $"Couldn't find benchmark suite config file at: {value}", StandardMessageBoxIcons.Error);
+                } // in case of exception an event will still be generated to notify that the setter has declined the operation
+                catch (Exception e)
+                {
+                    _fileDialog.Manager.ShowMessageBox("Error", $"Encountered error while reading benchmark suite config: {e.Message}", StandardMessageBoxIcons.Error);
+                }
+            }
+
+            BenchmarkSuiteFilePathChanged?.Invoke(_benchmarkSuiteFilePath);
+        }
+    }
+
+    [ConfigGroupMember]
 	[SliderProperty(1, 100, 0, name: "Benchmark duration")]
 	public float BenchmarkDuration
 	{
@@ -38,7 +137,7 @@ public class AnalyticsCore : MonoBehaviour
 		}
 	}
 
-	[ConfigGroupMember] [ConfigGroupToggle(1, 2)]
+	[ConfigGroupMember] [ConfigGroupToggle(20, 21)]
 	[ConfigProperty] public bool AutomaticBufferSize
 	{
 		get => _automaticBufferSize;
@@ -50,7 +149,7 @@ public class AnalyticsCore : MonoBehaviour
 		}
 	}
 
-	[ConfigGroupMember(1, 0)] [SliderProperty(0, 2, 0, inputFormatting: "0.0", name: "Buffer size margin")] 
+	[ConfigGroupMember(groupIndex: 20, parentIndex: 0)] [SliderProperty(0, 2, 0, inputFormatting: "0.0", name: "Buffer size margin")] 
 	public float AutomaticBufferSizeMargin
 	{
 		get => _autoBufferSizeMargin;
@@ -62,7 +161,7 @@ public class AnalyticsCore : MonoBehaviour
 		}
 	}
 
-	[ConfigGroupMember(2, 0)]
+	[ConfigGroupMember(groupIndex: 21, parentIndex: 0)]
 	[InputFieldProperty(0, 100000000, name: "Manual buffer size")]
 	public int FrameTimingBufferSize
 	{
@@ -82,28 +181,140 @@ public class AnalyticsCore : MonoBehaviour
 	public event Action<bool> AutomaticBufferSizeChanged;
 	public event Action<float> AutomaticBufferSizeMarginChanged;
 	public event Action<int> FrameTimingBufferSizeChanged;
+    public event Action<BenchmarkMode> BenchmarkModeChanged;
+    public event Action<string> BenchmarkFilePathChanged;
+    public event Action<string> BenchmarkSuiteFilePathChanged;
+
+	// make methods to wrap these try/catches ?
+	/// <summary>
+	/// Loads simulation config specified in benchmark config (could be null)
+	/// If any error is encountered returns false, and shows an error message box (if verbose is true)
+	/// </summary>
+	private bool LoadBenchmarkConfig(BenchmarkConfig config, bool verbose = true)
+	{
+		string path = config?.SimulationConfigPath;
+        if (path is null) {
+			if (verbose)
+				_fileDialog.Manager.ShowMessageBox("Error", $"Benchmark config is invalid or does not provide simulation config path", StandardMessageBoxIcons.Error);
+            return false;
+        }
+		try
+		{
+			if (_configSerializer.DeserializeConfig(path) <= 0)
+			{
+                if (verbose)
+                    _fileDialog.Manager.ShowMessageBox("Error", "No data deserialized form the simulation config", StandardMessageBoxIcons.Error);
+				return false;
+			}
+		}
+		catch (JsonSerializerException e)
+		{
+            if (verbose)
+                _fileDialog.Manager.ShowMessageBox("Error", $"Couldn't load simulation config: {e.Message}", StandardMessageBoxIcons.Error);
+			return false;
+		}
+		catch (FileNotFoundException)
+		{
+            if (verbose)
+                _fileDialog.Manager.ShowMessageBox("Error", $"Couldn't find simulation config file at: {path}", StandardMessageBoxIcons.Error);
+			return false;
+		}
+		catch (Exception e)
+		{
+            if (verbose)
+                _fileDialog.Manager.ShowMessageBox("Error", $"Unknown error: {e.Message}", StandardMessageBoxIcons.Error);
+            return false;
+        }
+
+        return true;
+    }
+
+	private void DoStartBenchmark(BenchmarkConfig config)
+	{
+        DisableUI();
+		try
+		{
+			_particleController.RestartSimulation();
+
+			if (_tracker is { }) { Destroy(_tracker); _tracker = null; }
+			_tracker = gameObject.AddComponent<FrameTimingTracker>();
+			if (AutomaticBufferSize)
+			{
+				_helperFpsCounter = gameObject.AddComponent<StaticTimeFPSCounter>();
+				_helperFpsCounter.TimeWindow = FPSMeasuringDelay;
+			}
+			StartCoroutine(StartTrackingDelayed(AutomaticBufferSize ? FPSMeasuringDelay : 0, TestStartDelay));
+		}
+		catch (Exception e)
+		{
+            RestoreUI();
+            _fileDialog.Manager.ShowMessageBox("Error", $"Unknown error: {e.Message}", StandardMessageBoxIcons.Error);
+		}
+    }
+
+	private void StartSuiteIteration()
+	{
+		if (_currentBenchmarkSuiteConfig.Configs.Count <= _currentSuiteIndex)
+		{
+			OnSuiteFinish();
+			return;
+		}
+		BenchmarkConfig config = _currentBenchmarkSuiteConfig.Configs[_currentSuiteIndex++];
+        BenchmarkDuration = config.BenchmarkDuration;
+		if (!LoadBenchmarkConfig(config, false)) { StartSuiteIteration(); return; }
+		_successfulSuiteRuns++;
+		DoStartBenchmark(config);
+    }
+
+	private void OnSuiteFinish()
+	{
+        _currentTimingExportPath = null;
+		RestoreUI();
+
+        _fileDialog.Manager.ShowMessageBox("Benchmark suite finished",
+            $"{_successfulSuiteRuns} / {_currentBenchmarkSuiteConfig.Configs.Count} benchmarks executed successfully", 
+			StandardMessageBoxIcons.Success);
+    }
 
 	[SetComponentProperty(typeof(UnityEngine.UI.Image), "color", typeof(Color), new object[] { 1f, 0.7733893f, 0.4198113f }, "Border")]
 	[SetComponentProperty(typeof(TMPro.TextMeshProUGUI), "color", typeof(Color), new object[] { 0.8862745f, 0.6864019f, 0f })]
 	[SetComponentProperty(typeof(UnityEngine.UI.Button), "colors.normalColor", typeof(Color), new object[] { 1f, 0.784871f, 0.2877358f, 0.1843137f })]
-	[ConfigGroupMember] [InvokableMethod] [ConfigMemberOrder(-3)]
-	public void StartTracking()
+	[ConfigGroupMember]
+	[InvokableMethod]
+	[ConfigMemberOrder(-3)]
+	public void StartBenchmark()
 	{
-		_uiObject.SetActive(false);
-		_particleController.RestartSimulation();
-
-		if (_tracker is { }) { Destroy(_tracker); _tracker = null; }
-		_tracker = gameObject.AddComponent<FrameTimingTracker>();
-		_fpsCounterPreviousState = _fpsCounter.enabled;
-		_fpsCounter.enabled = false;
-		_viewport.enabled = false;
-		if (AutomaticBufferSize)
+		if (BenchmarkMode == BenchmarkMode.BenchmarkFile && !LoadBenchmarkConfig(_currentBenchmarkConfig)) return;
+		if (BenchmarkMode == BenchmarkMode.BenchmarkSuite)
 		{
-			_helperFpsCounter = gameObject.AddComponent<StaticTimeFPSCounter>();
-			_helperFpsCounter.TimeWindow = FPSMeasuringDelay;
+			if (_currentBenchmarkSuiteConfig is null)
+			{
+				_fileDialog.Manager.ShowMessageBox("Error", $"No benchmark suite selected", StandardMessageBoxIcons.Error);
+				return;
+			}
+
+			if (_currentTimingExportPath is null)
+			{
+				_fileDialog.SyncCurrentDirectory(this);
+				_fileDialog.ShowDialog("Select directory to export timings", (x, y) =>
+				{
+					if (!y) return true;
+					_currentTimingExportPath = _fileDialog.CurrentDirectory.FullName;
+					return true;
+				});
+				return;
+			}
 		}
 
-		StartCoroutine(StartTrackingDelayed(AutomaticBufferSize ? FPSMeasuringDelay : 0, TestStartDelay));
+		if (BenchmarkMode != BenchmarkMode.BenchmarkSuite)
+		{
+			DoStartBenchmark(null);
+			return;
+		}
+
+		_successfulSuiteRuns = 0;
+		_currentSuiteIndex = 0;
+		StartSuiteIteration();
 	}
 
 	[ConfigGroupMember] [InvokableMethod] [ConfigMemberOrder(-2)]
@@ -129,12 +340,23 @@ public class AnalyticsCore : MonoBehaviour
 		}
 
 		_fileDialog.FileFilters = new List<FileDialog.FileFilter>() { new FileDialog.FileFilter() { Description = "CSV files", Pattern = "*.csv" } };
-		_fileDialog.FileName = "timings.scv";
+		_fileDialog.FileName = "timings.csv";
 		_fileDialog.ShowDialog("Select save location", TrySaveTimings);
 		_fileDialog.SyncCurrentDirectory(this);
 	}
 
-	private bool TrySaveTimings(MonoDialog fileDialog, bool result)
+	private void DoSaveTimings(string path)
+    {
+        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+        for (int i = 0; i < _tracker.FramesCaptured; i++)
+        {
+            builder.Append(_tracker.Buffer[i].ToString("G9"));
+            if (i != _tracker.FramesCaptured - 1) builder.Append(", ");
+        }
+        System.IO.File.WriteAllText(path, builder.ToString());
+    }
+
+    private bool TrySaveTimings(MonoDialog fileDialog, bool result)
 	{
 		if (result == false) return true;
 
@@ -143,30 +365,16 @@ public class AnalyticsCore : MonoBehaviour
 		if (System.IO.File.Exists(fileName))
 		{
 			_fileDialog.Manager.ShowOkCancelMessageBox("Confirmation", "The file with the given name already exists." +
-			   " Do you want to replace it?", StandardMessageBoxIcons.Question, x => { if (x) return DoSaveTimings(fileName); return true; }, _fileDialog);
+			   " Do you want to replace it?", StandardMessageBoxIcons.Question, x => { if (x) DoSaveTimings(fileName); return true; }, _fileDialog);
 
 			return false;
 		}
 
 		DoSaveTimings(fileName);
-		return true;
-
-		bool DoSaveTimings(string path)
-		{
-			System.Text.StringBuilder builder = new System.Text.StringBuilder();
-			for (int i = 0; i < _tracker.FramesCaptured; i++)
-			{
-				builder.Append(_tracker.Buffer[i].ToString("G9"));
-				if (i != _tracker.FramesCaptured - 1) builder.Append(", ");
-			}
-			System.IO.File.WriteAllText(path, builder.ToString());
-			fileDialog.OnDialogClosing = null;
-			fileDialog.CloseDialog(true);
-
-			_fileDialog.Manager.ShowMessageBox("Success", "Frame timings were saved successfully", StandardMessageBoxIcons.Info);
-
-			return false;
-		}
+        fileDialog.OnDialogClosing = null;
+        fileDialog.CloseDialog(true);
+        _fileDialog.Manager.ShowMessageBox("Success", "Frame timings were saved successfully", StandardMessageBoxIcons.Info);
+        return true;
 	}
 
 	private IEnumerator StartTrackingDelayed(float initDelay, float delay)
@@ -186,15 +394,66 @@ public class AnalyticsCore : MonoBehaviour
 		StartCoroutine(StopTrackingDelayed(BenchmarkDuration));
 	}
 
+	private void DisableUI()
+	{
+        _uiObject.SetActive(false);
+        _wasFpsCounterEnabled = _fpsCounter.enabled;
+        _fpsCounter.enabled = false;
+        _viewport.enabled = false;
+    }
+
+	private void RestoreUI()
+	{
+        _uiObject.SetActive(true);
+        _fpsCounter.enabled = _wasFpsCounterEnabled;
+        _viewport.enabled = true;
+    }
+
 	private IEnumerator StopTrackingDelayed(float delay)
 	{
 		yield return new WaitForSeconds(delay);
 
-		_tracker.StopTracking();
-		_uiObject.SetActive(true);
-		_fpsCounter.enabled = _fpsCounterPreviousState;
-		_viewport.enabled = true;
-
-		ShowReport();
+        _tracker.StopTracking();
+		if (BenchmarkMode == BenchmarkMode.BenchmarkSuite)
+		{
+			string name = _currentBenchmarkSuiteConfig.Configs[_currentSuiteIndex - 1].Name;
+            DoSaveTimings(Path.Combine(_currentTimingExportPath, name + "-timings.csv"));
+			StartSuiteIteration();
+        } else
+		{
+			RestoreUI();
+			ShowReport();
+		}
 	}
+}
+public enum BenchmarkMode { Custom, BenchmarkFile, BenchmarkSuite }
+
+public class BenchmarkNameGetter : IStringTransformer
+{
+	public string Transform(string benchmarkPath) {
+		try {
+			return benchmarkPath is null ? null : BenchmarkConfig.FromFile(benchmarkPath).Name;
+		}
+		catch {
+			return "<color=red>Error!</color>";
+		}
+	}
+}
+
+public class BenchmarkSuiteNameGetter : IStringTransformer
+{
+    public string Transform(string benchmarkSuitePath)
+    {
+        try
+        {
+			if (benchmarkSuitePath is null) return null;
+			var suite = BenchmarkSuiteConfig.FromFile(benchmarkSuitePath);
+			int totalBenchmarks = suite.Configs.Count + suite.ConfigsFailedToLoad;
+            return $"{suite.Name} ({suite.Configs.Count} / {totalBenchmarks} benchmarks)";
+        }
+        catch
+        {
+            return "<color=red>Error!</color>";
+        }
+    }
 }

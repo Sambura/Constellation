@@ -21,9 +21,11 @@ namespace ConfigSerialization
 		[SerializeField] private GameObject _radioButtonPrefab;
 		[SerializeField] private GameObject _dropdownPrefab;
 		[SerializeField] private GameObject _textureButtonPrefab;
-		[SerializeField] private GameObject _numericInputField;
+		[SerializeField] private GameObject _numericInputFieldPrefab;
+		[SerializeField] private GameObject _textInputFieldPrefab;
+		[SerializeField] private GameObject _filePathSelectorPrefab;
 
-		[Header("Readonly property control prefabs")]
+		[Header("No-input property control prefabs")]
 		[SerializeField] private GameObject _colorIndicatorPrefab;
 
 		[Header("Other prefabs")]
@@ -134,7 +136,8 @@ namespace ConfigSerialization
 		{
 			Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
 			Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader,
-			TexturePickerButton, ColorIndicator, InputField
+			TexturePickerButton, ColorIndicator, NumericInputField, FilePathSelector,
+			TextInputField
 		}
 
 		private class UINode
@@ -302,6 +305,11 @@ namespace ConfigSerialization
 
 			foreach (var toggleInfo in groupToggles)
 			{
+				if (toggleInfo.Value.Item1.PropertyType != typeof(bool)) {
+					Debug.LogError($"Config group toggle is not supported for properties of type {toggleInfo.Value.Item1.PropertyType}");
+					continue;
+				}
+
 				Group targetGroup = toggleInfo.Key;
 				UINode groupNode = uiNodes.Find(x => x.Type == ControlType.Container && x.Group == targetGroup);
 				UINode toggleNode = uiNodes.Find(x => x.Member == toggleInfo.Value.Item1);
@@ -497,7 +505,13 @@ namespace ConfigSerialization
 					GameObject controlObject = control.Control.gameObject;
 					if (attribute.ChildName != null)
 					{
-						controlObject = control.Control.Find(attribute.ChildName).gameObject;
+						Transform child = control.Control.Find(attribute.ChildName);
+						if (child is null)
+						{
+							Debug.LogError($"Could not find child {attribute.ChildName} on {control.Control} (Member: {control.Member})");
+							continue;
+						}
+						controlObject = child.gameObject;
 					}
 
 					Component component = controlObject.GetComponentInChildren(attribute.ComponentType, true);
@@ -643,9 +657,10 @@ namespace ConfigSerialization
 				property, _dropdownPrefab, memberContainer, parent, (x, y, z) =>
 				{
 					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
-					string[] names = z?.DisplayedOptions == null ? null : new string[z.DisplayedOptions.Length];
-					for (int i = 0; i < (z?.DisplayedOptions?.Length ?? 0); i++) names[i] = SplitAndLowerCamelCase(z.DisplayedOptions[i].ToString());
-					x.SetOptions(new List<string>(z?.OptionNames ?? names ?? property.PropertyType.GetEnumNames()));
+					object[] displayedOptions = z?.DisplayedOptions == null ? property.PropertyType.GetEnumNames() : z.DisplayedOptions;
+                    string[] names = new string[displayedOptions.Length];
+					for (int i = 0; i < displayedOptions.Length; i++) names[i] = SplitAndLowerCamelCase(displayedOptions[i].ToString());
+					x.SetOptions(new List<string>(z?.OptionNames ?? names));
 				},
 				nameof(DropdownList.SelectedValue), ControlType.DropdownList, (x, z) =>
 				{
@@ -724,7 +739,7 @@ namespace ConfigSerialization
 			{
 				var parentEvent = GetEvent(property);
 				if (parentEvent == null)
-					Debug.LogError($"Event not found for property {property} on {memberContainer}");
+					Debug.LogWarning($"Event not found for property {property} on {memberContainer}; Monitoring disabled");
 				else
 					parentEvent.AddEventHandler(memberContainer, propToUiHandler);
 			}
@@ -742,8 +757,11 @@ namespace ConfigSerialization
 		{
 			return (Action<T>)(x =>
 			{
-				prop1.SetValue(cont1, x);
-				prop2.SetValue(cont2, x);
+				// first check which doesn't have the new value, then set; otherwise bad recursion stuff may happen
+				bool set1 = !Equals(prop1.GetValue(cont1), x);
+				bool set2 = !Equals(prop2.GetValue(cont2), x);
+				if (set1) prop1.SetValue(cont1, x);
+				if (set2) prop2.SetValue(cont2, x);
 			});
 		}
 
@@ -777,7 +795,45 @@ namespace ConfigSerialization
 			);
 		}
 
-		private UINode CreateNumericPropertyControl(PropertyInfo property, object memberContainer, UINode parent)
+        private UINode CreateStringPropertyControl(PropertyInfo property, object memberContainer, UINode parent)
+        {
+            if (property.GetCustomAttribute<FilePathProperty>() is { })
+                return CreateFilePathSelector(property, memberContainer, parent);
+
+			return CreateTextInputField(property, memberContainer, parent);
+        }
+
+        private UINode CreateTextInputField(PropertyInfo property, object memberContainer, UINode parent)
+        {
+            return CreateUniversal<ConfigProperty, InputField>(
+                property, _textInputFieldPrefab, memberContainer, parent, (x, y, z) =>
+                {
+                    x.LabelText = z.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.Text = property.GetValue(memberContainer) as string;
+                },
+                nameof(InputField.Text), ControlType.TextInputField
+            );
+        }
+
+        private UINode CreateFilePathSelector(PropertyInfo property, object memberContainer, UINode parent)
+        {
+            FilePathProperty filePathProperty = property.GetCustomAttribute<FilePathProperty>();
+
+            return CreateUniversal<FilePathProperty, FilePathSelector>(
+                property, _filePathSelectorPrefab, memberContainer, parent, (x, y, z) =>
+                {
+					x.LabelText = z.Name ?? SplitAndLowerCamelCase(property.Name);
+					x.FileNameDisplayedConverter = z.StringConverter;
+					x.CheckFileExists = z.CheckFileExists;
+					x.FileFilters = z.Filters;
+					x.DialogTitle = z.DialogTitle;
+					x.SelectedPath = property.GetValue(memberContainer) as string;
+				},
+                nameof(FilePathSelector.SelectedPath), ControlType.FilePathSelector
+            );
+        }
+
+        private UINode CreateNumericPropertyControl(PropertyInfo property, object memberContainer, UINode parent)
 		{
 			if (property.GetCustomAttribute<MinMaxSliderProperty>() is { })
 				return CreateMinMaxSlider(property, memberContainer, parent);
@@ -793,7 +849,7 @@ namespace ConfigSerialization
 			bool isInt = IsIntegral(property.PropertyType);
 
 			return CreateUniversal<InputFieldPropertyAttribute, NumericInputField>(
-				property, _numericInputField, memberContainer, parent, (x, y, z) =>
+				property, _numericInputFieldPrefab, memberContainer, parent, (x, y, z) =>
 				{
 					int intValue = isInt ? (int)property.GetValue(memberContainer) : 0;
 					float floatValue = isInt ? intValue : (float)property.GetValue(memberContainer);
@@ -806,7 +862,7 @@ namespace ConfigSerialization
 					x.WholeNumbers = isInt;
 					x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
 				},
-				isInt ? nameof(NumericInputField.IntValue) : nameof(NumericInputField.Value), ControlType.InputField
+				isInt ? nameof(NumericInputField.IntValue) : nameof(NumericInputField.Value), ControlType.NumericInputField
 			);
 		}
 
@@ -1010,6 +1066,7 @@ namespace ConfigSerialization
 				{ x => x == typeof(Gradient), CreateGradientButton },
 				{ x => x == typeof(AnimationCurve), CreateCurveButton },
 				{ x => x == typeof(Texture2D), CreateTextureButton },
+				{ x => x == typeof(string), CreateStringPropertyControl }
 			};
 			_readonlyPropertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
 			{

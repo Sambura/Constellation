@@ -143,9 +143,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1313137866628742333}
-  - component: {fileID: 1313137866628742338}
+  - component: {fileID: 8381258167735336512}
   m_Layer: 5
-  m_Name: Labeled input field
+  m_Name: TextInputField
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -172,7 +172,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 50}
   m_Pivot: {x: 0.5, y: 1}
---- !u!114 &1313137866628742338
+--- !u!114 &8381258167735336512
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -181,18 +181,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1313137866628742332}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b28a8af1efb8ac4881f3b2be4714a5f, type: 3}
+  m_Script: {fileID: 11500000, guid: 8ebcb681ad1e1454db81b4300728b856, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _label: {fileID: 1313137866347308076}
   _inputField: {fileID: 1313137867724186414}
-  _value: 0
-  _minValue: -3.4028235e+38
-  _maxValue: 3.4028235e+38
-  _wholeNumbers: 0
-  _inputFormatting: 0.000
-  _inputRegex: ([-+]?[0-9]*\.?[0-9]+)
-  _regexGroupIndex: 1
 --- !u!1001 &6486399330119652292
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -286,6 +279,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5205424762566570217, guid: 4083d7921dffd234dbad68b9dd172885, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5205424762566570218, guid: 4083d7921dffd234dbad68b9dd172885, type: 3}
+      propertyPath: m_ContentType
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5205424762566570218, guid: 4083d7921dffd234dbad68b9dd172885, type: 3}
+      propertyPath: m_KeyboardType
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5205424762566570218, guid: 4083d7921dffd234dbad68b9dd172885, type: 3}
+      propertyPath: m_CharacterLimit
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5205424762566570218, guid: 4083d7921dffd234dbad68b9dd172885, type: 3}
+      propertyPath: m_CharacterValidation
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
