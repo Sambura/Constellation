@@ -1539,6 +1539,7 @@ MonoBehaviour:
   _viewport: {fileID: 519420034}
   _perfDialog: {fileID: 2057954985}
   _configSerializer: {fileID: 144636868}
+  _interactionCore: {fileID: 144636869}
 --- !u!1 &166361491
 GameObject:
   m_ObjectHideFlags: 0
@@ -1891,6 +1892,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 254612554}
   m_CullTransparentMesh: 1
+--- !u!114 &280117327 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8000336553768623330, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
+  m_PrefabInstance: {fileID: 1807979578}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0cc7ceb639ec441b473f36cf4c6b98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &305816698
 GameObject:
   m_ObjectHideFlags: 0
@@ -5398,6 +5410,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
   m_PrefabInstance: {fileID: 661217437}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &677184527 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8000336553768623330, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
+  m_PrefabInstance: {fileID: 1431343159}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0cc7ceb639ec441b473f36cf4c6b98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &683201795
 GameObject:
   m_ObjectHideFlags: 0
@@ -5742,6 +5765,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 772856648}
   m_CullTransparentMesh: 1
+--- !u!114 &772949174 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8000336553768623330, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
+  m_PrefabInstance: {fileID: 1397460277}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0cc7ceb639ec441b473f36cf4c6b98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &791280659
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9731,10 +9765,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Export summary button
       objectReference: {fileID: 0}
-    - target: {fileID: 3877502789024712509, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
-      propertyPath: m_Interactable
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 3877502789485936802, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
       propertyPath: m_text
       value: Export summary
@@ -10191,10 +10221,6 @@ PrefabInstance:
     - target: {fileID: 3877502789024712507, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
       propertyPath: m_Name
       value: Export timings button
-      objectReference: {fileID: 0}
-    - target: {fileID: 3877502789024712509, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
-      propertyPath: m_Interactable
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789485936802, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
       propertyPath: m_text
@@ -13042,10 +13068,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Export report button (to implement)
       objectReference: {fileID: 0}
-    - target: {fileID: 3877502789024712509, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
-      propertyPath: m_Interactable
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 3877502789485936802, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
       propertyPath: m_text
       value: Export report
@@ -14834,6 +14856,9 @@ MonoBehaviour:
   _titleLabel: {fileID: 1555557850}
   _basicStatsLabel: {fileID: 860969457}
   _timingsPlot: {fileID: 1648726381}
+  _exportSummaryButton: {fileID: 772949174}
+  _exportReportButton: {fileID: 280117327}
+  _exportTimingsButton: {fileID: 677184527}
 --- !u!114 &2057954986
 MonoBehaviour:
   m_ObjectHideFlags: 0

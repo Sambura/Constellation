@@ -20,6 +20,7 @@ public class AnalyticsCore : MonoBehaviour
 	[SerializeField] private Viewport _viewport;
 	[SerializeField] private PerformanceReportDialog _perfDialog;
 	[SerializeField] private ConfigSerializer _configSerializer;
+	[SerializeField] private InteractionCore _interactionCore;
 
 	private FrameTimingTracker _tracker;
 	private StaticTimeFPSCounter _helperFpsCounter;
@@ -38,6 +39,7 @@ public class AnalyticsCore : MonoBehaviour
 	private string _currentTimingExportPath;
 	private int _currentSuiteIndex;
 	private int _successfulSuiteRuns;
+	private string _currentSimulationConfigJson;
 
 	[ConfigGroupMember("Performance analysis")]
 	// [ConfigGroupToggle(groupIndex: 1)]
@@ -229,8 +231,12 @@ public class AnalyticsCore : MonoBehaviour
         return true;
     }
 
-	private void DoStartBenchmark(BenchmarkConfig config)
+	/// <summary>
+	/// Actually starts the benchmark. Does not apply any configs/settings before starting
+	/// </summary>
+	private void DoStartBenchmark()
 	{
+		_currentSimulationConfigJson = _configSerializer.GetCurrentConfigJson(false);
         DisableUI();
 		try
 		{
@@ -263,7 +269,7 @@ public class AnalyticsCore : MonoBehaviour
         BenchmarkDuration = config.BenchmarkDuration;
 		if (!LoadBenchmarkConfig(config, false)) { StartSuiteIteration(); return; }
 		_successfulSuiteRuns++;
-		DoStartBenchmark(config);
+		DoStartBenchmark();
     }
 
 	private void OnSuiteFinish()
@@ -308,7 +314,7 @@ public class AnalyticsCore : MonoBehaviour
 
 		if (BenchmarkMode != BenchmarkMode.BenchmarkSuite)
 		{
-			DoStartBenchmark(null);
+			DoStartBenchmark();
 			return;
 		}
 
@@ -326,56 +332,135 @@ public class AnalyticsCore : MonoBehaviour
 			return;
 		}
 
+		_perfDialog.OnExportReportClick = x => ExportReport();
+		_perfDialog.OnExportSummaryClick = x => ExportSummary();
+		_perfDialog.OnExportTimingsClick = x => ExportFrameTimings();
 		_perfDialog.ShowDialog();
-		_perfDialog.UpdateReport(new List<float>(_tracker.Buffer).GetRange(0, _tracker.FramesCaptured));
+		_perfDialog.UpdateReport(_tracker.FrameTimings);
 	}
 
 	[ConfigGroupMember] [InvokableMethod] [ConfigMemberOrder(-1)]
 	public void ExportFrameTimings()
 	{
-		if (_tracker is null || _tracker.FramesCaptured == 0)
-		{
-			_fileDialog.Manager.ShowMessageBox("Warning", "No frame timing data was captured yet", StandardMessageBoxIcons.Warning);
-			return;
-		}
-
-		_fileDialog.FileFilters = new List<FileDialog.FileFilter>() { new FileDialog.FileFilter() { Description = "CSV files", Pattern = "*.csv" } };
-		_fileDialog.FileName = "timings.csv";
-		_fileDialog.ShowDialog("Select save location", TrySaveTimings);
-		_fileDialog.SyncCurrentDirectory(this);
+		ExportTrackedData(
+            fileFilters: new List<FileDialog.FileFilter>() { new FileDialog.FileFilter() { Description = "CSV files", Pattern = "*.csv" } },
+            defaultFilename: "timings.csv",
+            fileSaveDelegate: DoSaveTimings
+        );
 	}
 
-	private void DoSaveTimings(string path)
+	public void ExportSummary()
+	{
+        ExportTrackedData(
+            fileFilters: new List<FileDialog.FileFilter>() { new FileDialog.FileFilter() { Description = "JSON files", Pattern = "*.json" } },
+            defaultFilename: "summary.json",
+            fileSaveDelegate: DoSaveSummary
+        );
+    }
+
+    public void ExportReport()
     {
+        ExportTrackedData(
+            fileFilters: new List<FileDialog.FileFilter>() { new FileDialog.FileFilter() { Description = "JSON files", Pattern = "*.json" } },
+            defaultFilename: "report.json",
+            fileSaveDelegate: DoSaveReport
+        );
+    }
+
+    private void ExportTrackedData(List<FileDialog.FileFilter> fileFilters, string defaultFilename, Action<string> fileSaveDelegate)
+	{
+        if (_tracker is null || _tracker.FramesCaptured == 0)
+        {
+            _fileDialog.Manager.ShowMessageBox("Warning", "No frame timing data was captured yet", StandardMessageBoxIcons.Warning);
+            return;
+        }
+		
+        _fileDialog.FileFilters = fileFilters;
+        _fileDialog.FileName = defaultFilename;
+        _fileDialog.ShowDialog("Select save location", (x, y) => SaveFile(x, y, fileSaveDelegate));
+        _fileDialog.SyncCurrentDirectory(this);
+    }
+
+	private string GenerateTimingsCsv()
+	{
         System.Text.StringBuilder builder = new System.Text.StringBuilder();
         for (int i = 0; i < _tracker.FramesCaptured; i++)
         {
             builder.Append(_tracker.Buffer[i].ToString("G9"));
             if (i != _tracker.FramesCaptured - 1) builder.Append(", ");
         }
-        System.IO.File.WriteAllText(path, builder.ToString());
+		return builder.ToString();
     }
 
-    private bool TrySaveTimings(MonoDialog fileDialog, bool result)
-	{
-		if (result == false) return true;
-
-		string fileName = _fileDialog.FileName; // make a copy of the string
-
-		if (System.IO.File.Exists(fileName))
-		{
-			_fileDialog.Manager.ShowOkCancelMessageBox("Confirmation", "The file with the given name already exists." +
-			   " Do you want to replace it?", StandardMessageBoxIcons.Question, x => { if (x) DoSaveTimings(fileName); return true; }, _fileDialog);
-
-			return false;
-		}
-
-		DoSaveTimings(fileName);
-        fileDialog.OnDialogClosing = null;
-        fileDialog.CloseDialog(true);
-        _fileDialog.Manager.ShowMessageBox("Success", "Frame timings were saved successfully", StandardMessageBoxIcons.Info);
-        return true;
+	private string GenerateSummaryJson() {
+        FrameStatistics stats = new FrameStatistics();
+        stats.SetFrameTimings(_tracker.FrameTimings);
+		return DefaultJsonSerializer.Default.ToJson(stats, false);
 	}
+
+    public bool DoSaveFile(string path, Action<string> fileSaveDelegate, string errorCaption = "Could not save file: {0}")
+    {
+        try
+        {
+            fileSaveDelegate(path);
+            return true;
+        }
+        catch (Exception e)
+        {
+            _fileDialog.Manager.ShowMessageBox("Error", string.Format(errorCaption, e.Message), StandardMessageBoxIcons.Error);
+        }
+
+        return false;
+    }
+
+    public void DoSaveTimings(string path) => File.WriteAllText(path, GenerateTimingsCsv());
+
+	public void DoSaveSummary(string path) => File.WriteAllText(path, JsonSerializerUtility.Prettify(GenerateSummaryJson()));
+
+    public void DoSaveReport(string path)
+	{
+        System.Text.StringBuilder report = new System.Text.StringBuilder();
+		JsonSerializerUtility.BeginObject(report);
+		JsonSerializerUtility.SerializeDefault(report, "ReportVersion", "1.0.0");
+		JsonSerializerUtility.SerializeDefault(report, "ConstellationVersion", Application.version);
+		JsonSerializerUtility.SerializeDefault(report, "ReportDateTime", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
+		JsonSerializerUtility.SerializeDefault(report, "BuiltPlayer", !Application.isEditor);
+		JsonSerializerUtility.SerializeDefault(report, "DisplayResolution", Screen.currentResolution);
+		JsonSerializerUtility.SerializeDefault(report, "FullscreenMode", Screen.fullScreenMode);
+		JsonSerializerUtility.PrintProperty(report, "Summary", GenerateSummaryJson());
+		JsonSerializerUtility.SerializeDefault(report, "Timings", GenerateTimingsCsv());
+		JsonSerializerUtility.PrintProperty(report, "SimulationConfig", _currentSimulationConfigJson);
+		JsonSerializerUtility.EndObject(report);
+		
+        File.WriteAllText(path, JsonSerializerUtility.Prettify(report.ToString()));
+    }
+
+    private bool SaveFile(MonoDialog fileDialog, bool result, Action<string> fileSaveDelegate)
+    {
+        if (result == false) return true;
+
+        string fileName = _fileDialog.FileName;
+
+        if (File.Exists(fileName))
+        {
+            _fileDialog.Manager.ShowOkCancelMessageBox("Confirmation", "The file with the given name already exists." +
+               " Do you want to replace it?", StandardMessageBoxIcons.Question, x => { if (x) FinishSave(fileName); return true; }, _fileDialog);
+
+            return false;
+        }
+
+        FinishSave(fileName);
+
+        void FinishSave(string path)
+        {
+            fileDialog.OnDialogClosing = null;
+            fileDialog.CloseDialog(true);
+
+            if (DoSaveFile(path, fileSaveDelegate))
+                _fileDialog.Manager.ShowMessageBox("Success", "File saved successfully", StandardMessageBoxIcons.Info);
+        }
+        return true;
+    }
 
 	private IEnumerator StartTrackingDelayed(float initDelay, float delay)
 	{
@@ -400,6 +485,7 @@ public class AnalyticsCore : MonoBehaviour
         _wasFpsCounterEnabled = _fpsCounter.enabled;
         _fpsCounter.enabled = false;
         _viewport.enabled = false;
+        _interactionCore.enabled = false;
     }
 
 	private void RestoreUI()
@@ -407,6 +493,7 @@ public class AnalyticsCore : MonoBehaviour
         _uiObject.SetActive(true);
         _fpsCounter.enabled = _wasFpsCounterEnabled;
         _viewport.enabled = true;
+		_interactionCore.enabled = true;
     }
 
 	private IEnumerator StopTrackingDelayed(float delay)
@@ -417,7 +504,7 @@ public class AnalyticsCore : MonoBehaviour
 		if (BenchmarkMode == BenchmarkMode.BenchmarkSuite)
 		{
 			string name = _currentBenchmarkSuiteConfig.Configs[_currentSuiteIndex - 1].Name;
-            DoSaveTimings(Path.Combine(_currentTimingExportPath, name + "-timings.csv"));
+            DoSaveReport(Path.Combine(_currentTimingExportPath, name + "-report.json"));
 			StartSuiteIteration();
         } else
 		{

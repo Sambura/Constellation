@@ -67,7 +67,7 @@ namespace Core.Json
             }
             else
             {
-                json.Append('{');
+                JsonSerializerUtility.BeginObject(json);
                 MemberInfo[] members = type.GetMembers();
                 JsonSerializerFlags flags = JsonSerializerFlags.Default;
                 if (_typeSpecificFlags.ContainsKey(type)) flags = _typeSpecificFlags[type];
@@ -93,8 +93,7 @@ namespace Core.Json
                             continue;
                     }
                 }
-                JsonSerializerUtility.StripComma(json);
-                json.Append('}');
+                JsonSerializerUtility.EndObject(json);
             }
 
             return JsonSerializerUtility.Prettify(json.ToString(), false);

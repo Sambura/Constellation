@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 namespace UnityCore
 {
@@ -31,10 +32,15 @@ namespace UnityCore
 		public bool ValidState => _index <= BufferSize;
 
 		/// <summary>
-		/// Invoked whenever PrepareTracking() is called. Can be used to prepare external
-		/// objects for tracking.
+		/// Get Buffer but as a list and trimmed to actual length. Not the most efficient implementation
 		/// </summary>
-		public event Action OnPrepare;
+		public List<float> FrameTimings => new List<float>(Buffer).GetRange(0, FramesCaptured);
+
+        /// <summary>
+        /// Invoked whenever PrepareTracking() is called. Can be used to prepare external
+        /// objects for tracking.
+        /// </summary>
+        public event Action OnPrepare;
 
 		public void PrepareTracking()
 		{

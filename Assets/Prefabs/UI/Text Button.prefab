@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 3877502789024712506}
   - component: {fileID: 3877502789024712511}
   - component: {fileID: 3877502789024712508}
-  - component: {fileID: 3877502789024712509}
   - component: {fileID: 8000336553768623330}
+  - component: {fileID: 3877502789024712509}
   - component: {fileID: 2775643075624625780}
   - component: {fileID: 8011949991892547734}
   m_Layer: 5
@@ -81,6 +81,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &8000336553768623330
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3877502789024712507}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0cc7ceb639ec441b473f36cf4c6b98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _label: {fileID: 3877502789485936802}
+  _button: {fileID: 3877502789024712509}
+  _icon: {fileID: 0}
 --- !u!114 &3877502789024712509
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,20 +140,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &8000336553768623330
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3877502789024712507}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c0cc7ceb639ec441b473f36cf4c6b98, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _label: {fileID: 3877502789485936802}
-  _button: {fileID: 3877502789024712509}
 --- !u!114 &2775643075624625780
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -177,18 +178,21 @@ MonoBehaviour:
       AnchorMax: {x: 1, y: 1}
       OffsetMin: {x: 0, y: 0}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 3877502789485936803}
       Pivot: {x: 0.5, y: 0.5}
       AnchorMin: {x: 0.5, y: 0.5}
       AnchorMax: {x: 0.5, y: 0.5}
       OffsetMin: {x: -36.625, y: -30}
       OffsetMax: {x: 36.625, y: 30}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 3877502789024712506}
       Pivot: {x: 0.5, y: 1}
       AnchorMin: {x: 0, y: 1}
       AnchorMax: {x: 0, y: 1}
       OffsetMin: {x: 104, y: -60}
       OffsetMax: {x: 1008, y: 0}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   - Name: Middle
     UIElements:
     - Object: {fileID: 3877502790516489991}
@@ -197,18 +201,21 @@ MonoBehaviour:
       AnchorMax: {x: 1, y: 1}
       OffsetMin: {x: 0, y: 0}
       OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 3877502789485936803}
       Pivot: {x: 0.5, y: 0.5}
       AnchorMin: {x: 0.5, y: 0.5}
       AnchorMax: {x: 0.5, y: 0.5}
       OffsetMin: {x: -36.625, y: -30}
       OffsetMax: {x: 36.625, y: 30}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 3877502789024712506}
       Pivot: {x: 0.5, y: 1}
       AnchorMin: {x: 0.5, y: 1}
       AnchorMax: {x: 0.5, y: 1}
       OffsetMin: {x: -452, y: -60}
       OffsetMax: {x: 452, y: 0}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   _selectedConfiguration: 0
 --- !u!1 &3877502789485936800
 GameObject:

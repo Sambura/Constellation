@@ -67,6 +67,8 @@ public class ConfigSerializer : MonoBehaviour
         };
 	}
 
+    public string GetCurrentConfigJson(bool prettyPrint = true) => MultipleObjectsToJson(_names, _objects, prettyPrint);
+    
     /// <summary>
     /// Serializes config in json and saves it to the specified file
     /// If the file already exists, it is overwritten
@@ -74,7 +76,7 @@ public class ConfigSerializer : MonoBehaviour
     /// <param name="path">Path to a file where config should be saved</param>
     public void SerializeConfig(string path)
     {
-        string json = MultipleObjectsToJson(_names, _objects, true);
+        string json = GetCurrentConfigJson();
         string parentPath = Path.GetDirectoryName(path);
         Directory.CreateDirectory(parentPath);
         File.WriteAllText(path, json);
@@ -103,26 +105,14 @@ public class ConfigSerializer : MonoBehaviour
     public string MultipleObjectsToJson(string[] names, object[] objects, bool prettyPrint)
 	{
         if (names.Length != objects.Length) throw new ArgumentException("Lengths of arguments do not match");
-        int length = 0;
-		string[] jsons = new string[names.Length];
+
+        StringBuilder json = new StringBuilder();
+
+        JsonSerializerUtility.BeginObject(json);
         for (int i = 0; i < names.Length; i++)
-		{
-			jsons[i] = ConfigJsonSerializer.ConfigToJson(objects[i], false);
-            length += jsons[i].Length;
-            length += names[i].Length;
-		}
+            JsonSerializerUtility.PrintProperty(json, names[i], ConfigJsonSerializer.ConfigToJson(objects[i], false));
 
-        // This length will only work for non-pretty print
-        StringBuilder json = new StringBuilder(length + names.Length * 4 + 2);
-
-        json.Append('{');
-        for (int i = 0; i < jsons.Length; i++)
-		{
-            JsonSerializerUtility.PrintPropertyName(json, names[i]);
-            json.Append(jsons[i]);
-            if (i != jsons.Length - 1) json.Append(',');
-		}
-        json.Append('}');
+        JsonSerializerUtility.EndObject(json);
 
         return JsonSerializerUtility.Prettify(json.ToString(), prettyPrint);
 	}

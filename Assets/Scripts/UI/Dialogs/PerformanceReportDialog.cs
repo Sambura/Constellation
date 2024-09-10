@@ -1,8 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
-using System.Linq;
-using static Core.Algorithm;
+using System;
 
 namespace ConstellationUI
 {
@@ -11,41 +10,31 @@ namespace ConstellationUI
         [Header("Objects")]
         [SerializeField] private TextMeshProUGUI _basicStatsLabel;
         [SerializeField] private LinePlot _timingsPlot;
+        [SerializeField] private Button _exportSummaryButton;
+        [SerializeField] private Button _exportReportButton;
+        [SerializeField] private Button _exportTimingsButton;
 
         protected float[] XTickSpacings = { 1, 2, 5, 10, 15, 25, 50, 100, 150, 200, 250 };
         protected float[] YTickSpacings = { 0.001f, 0.002f, 0.005f, 0.01f, 0.025f };
         protected float[] FPSLineLevels = { 0.1f, 0.25f, 0.5f, 1, 2, 5, 10, 15, 20, 30, 60, 120, 240, 360 };
 
-        public int TotalFrames { get; private set; }
-        public float TotalDuration { get; private set; }
-        public float AverageFPS { get; private set; }
-        public float AverageFrameTime { get; private set; }
-        public float FrameDurationStd { get; private set; }
-        public float OneLowTime { get; private set; }
-        public float PointOneLowTime { get; private set; }
-        public float LongestFrameTime { get; private set; }
+        public Action<PerformanceReportDialog> OnExportSummaryClick { get; set; }
+        public Action<PerformanceReportDialog> OnExportReportClick { get; set; }
+        public Action<PerformanceReportDialog> OnExportTimingsClick { get; set; }
+
+        public FrameStatistics FrameStatistics { get; private set; } = new FrameStatistics();
         public List<float> FrameTimings { get; private set; }
 
-        private void RecalculateStats()
-        {
-            TotalFrames = FrameTimings.Count;
-            TotalDuration = FrameTimings.Sum();
-            AverageFrameTime = TotalDuration / TotalFrames;
-            AverageFPS = 1 / AverageFrameTime;
-            FrameDurationStd = CalculateStandardDeviation(FrameTimings, AverageFrameTime);
+        private void ExportTimingsButtonClicked() => OnExportTimingsClick?.Invoke(this);
 
-            List<float> copy = new List<float>(FrameTimings);
-            copy.Sort();
-            copy.Reverse();
-            OneLowTime = copy[copy.Count / 100];
-            PointOneLowTime = copy[copy.Count / 1000];
-            LongestFrameTime = copy[0];
-        }
+        private void ExportSummaryButtonClicked() => OnExportSummaryClick?.Invoke(this);
+
+        private void ExportReportButtonClicked() => OnExportReportClick?.Invoke(this);
 
         public void UpdateReport(List<float> frameTimings)
         {
             FrameTimings = frameTimings;
-            RecalculateStats();
+            FrameStatistics.SetFrameTimings(FrameTimings);
             UpdateBasicStatsLabel();
 
             _timingsPlot.MinYLimit = 0;
@@ -55,14 +44,30 @@ namespace ConstellationUI
 
         private void UpdateBasicStatsLabel()
         {
-            _basicStatsLabel.text =	$"{TotalFrames} frames\n" +
-                                    $"{TotalDuration:0.00} s\n" +
-                                    $"{AverageFrameTime * 1000:0.000} ms\n" +
-                                    $"{FrameDurationStd}\n" +
-                                    $"{AverageFPS:0.00} FPS\n" +
-                                    $"{OneLowTime * 1000:0.000} ms, {1 / OneLowTime: 0.00} FPS\n" +
-                                    $"{PointOneLowTime * 1000:0.000} ms, {1 / PointOneLowTime: 0.00} FPS\n" +
-                                    $"{LongestFrameTime * 1000:0.000} ms, {1 / LongestFrameTime: 0.00} FPS";
+            FrameStatistics FS = FrameStatistics;
+            _basicStatsLabel.text =	$"{FS.TotalFrames} frames\n" +
+                                    $"{FS.TotalDuration:0.00} s\n" +
+                                    $"{FS.AverageFrameTime * 1000:0.000} ms\n" +
+                                    $"{FS.FrameDurationStd}\n" +
+                                    $"{FS.AverageFPS:0.00} FPS\n" +
+                                    $"{FS.OneLowTime * 1000:0.000} ms, {1 / FS.OneLowTime: 0.00} FPS\n" +
+                                    $"{FS.PointOneLowTime * 1000:0.000} ms, {1 / FS.PointOneLowTime: 0.00} FPS\n" +
+                                    $"{FS.LongestFrameTime * 1000:0.000} ms, {1 / FS.LongestFrameTime: 0.00} FPS";
+        }
+
+        protected virtual void Start()
+        {
+            _exportSummaryButton.Click += ExportSummaryButtonClicked;
+            _exportReportButton.Click += ExportReportButtonClicked;
+            _exportTimingsButton.Click += ExportTimingsButtonClicked;
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            _exportSummaryButton.Click -= ExportSummaryButtonClicked;
+            _exportReportButton.Click -= ExportReportButtonClicked;
+            _exportTimingsButton.Click -= ExportTimingsButtonClicked;
         }
     }
 }

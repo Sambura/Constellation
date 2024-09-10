@@ -20,7 +20,7 @@ namespace UnityCore
             if (obj == null) return "null";
 
             StringBuilder json = new StringBuilder();
-            json.Append('{');
+            JsonSerializerUtility.BeginObject(json);
 
             foreach (PropertyInfo property in obj.GetType().GetProperties())
             {
@@ -29,8 +29,7 @@ namespace UnityCore
                 JsonSerializerUtility.SerializeDefault(json, property.Name, property.GetValue(obj));
             }
 
-            JsonSerializerUtility.StripComma(json);
-            json.Append('}');
+            JsonSerializerUtility.EndObject(json);
 
             return JsonSerializerUtility.Prettify(json.ToString(), prettyPrint);
         }
@@ -47,17 +46,30 @@ namespace UnityCore
         {
             Dictionary<string, string> data = JsonSerializerUtility.GetProperties(json);
             int deserealized = 0;
+            HashSet<string> deserializedProperties = new HashSet<string>();
 
             foreach (PropertyInfo property in obj.GetType().GetProperties())
             {
                 if (data.TryGetValue(property.Name, out string value))
                 {
+                    if (deserializedProperties.Contains(property.Name))
+                    {
+                        Debug.LogWarning($"Deserializing {property.Name} multiple times");
+                    } else
+                    {
+                        deserializedProperties.Add(property.Name);
+                    }
                     Type type = property.PropertyType;
                     ConfigProperty attribute = property.GetCustomAttribute<ConfigProperty>();
                     if (attribute == null) { Debug.LogWarning("Invalid property deserialization attempt"); continue; }
                     property.SetValue(obj, DefaultJsonSerializer.Default.FromJson(value, type));
                     deserealized++;
                 }
+            }
+
+            if (data.Count != deserealized)
+            {
+                Debug.LogWarning($"Only {deserealized} properties deserialized out of {data.Count}.");
             }
 
             return deserealized;

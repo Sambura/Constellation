@@ -88,6 +88,17 @@ namespace Core.Json
             return elements;
         }
 
+        public static void BeginObject(StringBuilder json) { json.Append('{'); }
+
+        public static void EndObject(StringBuilder json) { StripComma(json); json.Append('}'); }
+
+        public static void PrintProperty(StringBuilder json, string name, string value)
+        {
+            PrintPropertyName(json, name);
+            json.Append(value);
+            json.Append(',');
+        }
+
         /// <summary>
         /// Skips all the spaces, tabs, and newline characters in the string
         /// Returns the index of first character that was not skipped
