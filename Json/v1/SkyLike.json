@@ -1,29 +1,62 @@
 {
     "Particles": {
-        "ShowParticles": false,
-        "ParticleSize": 2,
-        "ParticleColor": {
-            "r": 0.138274148106575,
-            "g": 0.24516132473945619,
-            "b": 0.5337873101234436,
-            "a": 0.007843137718737126
-        },
         "ParticleCount": 2500,
         "MinParticleVelocity": 0.316901386,
-        "MaxParticleVelocity": 2.88732386
+        "MaxParticleVelocity": 2.88732386,
+        "BoundMargins": 0.0,
+        "BoundsShape": "Viewport"
     },
     "Visualizer": {
+        "ShowParticles": false,
+        "ParticleSize": 2.0,
+        "ParticleColor": {
+            "r": 0.138274148,
+            "g": 0.245161325,
+            "b": 0.53378731,
+            "a": 0.00784313772
+        },
+        "ParticleSprite": {
+            "Name": "Circle",
+            "Path": null
+        },
         "ShowLines": false,
         "MeshLines": false,
+        "LineWidth": 0.0199999996,
+        "ShowTriangles": true,
+        "TriangleFillOpacity": 0.0500000156,
+        "AlphaCurve": {
+            "keys": [
+                {
+                    "time": 0.0,
+                    "value": 0.0,
+                    "inTangent": 1.18008745,
+                    "outTangent": 1.18008745,
+                    "inWeight": 0.0,
+                    "outWeight": 0.0393374749,
+                    "weightedMode": "None",
+                    "tangentMode": 0
+                },
+                {
+                    "time": 1.0,
+                    "value": 1.0,
+                    "inTangent": 0.542459667,
+                    "outTangent": 0.428191692,
+                    "inWeight": 0.333333343,
+                    "outWeight": 0.0,
+                    "weightedMode": "None",
+                    "tangentMode": 0
+                }
+            ],
+            "preWrapMode": "ClampForever",
+            "postWrapMode": "ClampForever"
+        },
+        "AlternateLineColor": false,
         "LineColor": {
-            "mode": {
-                "value__": 0
-            },
             "colorKeys": [
                 {
                     "color": {
-                        "r": 0.3063408136367798,
-                        "g": 0.6062904596328735,
+                        "r": 0.306340814,
+                        "g": 0.60629046,
                         "b": 1.0,
                         "a": 1.0
                     },
@@ -36,7 +69,7 @@
                         "b": 1.0,
                         "a": 1.0
                     },
-                    "time": 0.9928587675094605
+                    "time": 0.992858768
                 }
             ],
             "alphaKeys": [
@@ -48,42 +81,19 @@
                     "alpha": 1.0,
                     "time": 1.0
                 }
-            ]
+            ],
+            "mode": "Blend"
         },
-        "LineWidth": 0.0199999996,
-        "ConnectionDistance": 0.528169036,
-        "StrongDistance": 0,
-        "ShowTriangles": true,
-        "TriangleFillOpacity": 0.0500000156,
+        "MinColorFadeDuration": 3.0,
+        "MaxColorFadeDuration": 7.0,
         "ClearColor": {
-            "r": 0.917827308177948,
-            "g": 0.9500285983085632,
+            "r": 0.917827308,
+            "g": 0.950028598,
             "b": 1.0,
-            "a": 0.02976752258837223
+            "a": 0.0297675226
         },
-        "AlphaCurve": {
-            "keys": [
-                {
-                    "time": 0,
-                    "value": 0,
-                    "inTangent": 1.18008745,
-                    "outTangent": 1.18008745,
-                    "inWeight": 0,
-                    "outWeight": 0.0393374749
-                },
-                {
-                    "time": 1,
-                    "value": 1,
-                    "inTangent": 0.542459667,
-                    "outTangent": 0.428191692,
-                    "inWeight": 0.333333343,
-                    "outWeight": 0
-                }
-            ]
-        },
-        "AlternateLineColor": false,
-        "MinColorFadeDuration": 3,
-        "MaxColorFadeDuration": 7
+        "ConnectionDistance": 0.528169036,
+        "StrongDistance": 0.0
     },
     "Fragmentation": {
         "ShowCellBorders": false,
@@ -91,14 +101,21 @@
             "r": 1.0,
             "g": 0.0,
             "b": 0.0,
-            "a": 0.4627451002597809
+            "a": 0.4627451
         },
         "ShowCells": false,
         "CellColor": {
             "r": 0.0,
             "g": 0.0,
             "b": 0.0,
-            "a": 0.03837147355079651
+            "a": 0.0383714736
+        },
+        "ShowBounds": false,
+        "BoundsColor": {
+            "r": 0.0,
+            "g": 0.4584198,
+            "b": 1.0,
+            "a": 1.0
         }
     }
 }

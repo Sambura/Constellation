@@ -1,98 +1,121 @@
 {
     "Particles": {
-    "ShowParticles": true,
-    "ParticleSize": 0.300000012,
-    "ParticleColor": {
-    "r": 0.0,
-    "g": 0.0,
-    "b": 0.0,
-    "a": 0.7986108064651489
-    },
-    "ParticleCount": 1027,
-    "MinParticleVelocity": 0.637844563,
-    "MaxParticleVelocity": 1.64058137
+        "ParticleCount": 1027,
+        "MinParticleVelocity": 0.637844563,
+        "MaxParticleVelocity": 1.64058137,
+        "BoundMargins": 0.0,
+        "BoundsShape": "Viewport"
     },
     "Visualizer": {
-    "ShowLines": true,
-    "MeshLines": true,
-    "LineColor": {
-    "mode": {
-    "value__": 0
-    },
-    "colorKeys": [{
-    "color": {
-    "r": 0.0,
-    "g": 0.0,
-    "b": 0.0,
-    "a": 1.0
-    },
-    "time": 0.0
-    },
-    {
-    "color": {
-    "r": 0.3877856135368347,
-    "g": 0.7226698994636536,
-    "b": 1.0,
-    "a": 1.0
-    },
-    "time": 1.0
-    }],
-    "alphaKeys": [{
-    "alpha": 1.0,
-    "time": 0.0
-    },
-    {
-    "alpha": 1.0,
-    "time": 1.0
-    }]
-    },
-    "LineWidth": 0.0245102551,
-    "ConnectionDistance": 0.976828575,
-    "StrongDistance": 0,
-    "ShowTriangles": true,
-    "TriangleFillOpacity": 1,
-    "ClearColor": {
-    "r": 0.0,
-    "g": 0.0,
-    "b": 0.0,
-    "a": 0.05633615329861641
-    },
-    "AlphaCurve": {
-    "keys": [{
-    "time": 0,
-    "value": 0,
-    "inTangent": 0,
-    "outTangent": 0.648649693,
-    "inWeight": 0.100000001,
-    "outWeight": 0.17640841
-    },
-    {
-    "time": 1,
-    "value": 1,
-    "inTangent": 0.470588237,
-    "outTangent": 0,
-    "inWeight": 0.150306344,
-    "outWeight": 0.100000001
-    }]
-    },
-    "AlternateLineColor": false,
-    "MinColorFadeDuration": 0.495003462,
-    "MaxColorFadeDuration": 0.495003462
+        "ShowParticles": true,
+        "ParticleSize": 0.300000012,
+        "ParticleColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.798610806
+        },
+        "ParticleSprite": {
+            "Name": "Circle",
+            "Path": null
+        },
+        "ShowLines": true,
+        "MeshLines": true,
+        "LineWidth": 0.0245102551,
+        "ShowTriangles": true,
+        "TriangleFillOpacity": 1.0,
+        "AlphaCurve": {
+            "keys": [
+                {
+                    "time": 0.0,
+                    "value": 0.0,
+                    "inTangent": 0.0,
+                    "outTangent": 0.648649693,
+                    "inWeight": 0.100000001,
+                    "outWeight": 0.17640841,
+                    "weightedMode": "None",
+                    "tangentMode": 0
+                },
+                {
+                    "time": 1.0,
+                    "value": 1.0,
+                    "inTangent": 0.470588237,
+                    "outTangent": 0.0,
+                    "inWeight": 0.150306344,
+                    "outWeight": 0.100000001,
+                    "weightedMode": "None",
+                    "tangentMode": 0
+                }
+            ],
+            "preWrapMode": "ClampForever",
+            "postWrapMode": "ClampForever"
+        },
+        "AlternateLineColor": false,
+        "LineColor": {
+            "colorKeys": [
+                {
+                    "color": {
+                        "r": 0.0,
+                        "g": 0.0,
+                        "b": 0.0,
+                        "a": 1.0
+                    },
+                    "time": 0.0
+                },
+                {
+                    "color": {
+                        "r": 0.387785614,
+                        "g": 0.722669899,
+                        "b": 1.0,
+                        "a": 1.0
+                    },
+                    "time": 1.0
+                }
+            ],
+            "alphaKeys": [
+                {
+                    "alpha": 1.0,
+                    "time": 0.0
+                },
+                {
+                    "alpha": 1.0,
+                    "time": 1.0
+                }
+            ],
+            "mode": "Blend"
+        },
+        "MinColorFadeDuration": 0.495003462,
+        "MaxColorFadeDuration": 0.495003462,
+        "ClearColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0563361533
+        },
+        "ConnectionDistance": 0.976828575,
+        "StrongDistance": 0.0
     },
     "Fragmentation": {
-    "ShowCellBorders": false,
-    "CellBorderColor": {
-    "r": 0.0,
-    "g": 0.0,
-    "b": 0.0,
-    "a": 0.10263301432132721
-    },
-    "ShowCells": false,
-    "CellColor": {
-    "r": 0.21420717239379884,
-    "g": 0.6772946715354919,
-    "b": 1.0,
-    "a": 0.0117647061124444
+        "ShowCellBorders": false,
+        "CellBorderColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.102633014
+        },
+        "ShowCells": false,
+        "CellColor": {
+            "r": 0.214207172,
+            "g": 0.677294672,
+            "b": 1.0,
+            "a": 0.0117647061
+        },
+        "ShowBounds": false,
+        "BoundsColor": {
+            "r": 0.0,
+            "g": 0.4584198,
+            "b": 1.0,
+            "a": 1.0
+        }
     }
-    }
-    }
+}
