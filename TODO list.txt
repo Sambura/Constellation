@@ -1,9 +1,6 @@
 Current bugs:
 	- Transparency: when low framerate causes events from mouse/keyboard also become "frame limited"
 	- Connection distance 0 causes application to hang
-	- After benchmark suite is complete, fps counter stop working (turning off/on fixes it)
-
-	- some options should be enforced when using benchmark suite - .i.e. fullscreen mode, fps cap, etc.
 	- it seems that particle *rendering* performance has dropped in new version (1.1.2) compared to (fcafbce2bd97765134acf0b0f59cf31140ff8958)
 		+ I did not look for specific commit that worsened the performance, presumably it should be obvious though
 

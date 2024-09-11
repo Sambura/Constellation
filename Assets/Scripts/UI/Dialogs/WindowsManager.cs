@@ -58,9 +58,9 @@ namespace ConstellationUI
 			}
 		}
 
-		public void ShowMessageBox(string title, string text, StandardMessageBoxIcons icon, MonoDialog parent = null)
+		public void ShowMessageBox(string title, string text, StandardMessageBoxIcons icon, MonoDialog parent = null, OnDialogClosingHandler callback = null)
 		{
-			ShowMessageBox(title, text, icon.ToString(), parent);
+			ShowMessageBox(title, text, icon.ToString(), parent, callback);
 		}
 
 		private Sprite GetMessageBoxIcon(string name)
@@ -74,7 +74,7 @@ namespace ConstellationUI
 			return _messageBoxIcons[0].Sprite;
 		}
 
-		public void ShowMessageBox(string title, string text, string icon, MonoDialog parent = null)
+		public void ShowMessageBox(string title, string text, string icon, MonoDialog parent = null, OnDialogClosingHandler callback = null)
 		{
 			if (_messageBox == null)
 			{
@@ -85,7 +85,7 @@ namespace ConstellationUI
 			if (parent)
 				_messageBox.Position = parent.transform.position;
 
-			_messageBox.ShowDialog(title, null, text, GetMessageBoxIcon(icon), false);
+			_messageBox.ShowDialog(title, callback, text, GetMessageBoxIcon(icon), false);
 		}
 
 		public void ShowOkCancelMessageBox(string title, string text, StandardMessageBoxIcons icon, Func<bool, bool> callback, MonoDialog parent = null)

@@ -1465,6 +1465,7 @@ MonoBehaviour:
   _perfDialog: {fileID: 2057954985}
   _configSerializer: {fileID: 144636868}
   _interactionCore: {fileID: 144636869}
+  _applicationController: {fileID: 519420029}
 --- !u!1 &166361491
 GameObject:
   m_ObjectHideFlags: 0

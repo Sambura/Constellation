@@ -21,8 +21,9 @@ public class AnalyticsCore : MonoBehaviour
 	[SerializeField] private PerformanceReportDialog _perfDialog;
 	[SerializeField] private ConfigSerializer _configSerializer;
 	[SerializeField] private InteractionCore _interactionCore;
+	[SerializeField] private ApplicationController _applicationController;
 
-	private FrameTimingTracker _tracker;
+    private FrameTimingTracker _tracker;
 	private StaticTimeFPSCounter _helperFpsCounter;
 	private bool _wasFpsCounterEnabled;
 
@@ -312,15 +313,26 @@ public class AnalyticsCore : MonoBehaviour
 			}
 		}
 
-		if (BenchmarkMode != BenchmarkMode.BenchmarkSuite)
+        if (BenchmarkMode != BenchmarkMode.BenchmarkSuite)
 		{
+			_wasFpsCounterEnabled = _fpsCounter.enabled;
 			DoStartBenchmark();
 			return;
 		}
 
-		_successfulSuiteRuns = 0;
-		_currentSuiteIndex = 0;
-		StartSuiteIteration();
+		_fileDialog.Manager.ShowMessageBox("Alert", "You are about to start benchmark suite! Please <color=yellow>close all other applications</color> and " +
+			"make sure that the <color=orange>power mode of your PC is configured</color> correctly. <color=#b0b0b0>Refrain from using your PC until the benchmark " +
+			"is complete to ensure the best measurement results</color>", StandardMessageBoxIcons.Info, null, (x, y) => { DoStartBenchmarkSuite(); return true; });
+
+		void DoStartBenchmarkSuite()
+		{
+            _wasFpsCounterEnabled = _fpsCounter.enabled;
+            _successfulSuiteRuns = 0;
+			_currentSuiteIndex = 0;
+			_applicationController.FullScreenMode = _currentBenchmarkSuiteConfig.FullscreenMode;
+			_applicationController.TargetFrameRate = _currentBenchmarkSuiteConfig.FpsCap;
+			StartSuiteIteration();
+		}
 	}
 
 	[ConfigGroupMember] [InvokableMethod] [ConfigMemberOrder(-2)]
@@ -482,7 +494,6 @@ public class AnalyticsCore : MonoBehaviour
 	private void DisableUI()
 	{
         _uiObject.SetActive(false);
-        _wasFpsCounterEnabled = _fpsCounter.enabled;
         _fpsCounter.enabled = false;
         _viewport.enabled = false;
         _interactionCore.enabled = false;

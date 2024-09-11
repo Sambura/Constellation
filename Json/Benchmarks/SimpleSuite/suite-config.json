@@ -1,5 +1,7 @@
 {
-    "BenchmarkSuiteVersion": "1.0.0",
+    "BenchmarkSuiteVersion": "1.1.0",
     "Name": "Simple suite",
-    "Description": "Basic performance benchmarks"
+    "Description": "Basic performance benchmarks",
+    "FullscreenMode": "ExclusiveFullScreen",
+    "FpsCap": 0
 }

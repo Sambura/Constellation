@@ -1,12 +1,15 @@
 using System.IO;
 using System.Collections.Generic;
 using Core.Json;
+using UnityEngine;
 
 public class BenchmarkSuiteConfig
 {
     public string BenchmarkSuiteVersion { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public FullScreenMode FullscreenMode { get; set; } = FullScreenMode.ExclusiveFullScreen;
+    public int FpsCap { get; set; } = 0;
     public List<BenchmarkConfig> Configs { get; set; } // TODO - make so that this is not serialized
     public int ConfigsFailedToLoad { get; protected set; }
 
