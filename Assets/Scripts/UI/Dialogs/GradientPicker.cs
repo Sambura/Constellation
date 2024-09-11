@@ -16,6 +16,7 @@ namespace ConstellationUI
         private GradientStop _selectedStop;
         private Gradient _gradient;
         private List<GradientStop> _stops = new List<GradientStop>();
+        private bool _stopsLock = false; // when true, do not modify gradient stops
 
         public GradientStop SelectedStop
         {
@@ -65,11 +66,13 @@ namespace ConstellationUI
             while (_stops.Count < keys.Length)
                 AddStop(Vector2.zero);
 
+            _stopsLock = true;
             for (int i = 0; i < keys.Length; i++)
             {
                 _stops[i].SetNormalizedPosition(new Vector2(keys[i].time, 0));
                 _stops[i].Color = keys[i].color;
             }
+            _stopsLock = false;
 
             // Raises GradientChanged event
             UpdateStops();
@@ -102,6 +105,8 @@ namespace ConstellationUI
 
         private void UpdateStops()
         {
+            if (_stopsLock) return;
+
             Algorithm.BubbleSort(_stops, (x, y) =>
             {
                 bool byX = x.Position.x != y.Position.x;

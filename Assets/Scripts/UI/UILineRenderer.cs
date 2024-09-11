@@ -89,7 +89,14 @@ namespace ConstellationUI
 
         private void CreateMeshes()
         {
-            if (_points == null) return;
+            if (_points == null)
+            {
+                foreach (var chunk in _meshChunks)
+                    Destroy(chunk.gameObject);
+                _meshChunks.Clear();
+                
+                return;
+            }
 
             int verticesTotal = 4 * (_chunckedMode ? _points.Length / 2 : _points.Length - 1);
             int chunksRequiered = (verticesTotal + MaxVertexCount - 1) / MaxVertexCount;

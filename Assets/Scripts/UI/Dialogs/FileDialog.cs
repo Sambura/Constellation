@@ -101,7 +101,7 @@ namespace ConstellationUI
 			string customTitle = null;
 			DirectoryInfo[] customDirectories = null;
 
-			if (CurrentDirectory == null)
+			if (CurrentDirectory is null)
 			{
 				string[] drives = Directory.GetLogicalDrives();
 				customDirectories = new DirectoryInfo[drives.Length];
@@ -131,6 +131,8 @@ namespace ConstellationUI
 
 		private static FileInfo[] GetFilesByPattern(DirectoryInfo dir, string pattern)
 		{
+			if (dir is null) return null;
+
 			string[] filters = pattern.Split('|');
 			List<FileInfo> files = new List<FileInfo>();
 
@@ -156,7 +158,7 @@ namespace ConstellationUI
 				return;
 			}
 
-			_pathInputField.text = customTitle ?? CurrentDirectory.Name;
+			_pathInputField.text = customTitle ?? CurrentDirectory?.Name ?? "<error>";
 
 			foreach (GameObject file in _fileObjects) Destroy(file);
 			_fileObjects.Clear();

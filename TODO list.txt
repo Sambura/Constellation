@@ -1,19 +1,19 @@
 Current bugs:
-	- Sometimes when opening color picker the alpha slider is in incorrect position (prob. when opening color picker the first time)
-	- Curve picker: when editing a curve and deselecting a node, handle lines do not disappear (sometimes - do not appear when selecting node)
 	- Transparency: when low framerate causes events from mouse/keyboard also become "frame limited"
-	- Gradient picker: when loading config with 3-stop gradient and opening editor for the first time, only 2 stops are displayed
 	- Connection distance 0 causes application to hang
 	- After benchmark suite is complete, fps counter stop working (turning off/on fixes it)
 
+	- some options should be enforced when using benchmark suite - .i.e. fullscreen mode, fps cap, etc.
+	- it seems that particle *rendering* performance has dropped in new version (1.1.2) compared to (fcafbce2bd97765134acf0b0f59cf31140ff8958)
+		+ I did not look for specific commit that worsened the performance, presumably it should be obvious though
+
 Minor bugs:
-	- Dropdown list: is larger than needed (especially bad when dropdown appears at the top)
 	- Minmax slider: when clicking a knob, only a left one actually changes color in response to click, regardless of which one is actually pressed
-	- File dialog: cannot switch to other disks
 
 To-do list:
 	- Try to implement circular bounds
 	- Add custom rectangular bounds
+	- No bounds
 	- Add more default particle sprites (new soft circle!!!)
 	- Try to switch to fields from properties in Particle class, and measure performance effect
 	- Add ability to turn off debug & interaction scripts to boost performance

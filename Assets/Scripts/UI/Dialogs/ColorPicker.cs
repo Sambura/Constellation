@@ -12,15 +12,17 @@ namespace ConstellationUI
         [SerializeField] private Image _colorWindowImage;
         [SerializeField] private RectTransform _hueBarKnob;
         [SerializeField] private RectTransform _colorWindowKnob;
+        
+        protected float Alpha => _alphaSlider.Value / 255f;
 
         public Color Color
         {
-            get => _color;
+            get => new Color(_color.r, _color.g, _color.b, UseAlpha ? Alpha : 1f);
             set
             {
                 if (_color == value) return;
                 SetColor(value);
-                ColorChanged?.Invoke(value);
+                ColorChanged?.Invoke(Color);
             }
         }
         public Action<Color> OnColorChanged { get; set; }
@@ -31,13 +33,8 @@ namespace ConstellationUI
             get => _useAlpha;
             set
             {
-                if (_useAlpha == value) return;
                 _useAlpha = value;
                 _alphaSlider.gameObject.SetActive(value);
-                if (_useAlpha == false)
-                {
-                    _alphaSlider.Value = 255;
-                }
             }
         }
 

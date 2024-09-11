@@ -125,7 +125,11 @@ public class ConfigSerializer : MonoBehaviour
         foreach (var keyValue in jsons)
         {
             int index = Array.IndexOf(names, keyValue.Key);
-            if (index < 0) continue;
+            if (index < 0)
+            {
+                Debug.Log($"Unknown system encountered in specified config: {keyValue.Key}");
+                continue;
+            }
             deserealized += ConfigJsonSerializer.OverwriteConfigFromJson(keyValue.Value, objects[index]);
         }
 

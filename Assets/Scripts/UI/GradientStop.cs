@@ -39,7 +39,8 @@ public class GradientStop : MonoSelectable
 
 	public override void SetPositionWithoutNotify(Vector3 pointerPosition)
 	{
-		Vector3 newPosition = pointerPosition;
+        // own implementation, no base.SetPositionWithoutNotify
+        Vector3 newPosition = pointerPosition;
 		if (newPosition == _transform.position) return;
 		Vector3 local = _parent.InverseTransformPoint(newPosition);
 		local.x = Mathf.Clamp(local.x, _parent.rect.xMin, _parent.rect.xMax);

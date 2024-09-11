@@ -809,7 +809,6 @@ namespace ConfigSerialization
                 property, _textInputFieldPrefab, memberContainer, parent, (x, y, z) =>
                 {
                     x.LabelText = z.Name ?? SplitAndLowerCamelCase(property.Name);
-					x.Text = property.GetValue(memberContainer) as string;
                 },
                 nameof(InputField.Text), ControlType.TextInputField
             );
@@ -827,7 +826,6 @@ namespace ConfigSerialization
 					x.CheckFileExists = z.CheckFileExists;
 					x.FileFilters = z.Filters;
 					x.DialogTitle = z.DialogTitle;
-					x.SelectedPath = property.GetValue(memberContainer) as string;
 				},
                 nameof(FilePathSelector.SelectedPath), ControlType.FilePathSelector
             );

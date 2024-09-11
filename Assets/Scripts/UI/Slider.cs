@@ -41,13 +41,13 @@ namespace ConstellationUI
 
 		protected override void Start()
 		{
-			base.Start();
-
 			if (_keepSliderConstraints == false)
 			{
 				_slider.minValue = MinValue;
 				_slider.maxValue = MaxValue;
 			}
+
+			base.Start();
 
 			_slider.onValueChanged.AddListener(OnSliderValueChanged);
 		}

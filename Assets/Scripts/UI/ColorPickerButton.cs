@@ -82,8 +82,8 @@ namespace ConstellationUI
 			ColorPicker.ShowDialog(_colorPickerTitle);
 			ColorPicker.Position = _transform.position + (Vector3)_colorPickerOffset;
 			ColorPicker.OnColorChanged = OnColorPickerColorChange;
-			ColorPicker.Color = Color;
 			ColorPicker.UseAlpha = _useAlpha;
+			ColorPicker.Color = Color;
 		}
 
 		private void Awake()
