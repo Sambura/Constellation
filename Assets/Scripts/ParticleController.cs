@@ -164,12 +164,7 @@ public class ParticleController : MonoBehaviour
     public Viewport Viewport
     {
         get => _viewport;
-        set
-		{
-            _viewport = value;
-            _viewport.CameraDimensionsChanged += OnViewportChanged;
-            OnViewportChanged();
-        }
+        set { if (_viewport != value) SetViewport(value); }
     }
     public float BoundLeft => _left;
     public float BoundRight => _right;
@@ -183,13 +178,22 @@ public class ParticleController : MonoBehaviour
         if (_particles != null) DoFragmentation();
     }
 
-	private void Awake()
+    private void SetViewport(Viewport viewport)
+    {
+        if (_viewport) 
+            _viewport.CameraDimensionsChanged -= OnViewportChanged;
+
+        _viewport = viewport;
+        _viewport.CameraDimensionsChanged += OnViewportChanged;
+        OnViewportChanged();
+    }
+
+    private void Awake()
 	{
         _particles = new List<Particle>(_particlesCount);
 
-        RecalculateBounds();
+        SetViewport(_viewport);
         SetParticlesCount(_particlesCount);
-        DoFragmentation();
     }
 
     private void OnViewportChanged()

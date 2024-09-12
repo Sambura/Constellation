@@ -322,20 +322,23 @@ public class AnalyticsCore : MonoBehaviour
 
 		_fileDialog.Manager.ShowMessageBox("Alert", "You are about to start benchmark suite! Please <color=yellow>close all other applications</color> and " +
 			"make sure that the <color=orange>power mode of your PC is configured</color> correctly. <color=#b0b0b0>Refrain from using your PC until the benchmark " +
-			"is complete to ensure the best measurement results</color>", StandardMessageBoxIcons.Info, null, (x, y) => { DoStartBenchmarkSuite(); return true; });
-
-		void DoStartBenchmarkSuite()
-		{
-            _wasFpsCounterEnabled = _fpsCounter.enabled;
-            _successfulSuiteRuns = 0;
-			_currentSuiteIndex = 0;
-			_applicationController.FullScreenMode = _currentBenchmarkSuiteConfig.FullscreenMode;
-			_applicationController.TargetFrameRate = _currentBenchmarkSuiteConfig.FpsCap;
-			StartSuiteIteration();
-		}
+			"is complete to ensure the best measurement results</color>", StandardMessageBoxIcons.Info, null, (x, y) => { StartCoroutine(DoStartBenchmarkSuite()); return true; });
 	}
 
-	[ConfigGroupMember] [InvokableMethod] [ConfigMemberOrder(-2)]
+    private IEnumerator DoStartBenchmarkSuite()
+    {
+        _wasFpsCounterEnabled = _fpsCounter.enabled;
+        _successfulSuiteRuns = 0;
+        _currentSuiteIndex = 0;
+        _applicationController.FullScreenMode = _currentBenchmarkSuiteConfig.FullscreenMode;
+        _applicationController.TargetFrameRate = _currentBenchmarkSuiteConfig.FpsCap;
+
+        yield return null; // wait one frame for viewport dimensions to update (due to chaning fullscreen mode)
+
+        StartSuiteIteration();
+    }
+
+    [ConfigGroupMember] [InvokableMethod] [ConfigMemberOrder(-2)]
 	public void ShowReport()
 	{
 		if (_tracker is null || _tracker.FramesCaptured == 0)

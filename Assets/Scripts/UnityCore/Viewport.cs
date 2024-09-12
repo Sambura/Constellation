@@ -54,7 +54,7 @@ public class Viewport : MonoBehaviour
 
 	private void Update() => UpdateTrackedVariables();
 
-	private void UpdateTrackedVariables()
+	public void UpdateTrackedVariables()
 	{
 		float newAspect = _camera.aspect;
 		if (_aspect != newAspect)
