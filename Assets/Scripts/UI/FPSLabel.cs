@@ -18,27 +18,27 @@ public class FPSLabel : MonoBehaviour
         _floatFormat = "0." + new string('0', _decimalPlaces);
     }
 
-	private void OnEnable()
-	{
+    private void OnEnable()
+    {
         StartCoroutine(Updater());
     }
 
-	private void OnDisable()
-	{
+    private void OnDisable()
+    {
         StopAllCoroutines();
-	}
+    }
 
-	private IEnumerator Updater()
-	{
+    private IEnumerator Updater()
+    {
         WaitForSeconds wait = new WaitForSeconds(1 / _updateFrequency);
 
         float lastFps = -1;
         while (true)
-		{
+        {
             float fps = (float)System.Math.Round(_counter.CurrentFps, _decimalPlaces);
             if (fps != lastFps)
                 _label.text = _outputFormat + fps.ToString(_floatFormat);
             yield return wait;
-		}
-	}
+        }
+    }
 }

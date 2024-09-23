@@ -22,7 +22,7 @@ namespace Core
         /// List indexer.
         /// You are allowed to index any item from the internal buffer.
         /// </summary>
-		public ref T this[int index]
+        public ref T this[int index]
         {
             get { return ref _buffer[index]; }
         }
@@ -59,11 +59,11 @@ namespace Core
         public void PseudoClear() => _count = 0;
 
         public T[] ToArray()
-		{
+        {
             T[] array = new T[_count];
             Array.Copy(_buffer, 0, array, 0, _count);
             return array;
-		}
+        }
 
         public FastList(int capacity = 8)
         {

@@ -4,8 +4,8 @@ using System.Linq;
 
 namespace Core
 {
-	static class Algorithm
-	{
+    static class Algorithm
+    {
         /// <summary>
         /// Bubble sort algorithm implementation
         /// Sorts list until comparer(list[i], list[i+1]) is true for all i

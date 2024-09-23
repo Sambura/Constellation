@@ -42,15 +42,15 @@ namespace ConstellationUI
         }
         
         public bool ChunckedMode
-		{
+        {
             get => _chunckedMode;
             set
-			{
+            {
                 if (_chunckedMode == value) return;
                 _chunckedMode = value;
                 CreateMeshes();
             }
-		}
+        }
 
         protected RectTransform rectTransform => GetComponent<RectTransform>();
 

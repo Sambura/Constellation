@@ -17,13 +17,13 @@ namespace ConstellationUI
         private string _text;
 
         public string Text
-		{
+        {
             get => _text;
             set { _text = value; _updateText = true; }
-		}
+        }
 
         private void UpdateText(string newText, bool force = false)
-		{
+        {
             if (!force && Time.time - _lastTextUpdate < 1 / _textUpdateMaxFrequency) return;
 
             // TMP is broken, so this line ensures that scroll position is reset
@@ -34,25 +34,25 @@ namespace ConstellationUI
             _updateText = false;
         }
 
-		protected override void Awake()
-		{
+        protected override void Awake()
+        {
             base.Awake();
             _logOutput.scrollSensitivity = _scrollSensitivity;
             _updateText = true;
         }
 
-		protected override void Update()
-		{
-			base.Update();
+        protected override void Update()
+        {
+            base.Update();
             if (_updateText) UpdateText(_text);
-		}
+        }
 
-		public void ScrollToBeginning() => Scroll(float.PositiveInfinity);
+        public void ScrollToBeginning() => Scroll(float.PositiveInfinity);
 
         public void ScrollToEnd() => Scroll(float.NegativeInfinity);
 
         public void Scroll(float deltaPixels)
-		{
+        {
             // No, there is no way to do this better. Well, unless TMP gets an update
             // ScrollSensitivity manipulations are questionable tho. They do cause some canvas
             // dirty rebuild trickery, but I guess it is not really a massive issue

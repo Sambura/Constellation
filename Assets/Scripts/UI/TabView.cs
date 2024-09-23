@@ -45,7 +45,7 @@ namespace ConstellationUI
         }
 
         public void ClearAllTabs()
-		{
+        {
             for (int i = 0; i < _tabs.Count; i++)
             {
                 Destroy(_tabs[i].Contents.gameObject);
@@ -58,7 +58,7 @@ namespace ConstellationUI
         }
 
         public RectTransform AddTab(string name)
-		{
+        {
             GameObject newTab = new GameObject(name);
             RectTransform tabTransform = newTab.AddComponent<RectTransform>();
             tabTransform.SetParent(_scrollRect.content, false);
@@ -71,17 +71,17 @@ namespace ConstellationUI
             RegisterTab(tabTransform, name);
 
             return tabTransform;
-		}
+        }
 
         private void RegisterTab(RectTransform content, string name)
-		{
+        {
             Tab newTab = new Tab() { Contents = content, Name = name };
             _tabs.Add(newTab);
             RegisterTab(newTab);
-		}
+        }
 
         private void RegisterTab(Tab tab)
-		{
+        {
             MonoEvents events = tab.Contents.gameObject.GetOrAddComponent<MonoEvents>();
             events.OnRectTransformChange += OnTabRectTransformChange;
             tab.Contents.gameObject.SetActive(false);
@@ -90,7 +90,7 @@ namespace ConstellationUI
         }
 
         private void CreateTabButton(string name)
-		{
+        {
             GameObject tabButton = Instantiate(_tabButtonPrefab, _tabButtonsContainer);
             Toggle toggle = tabButton.GetComponent<Toggle>();
             toggle.IsCheckedChanged += OnSomeToggleChanged;
@@ -102,7 +102,7 @@ namespace ConstellationUI
         }
 
         private IEnumerator ForceLayoutUpdate(RectTransform root)
-		{
+        {
             yield return null;
             LayoutRebuilder.ForceRebuildLayoutImmediate(root);
         }
@@ -147,7 +147,7 @@ namespace ConstellationUI
             SetTabActive(_selectedIndex, true);
         }
 
-		private void OnDestroy()
+        private void OnDestroy()
         {
             for (int i = 0; i < _tabs.Count; i++)
             {

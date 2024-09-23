@@ -24,7 +24,7 @@ public class FragmentationVisualization : MonoBehaviour
     // Is _renderBatch added to the renderer?
     private bool _isRendered = false;
 
-	[ConfigGroupToggle(1)] [ConfigGroupMember("Fragmentation visualization")]
+    [ConfigGroupToggle(1)] [ConfigGroupMember("Fragmentation visualization")]
     [ConfigProperty]
     public bool ShowCellBorders
     {
@@ -33,21 +33,21 @@ public class FragmentationVisualization : MonoBehaviour
     }
     [ConfigGroupMember(1, 0)]
     [ColorPickerButtonProperty(true, "Select color", "Color")]
-	public Color CellBorderColor
+    public Color CellBorderColor
     {
         get => _cellBorderColor;
         set { if (_cellBorderColor != value) { _cellBorderColor = value; CellBorderColorChanged?.Invoke(value); }; }
     }
-	[ConfigGroupToggle(2)] [ConfigGroupMember]
+    [ConfigGroupToggle(2)] [ConfigGroupMember]
     [ConfigProperty]
-	public bool ShowCells
+    public bool ShowCells
     {
         get => _showCells;
         set { if (_showCells != value) { SetShowCells(value); ShowCellsChanged?.Invoke(value); }; }
     }
     [ConfigGroupMember(2, 0)]
     [ColorPickerButtonProperty(true, "Select color", "Color")]
-	public Color CellColor
+    public Color CellColor
     {
         get => _cellColor;
         set { if (_cellColor != value) { _cellColor = value; CellColorChanged?.Invoke(value); }; }
@@ -75,7 +75,7 @@ public class FragmentationVisualization : MonoBehaviour
     public event Action<Color> BoundsColorChanged;
 
     private void SetShowCellBorders(bool value)
-	{
+    {
         _showCellBorders = value;
         UpdateRenderBatch();
     }
@@ -93,7 +93,7 @@ public class FragmentationVisualization : MonoBehaviour
     }
 
     private void UpdateRenderBatch()
-	{
+    {
         bool needsRendering = _showCellBorders || _showCells || _showBounds;
 
         if (needsRendering && !_isRendered)
@@ -103,14 +103,14 @@ public class FragmentationVisualization : MonoBehaviour
         }
 
         if (!needsRendering && _isRendered)
-		{
+        {
             _isRendered = false;
             _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
         }
     }
 
     private void Awake()
-	{
+    {
         _renderBatch = new SimpleDrawBatch();
         _renderBatch.lines = new FastList<LineEntry>();
         _renderBatch.quads = new FastList<QuadEntry>();
@@ -118,7 +118,7 @@ public class FragmentationVisualization : MonoBehaviour
         UpdateRenderBatch();
     }
 
-	private void Update()
+    private void Update()
     {
         if (!_isRendered) return;
 
@@ -171,12 +171,12 @@ public class FragmentationVisualization : MonoBehaviour
         }
 
         if (_showBounds)
-		{
+        {
             (float left, float right, float bottom, float top) = (_fragmentator.BoundLeft, _fragmentator.BoundRight, _fragmentator.BoundBottom, _fragmentator.BoundTop);
             _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
             _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
             _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
             _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
-		}
+        }
     }
 }

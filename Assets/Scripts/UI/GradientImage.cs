@@ -12,10 +12,10 @@ public class GradientImage : MonoBehaviour
     private Texture2D _gradientTexture;
 
     public Gradient Gradient
-	{
+    {
         get => _gradient;
         set { _gradient = value; UpdateGradient(); } 
-	}
+    }
 
     void Awake()
     {

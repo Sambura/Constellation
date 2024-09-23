@@ -8,18 +8,18 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace ConstellationUI
 {
-	public class FilePathSelector : LabeledUIElement
-	{
-		[Header("Objects")]
-		[SerializeField] private TextMeshProUGUI _fileNameLabel;
-		[SerializeField] private Button _browseButton;
+    public class FilePathSelector : LabeledUIElement
+    {
+        [Header("Objects")]
+        [SerializeField] private TextMeshProUGUI _fileNameLabel;
+        [SerializeField] private Button _browseButton;
         [SerializeField] private FileDialog _fileDialog;
 
         [Header("Parameters")]
         [SerializeField] private string _dialogTitle = "Select file";
         [SerializeField] private FileDialog.FileFilter[] _fileFilters = { new FileDialog.FileFilter() { Description = "All files", Pattern = "*"} };
         [SerializeField] private bool _checkFileExists = false;
-		[SerializeField] private bool _findFileDialog = true;
+        [SerializeField] private bool _findFileDialog = true;
 
         private string _selectedPath;
         private Func<string, string> _fileNameDisplayedConverter;
@@ -111,9 +111,9 @@ namespace ConstellationUI
         }
 
         private void Start()
-		{
+        {
             _browseButton.Click += OnBrowseButtonClick;
-		}
+        }
 
         private void OnDestroy()
         {

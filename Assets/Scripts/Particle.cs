@@ -13,7 +13,7 @@ public class Particle
     public float Size { get; set; }
 
     public void SetRandomVelocity(float minAngle = Angle0, float maxAngle = Angle360)
-	{
+    {
         float angle = Random.Range(minAngle, maxAngle);
         float magnitude = VelocityDelegate(this);
         Velocity = new Vector3((float)Cos(angle) * magnitude, (float)Sin(angle) * magnitude, 0);

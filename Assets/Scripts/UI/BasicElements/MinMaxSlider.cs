@@ -476,13 +476,13 @@ namespace UnityEngine.UI
             }
         }
 
-		public override void OnPointerUp(PointerEventData eventData)
-		{
-			base.OnPointerUp(eventData);
+        public override void OnPointerUp(PointerEventData eventData)
+        {
+            base.OnPointerUp(eventData);
             _capturedHandle = null;
-		}
+        }
 
-		public virtual void OnDrag(PointerEventData eventData)
+        public virtual void OnDrag(PointerEventData eventData)
         {
             if (!MayDrag(eventData))
                 return;

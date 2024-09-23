@@ -35,20 +35,20 @@ namespace SimpleGraphics
         }
 
         public void FromScreenToWorld(ref float x, ref float y)
-		{
+        {
             Vector3 world = _camera.ScreenToWorldPoint(new Vector3(x, y));
             x = world.x;
             y = world.y;
-		}
+        }
 
         public void FromScreenToWorld(ref LineEntry line)
-		{
+        {
             FromScreenToWorld(ref line.x1, ref line.y1);
             FromScreenToWorld(ref line.x2, ref line.y2);
-		}
+        }
 
         private void DrawBatch(SimpleDrawBatch batch)
-		{
+        {
             batch.material.SetPass(0);
 
             if (batch.triangles != null)

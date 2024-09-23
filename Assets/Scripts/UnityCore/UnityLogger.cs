@@ -14,7 +14,7 @@ public static class UnityLogger
     private static StringBuilder _log;
 
     static UnityLogger()
-	{
+    {
         _log = new StringBuilder(_logLimit, _logLimit);
         StackTraceFontSize = 12;
     }
@@ -31,10 +31,10 @@ public static class UnityLogger
             _loggingEnabled = value;
 
             if (value)
-			{
+            {
                 Application.logMessageReceived += OnMessageReceived;
             } else
-			{
+            {
                 Application.logMessageReceived -= OnMessageReceived;
             }
             
@@ -57,10 +57,10 @@ public static class UnityLogger
     /// Note, that if the logs exceed this number, they are automatically cleared
     /// </summary>
     public static int LogLimit
-	{
+    {
         get => _logLimit;
         set
-		{
+        {
             if (_logLimit == value) return;
             _logLimit = value;
             StringBuilder oldLog = _log; 
@@ -73,8 +73,8 @@ public static class UnityLogger
                 AppendLogSafe(LogsClearedMessage);
                 LogChanged?.Invoke();
             }
-		}
-	}
+        }
+    }
 
     /// <summary>
     /// This message gets appended to the logs every time they were automatically cleared
@@ -104,7 +104,7 @@ public static class UnityLogger
     {
         get => _stackTraceFontSize;
         set
-		{
+        {
             if (value == _stackTraceFontSize) return;
             _stackTraceFontSize = value;
             _stackTraceSizeTag = $"<size={value}>";
@@ -145,10 +145,10 @@ public static class UnityLogger
     /// Clears all the collected logs
     /// </summary>
     public static void ClearLog()
-	{
-	    _log.Clear();
+    {
+        _log.Clear();
         LogChanged?.Invoke();
-	}
+    }
 
     /// <summary>
     /// Appends a given string to the _log StringBuilder. If there is not enough space left in
@@ -157,33 +157,33 @@ public static class UnityLogger
     /// Does not raise LogChanged event
     /// </summary>
     private static void AppendLogSafe(string str)
-	{
+    {
         int spaceRemainig = _log.MaxCapacity - _log.Length;
 
         if (str.Length > spaceRemainig)
             _log.Append(str, str.Length - spaceRemainig, spaceRemainig);
         else 
             _log.Append(str);
-	}
+    }
 
     /// <summary>
     /// Get the color associated with the given log type
     /// </summary>
     public static Color GetLogTypeColor(LogType type)
-	{
-		switch (type)
-		{
-			case LogType.Error: return ErrorColor;
-			case LogType.Assert: return AssertColor;
-			case LogType.Warning: return WarningColor;
-			case LogType.Log: return MessageColor;
-			case LogType.Exception: return ExceptionColor;
-		}
+    {
+        switch (type)
+        {
+            case LogType.Error: return ErrorColor;
+            case LogType.Assert: return AssertColor;
+            case LogType.Warning: return WarningColor;
+            case LogType.Log: return MessageColor;
+            case LogType.Exception: return ExceptionColor;
+        }
 
         throw new NotImplementedException("Unknown LogType provided");
-	}
+    }
 
-	private static void OnMessageReceived(string logString, string stackTrace, LogType type)
+    private static void OnMessageReceived(string logString, string stackTrace, LogType type)
     {
         LastMessage = new UnityLogMessage(logString, stackTrace, type);
 
@@ -203,15 +203,15 @@ public static class UnityLogger
         if (includeStackTrace) newEntryLength += stackTrace.Length + "\n".Length;
         string colorCode = null;
         if (GenerateRichText)
-		{
+        {
             colorCode = GetColorCode(GetLogTypeColor(type));
             newEntryLength += "<color=#></color>".Length + colorCode.Length;
             if (includeStackTrace) newEntryLength += "</size>".Length + _stackTraceSizeTag.Length;
         }
 
         if (_log.Length + newEntryLength > _log.MaxCapacity)
-		{
-		    _log.Clear();
+        {
+            _log.Clear();
             AppendLogSafe(LogsClearedMessage);
         }
 
@@ -242,25 +242,25 @@ public static class UnityLogger
         //
 
         static string GetColorCode(Color color)
-		{
+        {
             if (color.a == 1) return ColorUtility.ToHtmlStringRGB(color);
             return ColorUtility.ToHtmlStringRGBA(color);
-		}
+        }
     }
 
     public struct UnityLogMessage
-	{
+    {
         public string Message;
         public string StackTrace;
         public LogType LogType;
         public DateTime Timestamp;
 
         public UnityLogMessage(string message, string stackTrack, LogType type)
-		{
+        {
             Message = message;
             StackTrace = stackTrack;
             LogType = type;
             Timestamp = DateTime.Now;
-		}
-	}
+        }
+    }
 }

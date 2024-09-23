@@ -10,29 +10,29 @@ using Core.Json;
 public class ConfigSerializer : MonoBehaviour
 {
     [SerializeField] private List<SerializablePair> _toSerialize;
-	[SerializeField] private FileDialog _fileDialog;
-	[SerializeField] private ParticleController _particleController;
+    [SerializeField] private FileDialog _fileDialog;
+    [SerializeField] private ParticleController _particleController;
     [SerializeField] private long _loadFileSizeLimit = 1024 * 1024 * 10; // 10 MB
 
-	[Serializable] private class SerializablePair
-	{
+    [Serializable] private class SerializablePair
+    {
         public string Name;
         public MonoBehaviour Object;
-	}
+    }
 
     private string[] _names;
     private object[] _objects;
 
-	private void Start()
-	{
+    private void Start()
+    {
         _names = new string[_toSerialize.Count];
         _objects = new object[_toSerialize.Count];
 
         for (int i = 0; i < _toSerialize.Count; i++)
-		{
+        {
             _names[i] = _toSerialize[i].Name;
             _objects[i] = _toSerialize[i].Object;
-		}
+        }
     }
 
     /// <summary>
@@ -52,20 +52,20 @@ public class ConfigSerializer : MonoBehaviour
     /// When the file dialog is closed, an attempt to deserialize config from disk is made
     /// </summary>
     public void LoadConfig()
-	{
+    {
         SetFileFilters();
         _fileDialog.ShowDialog("Select config to load", TryLoadConfig);
         _fileDialog.SyncCurrentDirectory(this);
     }
 
     private void SetFileFilters()
-	{
+    {
         _fileDialog.FileFilters = new List<FileDialog.FileFilter>()
         {
             new FileDialog.FileFilter() { Description = "Json files", Pattern = "*.json"},
             new FileDialog.FileFilter() { Description = "All files", Pattern = "*"}
         };
-	}
+    }
 
     public string GetCurrentConfigJson(bool prettyPrint = true) => MultipleObjectsToJson(_names, _objects, prettyPrint);
     
@@ -103,7 +103,7 @@ public class ConfigSerializer : MonoBehaviour
     }
 
     public string MultipleObjectsToJson(string[] names, object[] objects, bool prettyPrint)
-	{
+    {
         if (names.Length != objects.Length) throw new ArgumentException("Lengths of arguments do not match");
 
         StringBuilder json = new StringBuilder();
@@ -115,10 +115,10 @@ public class ConfigSerializer : MonoBehaviour
         JsonSerializerUtility.EndObject(json);
 
         return prettyPrint ? JsonSerializerUtility.Prettify(json.ToString()) : json.ToString();
-	}
+    }
 
     public int MultipleObjectOverwriteFromJson(string json, string[] names, object[] objects)
-	{
+    {
         Dictionary<string, string> jsons = JsonSerializerUtility.GetProperties(json);
         int deserealized = 0;
 
@@ -143,13 +143,13 @@ public class ConfigSerializer : MonoBehaviour
     /// or `false` on failure
     /// </summary>
     private bool TrySaveConfig(MonoDialog fileDialog, bool result)
-	{
+    {
         if (result == false) return true;
 
         string fileName = _fileDialog.FileName; // make a copy of the string
 
         if (File.Exists(fileName))
-		{
+        {
             _fileDialog.Manager.ShowOkCancelMessageBox("Confirmation", "The file with the given name already exists." +
                " Do you want to replace it?", StandardMessageBoxIcons.Question, x => { if (x) return DoSaveConfig(fileName); return true; }, _fileDialog);
 
@@ -167,8 +167,8 @@ public class ConfigSerializer : MonoBehaviour
                 _fileDialog.Manager.ShowMessageBox("File saved", $"Config saved successfully to the file `{fileName}`",
                     StandardMessageBoxIcons.Success, _fileDialog);
             }
-			catch (Exception e)
-			{
+            catch (Exception e)
+            {
                 _fileDialog.Manager.ShowMessageBox("Error", $"An unknown error occured while saving config. Message: {e.Message}",
                     StandardMessageBoxIcons.Error, _fileDialog);
             }
@@ -209,7 +209,7 @@ public class ConfigSerializer : MonoBehaviour
         {
             deserealized = DeserializeConfig(fileInfo.FullName);
             if (deserealized == 0)
-			{
+            {
                 _fileDialog.Manager.ShowMessageBox("Warning", "No Constellation properties were found in the " + 
                     "loaded file. You have probably selected wrong file to load.", StandardMessageBoxIcons.Warning, _fileDialog);
                 return true;
@@ -229,7 +229,7 @@ public class ConfigSerializer : MonoBehaviour
         }
 
         _fileDialog.Manager.ShowMessageBox("File loaded", $"Config has been loaded successfully. In total" +
-			$" {deserealized} Constellation properties were loaded.", StandardMessageBoxIcons.Success, _fileDialog);
+            $" {deserealized} Constellation properties were loaded.", StandardMessageBoxIcons.Success, _fileDialog);
         return true;
     }
 }

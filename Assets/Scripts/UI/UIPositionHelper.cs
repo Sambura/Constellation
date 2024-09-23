@@ -8,7 +8,7 @@ public class UIPositionHelper : MonoBehaviour, IPointerDownHandler, IDragHandler
     {
         get => _pointerPosition;
         private set
-		{
+        {
             _pointerPosition = value;
             PointerPositionChanged?.Invoke(value);
         }
@@ -19,8 +19,8 @@ public class UIPositionHelper : MonoBehaviour, IPointerDownHandler, IDragHandler
     private Vector2 _pointerPosition;
     private RectTransform _rectTransform;
 
-	public void OnDrag(PointerEventData eventData)
-	{
+    public void OnDrag(PointerEventData eventData)
+    {
         Vector3 clampedPosition = eventData.position;
 
         Vector2 preNormalized = _rectTransform.worldToLocalMatrix.MultiplyPoint3x4(clampedPosition)
@@ -35,12 +35,12 @@ public class UIPositionHelper : MonoBehaviour, IPointerDownHandler, IDragHandler
     }
 
     public static Vector2 WorldToNormalizedPosition(RectTransform rectTransform, Vector2 world)
-	{
+    {
         return LocalToNormalizedPosition(rectTransform, rectTransform.InverseTransformPoint(world));
-	}
+    }
 
     public static Vector2 LocalToNormalizedPosition(RectTransform rectTransform, Vector2 local)
-	{
+    {
         return local / rectTransform.rect.size + rectTransform.pivot;
     }
 
@@ -52,14 +52,14 @@ public class UIPositionHelper : MonoBehaviour, IPointerDownHandler, IDragHandler
     }
 
     public static Vector2 NormalizedToWorldPosition(RectTransform rectTransform, Vector2 normalized)
-	{
+    {
         return rectTransform.localToWorldMatrix.MultiplyPoint3x4(NormalizedToLocalPosition(rectTransform, normalized));
     }
 
     public Vector2 NormalizedToWorldPosition(Vector2 normalized) => NormalizedToWorldPosition(_rectTransform, normalized);
 
     private void Awake()
-	{
+    {
         _rectTransform = GetComponent<RectTransform>();
     }
 }

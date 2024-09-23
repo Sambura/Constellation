@@ -40,37 +40,37 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     /// `Position` property of MonoDraggable
     /// </summary>
     public bool RestrictMovement
-	{
+    {
         get => _restrictMovement;
         set
-		{
+        {
             if (_restrictMovement == value) return;
             _restrictMovement = value;
             if (_restrictMovement) SetPositionWithoutNotify(Position);
-		}
-	}
+        }
+    }
 
     /// <summary>
     /// The current world position of MonoDraggable
     /// </summary>
-	public Vector3 Position
-	{
-		get => transform.position;
-		set { if (transform.position != value) { SetPositionWithoutNotify(value); PositionChanged?.Invoke(value); } }
-	}
+    public Vector3 Position
+    {
+        get => transform.position;
+        set { if (transform.position != value) { SetPositionWithoutNotify(value); PositionChanged?.Invoke(value); } }
+    }
 
     /// <summary>
     /// Raised any time `Position` property is set a new value
     /// </summary>
-	public event Action<Vector3> PositionChanged;
+    public event Action<Vector3> PositionChanged;
 
     /// <summary>
     /// A function that sets value to `Position` property
     /// Does not raise PositionChanged event
     /// </summary>
     /// <param name="position">New position value</param>
-	public virtual void SetPositionWithoutNotify(Vector3 position)
-	{
+    public virtual void SetPositionWithoutNotify(Vector3 position)
+    {
         if (RestrictMovement)
         {
             position = _parent.worldToLocalMatrix.MultiplyPoint3x4(position);
@@ -87,13 +87,13 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         }
 
         transform.position = position;
-	}
+    }
 
     /// <summary>
     /// See IPointerDownHandler
     /// Raises PointerDown event
     /// </summary>
-	public virtual void OnPointerDown(PointerEventData eventData)
+    public virtual void OnPointerDown(PointerEventData eventData)
     {
         PointerDown?.Invoke(this, eventData);
         if (eventData.button != PointerEventData.InputButton.Left) return;
@@ -120,8 +120,8 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         Position = (Vector2)Input.mousePosition + _dragOffset;
     }
 
-	protected virtual void Awake()
-	{
+    protected virtual void Awake()
+    {
         _transform = GetComponent<RectTransform>();
         _parent = _transform.parent as RectTransform;
     }

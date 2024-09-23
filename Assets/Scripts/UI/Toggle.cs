@@ -4,56 +4,56 @@ using UnityEngine.UI;
 
 namespace ConstellationUI
 {
-	public class Toggle : LabeledUIElement
-	{
-		[Header("Objects")]
-		[SerializeField] private UnityEngine.UI.Toggle _toggle;
+    public class Toggle : LabeledUIElement
+    {
+        [Header("Objects")]
+        [SerializeField] private UnityEngine.UI.Toggle _toggle;
 
-		[Header("Parameters")]
-		[SerializeField] private bool _isChecked;
+        [Header("Parameters")]
+        [SerializeField] private bool _isChecked;
 
-		public bool IsChecked
-		{
-			get => _isChecked;
-			set
-			{
-				if (value == _isChecked) return;
-				SetIsCheckedWithoutNotify(value);
-				IsCheckedChanged?.Invoke(_isChecked);
-			}
-		}
+        public bool IsChecked
+        {
+            get => _isChecked;
+            set
+            {
+                if (value == _isChecked) return;
+                SetIsCheckedWithoutNotify(value);
+                IsCheckedChanged?.Invoke(_isChecked);
+            }
+        }
 
-		public ToggleGroup ToggleGroup
-		{
-			get => _toggle.group;
-			set => _toggle.group = value;
-		}
+        public ToggleGroup ToggleGroup
+        {
+            get => _toggle.group;
+            set => _toggle.group = value;
+        }
 
-		public UnityEngine.UI.Toggle WrappedToggle => _toggle;
+        public UnityEngine.UI.Toggle WrappedToggle => _toggle;
 
-		public event Action<bool> IsCheckedChanged;
+        public event Action<bool> IsCheckedChanged;
 
-		public void SetIsCheckedWithoutNotify(bool value)
-		{
-			_isChecked = value;
-			_toggle.SetIsOnWithoutNotify(value);
-		}
+        public void SetIsCheckedWithoutNotify(bool value)
+        {
+            _isChecked = value;
+            _toggle.SetIsOnWithoutNotify(value);
+        }
 
-		private void OnToggleValueChanged(bool value)
-		{
-			IsChecked = value;
-		}
+        private void OnToggleValueChanged(bool value)
+        {
+            IsChecked = value;
+        }
 
-		private void Start()
-		{
-			SetIsCheckedWithoutNotify(_isChecked);
+        private void Start()
+        {
+            SetIsCheckedWithoutNotify(_isChecked);
 
-			_toggle.onValueChanged.AddListener(OnToggleValueChanged);
-		}
+            _toggle.onValueChanged.AddListener(OnToggleValueChanged);
+        }
 
-		private void OnDestroy()
-		{
-			_toggle?.onValueChanged.RemoveListener(OnToggleValueChanged);
-		}
-	}
+        private void OnDestroy()
+        {
+            _toggle?.onValueChanged.RemoveListener(OnToggleValueChanged);
+        }
+    }
 }

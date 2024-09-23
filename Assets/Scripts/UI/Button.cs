@@ -3,14 +3,14 @@ using UnityEngine.UIElements;
 
 namespace ConstellationUI
 {
-	public class Button : LabeledUIElement
-	{
-		[Header("Objects")]
-		[SerializeField] private UnityEngine.UI.Button _button;
-		[SerializeField] private UnityEngine.UI.Image _icon;
+    public class Button : LabeledUIElement
+    {
+        [Header("Objects")]
+        [SerializeField] private UnityEngine.UI.Button _button;
+        [SerializeField] private UnityEngine.UI.Image _icon;
 
-		public event System.Action Click;
-		
+        public event System.Action Click;
+        
         public Sprite ButtonIcon
         {
             get => _icon?.sprite;
@@ -19,14 +19,14 @@ namespace ConstellationUI
 
         private void OnButtonClick() => Click?.Invoke();
 
-		private void Start()
-		{
-			_button?.onClick.AddListener(OnButtonClick);
-		}
+        private void Start()
+        {
+            _button?.onClick.AddListener(OnButtonClick);
+        }
 
-		private void OnDestroy()
-		{
-			_button?.onClick.RemoveListener(OnButtonClick);
-		}
-	}
+        private void OnDestroy()
+        {
+            _button?.onClick.RemoveListener(OnButtonClick);
+        }
+    }
 }

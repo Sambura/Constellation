@@ -7,7 +7,7 @@ using UnityRawInput;
 
 public class TransparentWindow : MonoBehaviour
 {
-	[SerializeField] private Camera _cam;
+    [SerializeField] private Camera _cam;
     [SerializeField] private bool _autoRun = true;
 #if UNITY_EDITOR
     [SerializeField] private bool _debugMessages = true;
@@ -25,7 +25,7 @@ public class TransparentWindow : MonoBehaviour
     private const int WS_EX_LAYERED = 0x00080000;
     private const int WS_EX_TRANSPARENT = 0x00000020;
 
-	[DllImport("user32.dll")]
+    [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
     private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
@@ -49,7 +49,7 @@ public class TransparentWindow : MonoBehaviour
     private IntPtr hWnd;
 
     public void MakeTransparent()
-	{
+    {
 #if UNITY_EDITOR
         if (_debugMessages) Debug.Log("MakeTrnaparent() call");
 #else
@@ -78,17 +78,17 @@ public class TransparentWindow : MonoBehaviour
     }
 
     private void OnDisable()
-	{
+    {
         RawInput.Stop();
-	}
+    }
 
     private void HandleKeyTest(RawKey key)
-	{
+    {
         print($"hello world { key}");
-	}
+    }
 
     private void SetClickthrough(bool clickthrough)
-	{
+    {
 #if UNITY_EDITOR
         if (_debugMessages)
             Debug.Log($"Setting to {(clickthrough ? "transparent" : "clickable")}");
@@ -98,8 +98,8 @@ public class TransparentWindow : MonoBehaviour
     }
 
     // will only run if the script is enabled
-	private void Update()
-	{
+    private void Update()
+    {
         // This one does not work when out of foces for whatever reason (double checked)
         //SetClickthrough(!EventSystem.current.IsPointerOverGameObject());
 

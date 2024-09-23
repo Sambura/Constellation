@@ -12,7 +12,7 @@ public class MainVisualizer : MonoBehaviour
     [SerializeField] private Viewport _viewport;
     [SerializeField] private ParticleController _particleController;
 
-	[Header("Static properties")]
+    [Header("Static properties")]
     [SerializeField] private Material _particleMaterial;
 
     [Header("General appearance parameters")]
@@ -45,13 +45,13 @@ public class MainVisualizer : MonoBehaviour
 
     #region Config properties
 
-	[ConfigGroupToggle(2)]
+    [ConfigGroupToggle(2)]
     [ConfigGroupMember("General appearance")] [ConfigProperty] public bool ShowParticles
     {
         get => _showParticles;
         set { if (_showParticles != value) { SetShowParticles(value); ShowParticlesChanged?.Invoke(value); } }
     }
-	[SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Compact")]
+    [SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Compact")]
     [ConfigGroupMember(2, 0)] [SliderProperty(0, 0.1f, 0, 10, name: "Size")] public float ParticleSize
     {
         get => _particlesSize;
@@ -63,10 +63,10 @@ public class MainVisualizer : MonoBehaviour
         set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
     }
     [ConfigGroupMember(2)] [ConfigProperty("Sprite")] public Texture2D ParticleSprite
-	{
+    {
         get => _particleSprite;
         set { if (_particleSprite != value) { SetParticleSprite(value); ParticleSpriteChanged?.Invoke(value); } }
-	}
+    }
     [ConfigGroupToggle(3)]
     [ConfigGroupMember] [ConfigProperty] public bool ShowLines
     {
@@ -81,43 +81,43 @@ public class MainVisualizer : MonoBehaviour
     }
     [SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Compact")]
     [ConfigGroupMember(4, 3)] [SliderProperty(0.001f, 0.05f, 0, 0.5f, "0.0000", name: "Width")] public float LineWidth
-	{
+    {
         get => _linesWidth;
         set { if (_linesWidth != value) { _linesWidth = value; LineWidthChanged?.Invoke(value); }; }
     }
     [ConfigGroupToggle(5)]
     [ConfigGroupMember] [ConfigProperty] public bool ShowTriangles
-	{
+    {
         get => _showTriangles;
         set { if (_showTriangles != value) { _showTriangles = value; ShowTrianglesChanged?.Invoke(value); }; }
     }
     [ConfigGroupMember(5, 0)] [SliderProperty(name: "Fill opacity")] public float TriangleFillOpacity
-	{
+    {
         get => _triangleFillOpacity;
         set { if (_triangleFillOpacity != value) { SetTriangleFillOpacity(value); TriangleFillOpacityChanged?.Invoke(value); }; }
     }
     [ConfigGroupMember] [CurvePickerButtonProperty("Modify Alpha Curve")] public AnimationCurve AlphaCurve
-	{
+    {
         get => _alphaCurve;
         set { if (_alphaCurve != value) { SetAlphaCurve(value); AlphaCurveChanged?.Invoke(value); } }
-	}
+    }
     [ConfigGroupToggle(7, 6)]
     [ConfigGroupMember] [RadioButtonsProperty(new string[] { "Color gradient", "Alternating Color" })] public bool AlternateLineColor
-	{
+    {
         get => _alternateLineColor;
         set { if (_alternateLineColor != value) { SetAlternateLineColor(value); AlternateLineColorChanged?.Invoke(value); } }
-	}
+    }
     [ConfigGroupMember(6, 0)] [GradientPickerButtonProperty("Set Line Color Gradient", "Gradient")] public Gradient LineColor
-	{
+    {
         get => _lineColor;
         set { if (_lineColor != value) { SetLineColor(value); LineColorChanged?.Invoke(value); } }
     }
     [ConfigGroupMember(7, 0)] [MinMaxSliderProperty(0, 10, 0, 300, "0.00 s", @"([-+]?[0-9]*\.?[0-9]+) *s?", name: "Fade duration", higherPropertyName: nameof(MaxColorFadeDuration))]
     public float MinColorFadeDuration
-	{
+    {
         get => _colorMinFadeDuration;
         set { if (_colorMinFadeDuration != value) { _colorMinFadeDuration = value; RestartColorChanger(); MinColorFadeDurationChanged?.Invoke(MinColorFadeDuration); } }
-	}
+    }
     [ConfigGroupMember(7)] [MinMaxSliderProperty] public float MaxColorFadeDuration
     {
         get => _colorMaxFadeDuration;
@@ -159,16 +159,16 @@ public class MainVisualizer : MonoBehaviour
     public event System.Action<float> MaxColorFadeDurationChanged;
 
     private void RestartColorChanger()
-	{
+    {
         if (_colorChanger != null)
-		{
+        {
             StopCoroutine(_colorChanger);
             _colorChanger = StartCoroutine(ColorChanger());
-		}
-	}
+        }
+    }
 
     private void SetAlphaCurve(AnimationCurve value)
-	{
+    {
         _alphaCurve = value;
 
         Keyframe[] alphaKeys = value.keys; // Is is a copy
@@ -207,7 +207,7 @@ public class MainVisualizer : MonoBehaviour
     }
 
     private void SetConnectionDistance(float value)
-	{
+    {
         _connectionDistance = value;
         _connectionDistanceSquared = _connectionDistance * _connectionDistance;
         _lineIntensityDenominator = _connectionDistance - _strongDistance;
@@ -223,17 +223,17 @@ public class MainVisualizer : MonoBehaviour
     }
 
     private void SetTriangleFillOpacity(float value)
-	{
+    {
         _triangleFillOpacity = value;
         _triangleColorOffset = 1 - _triangleFillOpacity;
         _triangleColorCoefficient = _triangleFillOpacity / _lineIntensityDenominator;
     }
     
     private void SetClearColor(Color value)
-	{
+    {
         _clearColor = value;
         _backgroundBatch.quads[0].color = value;
-	}
+    }
 
     private void SetShowParticles(bool value)
     {
@@ -288,7 +288,7 @@ public class MainVisualizer : MonoBehaviour
     public bool ColorChangerIterationFlag => _colorChangerIterationFlag;
 
     private void InvertGradientKeys(GradientColorKey[] keys)
-	{
+    {
         for (int i = 0; i < keys.Length; i++)
             keys[i].time = 1 - keys[i].time;
     }
@@ -300,14 +300,14 @@ public class MainVisualizer : MonoBehaviour
     }
 
     private void InvertAnimationCurveKeys(Keyframe[] keys)
-	{
+    {
         for (int i = 0; i < keys.Length; i++)
         {
             keys[i].time = 1 - keys[i].time;
             (keys[i].inTangent, keys[i].outTangent) = (-keys[i].outTangent, -keys[i].inTangent);
             (keys[i].inWeight, keys[i].outWeight) = (keys[i].outWeight, keys[i].inWeight);
             switch (keys[i].weightedMode)
-			{
+            {
                 case WeightedMode.In:
                     keys[i].weightedMode = WeightedMode.Out;
                     break;
@@ -319,7 +319,7 @@ public class MainVisualizer : MonoBehaviour
     }
 
     private void UpdateBackgroundQuad()
-	{
+    {
         float extents = 0.1f;
         float width = _viewport.MaxX + extents;
         float height = _viewport.MaxY + extents;
@@ -329,22 +329,22 @@ public class MainVisualizer : MonoBehaviour
     private void Awake()
     {
         _neighbours = new FastList<Particle>[4];
-		_backgroundBatch = new SimpleDrawBatch
-		{
-			quads = new FastList<QuadEntry>()
-		};
-		_mainBatch = new SimpleDrawBatch
-		{
-			lines = new FastList<LineEntry>(),
-			meshLines = new FastList<MeshLineEntry>(),
-			triangles = new FastList<TriangleEntry>()
-		};
+        _backgroundBatch = new SimpleDrawBatch
+        {
+            quads = new FastList<QuadEntry>()
+        };
+        _mainBatch = new SimpleDrawBatch
+        {
+            lines = new FastList<LineEntry>(),
+            meshLines = new FastList<MeshLineEntry>(),
+            triangles = new FastList<TriangleEntry>()
+        };
         _particleBatch = new SimpleDrawBatch()
         {
             quads = new FastList<QuadEntry>(),
             material = _particleMaterial
         };
-		_alphaCurveInternal = new AnimationCurve();
+        _alphaCurveInternal = new AnimationCurve();
         _currentLineColorGradient = new Gradient();
 
         SetConnectionDistance(_connectionDistance);
@@ -368,21 +368,21 @@ public class MainVisualizer : MonoBehaviour
             SetParticleSize(_particlesSize);
         }
         SetParticleSprite(_particleSprite);
-		_particleController.ParticleCreated += OnParticleCreated;
+        _particleController.ParticleCreated += OnParticleCreated;
 
         _drawer.AddBatch(_renderQueueIndex, _backgroundBatch);
         _drawer.AddBatch(_renderQueueIndex + 1, _mainBatch);
         _drawer.AddBatch(_renderQueueIndex + 2, _particleBatch);
     }
 
-	private void OnParticleCreated(Particle particle)
-	{
+    private void OnParticleCreated(Particle particle)
+    {
         particle.Visible = _showParticles;
         particle.Color = _particlesColor;
         particle.Size = _particlesSize;
     }
 
-	private void Update()
+    private void Update()
     {
         _mainBatch.lines.PseudoClear();
         _mainBatch.triangles.PseudoClear();
@@ -430,15 +430,15 @@ public class MainVisualizer : MonoBehaviour
                 }
 
                 if (_showParticles)
-				{
+                {
                     for (int i = 0; i < current._count; i++)
-					{
+                    {
                         Vector2 pos = current[i].Position;
                         float hs = current[i].Size / 2;
                         float x = pos.x, y = pos.y;
                         _particleBatch.quads.Add(new QuadEntry(x - hs, y + hs, x - hs, y - hs, x + hs, y - hs, x + hs, y + hs, _particlesColor));
                     }
-				}
+                }
 
                 if (_showLines)
                 {
@@ -516,22 +516,22 @@ public class MainVisualizer : MonoBehaviour
     }
 
     private IEnumerator ColorChanger()
-	{
+    {
         while (true)
-		{
+        {
             Color oldColor = _currentLineGradientColorKeys[0].color;
             Color newColor = Random.ColorHSV(_colorMinHue, _colorMaxHue, _colorMinSaturation, _colorMaxSaturation, _colorMinValue, _colorMaxValue);
             float fadeTime = Random.Range(_colorMinFadeDuration, _colorMaxFadeDuration);
             float startTime = Time.time;
             float progress = 0;
             if (fadeTime == 0)
-			{
+            {
                 fadeTime = 0.01f;
                 startTime -= 1;
-			}
+            }
 
             while (progress < 1)
-			{
+            {
                 _colorChangerIterationFlag = false;
                 progress = (Time.time - startTime) / fadeTime;
                 Color currentColor = Color.Lerp(oldColor, newColor, progress);
@@ -539,12 +539,12 @@ public class MainVisualizer : MonoBehaviour
                 _currentLineColorGradient.colorKeys = _currentLineGradientColorKeys;
 
                 yield return null;
-			}
-		}
-	}
+            }
+        }
+    }
 
     private void DrawLine(Particle p1, Particle p2)
-	{
+    {
         Vector3 pos1 = p1.Position, pos2 = p2.Position;
 
         float diffX = pos1.x - pos2.x;

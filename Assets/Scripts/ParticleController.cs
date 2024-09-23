@@ -20,10 +20,10 @@ public class ParticleController : MonoBehaviour
 
     public event System.Action<Particle> ParticleCreated;
 
-	#region Config properties
+    #region Config properties
 
-	[ConfigGroupMember("Simulation parameters", GroupId = "PC+sim_params")]
-	[SliderProperty(0, 2500, 0, 100000, name: "Particles count")] public int ParticleCount
+    [ConfigGroupMember("Simulation parameters", GroupId = "PC+sim_params")]
+    [SliderProperty(0, 2500, 0, 100000, name: "Particles count")] public int ParticleCount
     {
         get => _particlesCount;
         set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
@@ -49,7 +49,7 @@ public class ParticleController : MonoBehaviour
     }
     [ConfigGroupMember]
     [ConfigProperty] public BoundsShapes BoundsShape
-	{
+    {
         get => _boundsShape;
         set { if (_boundsShape != value) { SetBoundsShape(value); BoundsShapeChanged?.Invoke(value); }; }
     }
@@ -74,11 +74,11 @@ public class ParticleController : MonoBehaviour
 
         while (_particles.Count < value)
         {
-			Particle particle = new Particle
-			{
-				VelocityDelegate = GetParticleVelocity
-			};
-			SetRandomPositionAndVelocity(particle);
+            Particle particle = new Particle
+            {
+                VelocityDelegate = GetParticleVelocity
+            };
+            SetRandomPositionAndVelocity(particle);
 
             _particles.Add(particle);
 
@@ -152,9 +152,9 @@ public class ParticleController : MonoBehaviour
     public float AveragePerCell => (float)_particles.Count / CellCount;
 
     public List<Particle> Particles
-	{
+    {
         get => _particles;
-	}
+    }
     public FastList<Particle>[,] RegionMap => _regionMap;
     public int XSquareOffset => _xSquareOffset;
     public int YSquareOffset => _ySquareOffset;
@@ -172,7 +172,7 @@ public class ParticleController : MonoBehaviour
     public float BoundTop => _top;
 
     public void SetConnectionDistance(float value)
-	{
+    {
         _connectionDistance = value;
 
         if (_particles != null) DoFragmentation();
@@ -189,7 +189,7 @@ public class ParticleController : MonoBehaviour
     }
 
     private void Awake()
-	{
+    {
         _particles = new List<Particle>(_particlesCount);
 
         SetViewport(_viewport);
@@ -197,23 +197,23 @@ public class ParticleController : MonoBehaviour
     }
 
     private void OnViewportChanged()
-	{
-		RecalculateBounds();
-		DoFragmentation();
-	}
+    {
+        RecalculateBounds();
+        DoFragmentation();
+    }
 
-	private void RecalculateBounds()
-	{
-		_left = -_viewport.MaxX + _boundMargins;
-		_right = _viewport.MaxX - _boundMargins;
+    private void RecalculateBounds()
+    {
+        _left = -_viewport.MaxX + _boundMargins;
+        _right = _viewport.MaxX - _boundMargins;
 
         float verticalMax = BoundsShape == BoundsShapes.Viewport ? _viewport.MaxY : _viewport.MaxX;
-		_bottom = -verticalMax + _boundMargins;
-		_top = verticalMax - _boundMargins;
-	}
+        _bottom = -verticalMax + _boundMargins;
+        _top = verticalMax - _boundMargins;
+    }
 
-	private void DoFragmentation()
-	{
+    private void DoFragmentation()
+    {
         if (_connectionDistance <= 0) return;
         int xSquareOffset = Mathf.FloorToInt(Viewport.MaxX / _connectionDistance) + 1;
         int ySquareOffset = Mathf.FloorToInt(Viewport.MaxY / _connectionDistance) + 1;
@@ -246,7 +246,7 @@ public class ParticleController : MonoBehaviour
     private void Update()
     {
         foreach (var particle in _particles)
-		{
+        {
             particle.Position += particle.Velocity * Time.deltaTime;
 
             bool leftHit = particle.Position.x < _left;

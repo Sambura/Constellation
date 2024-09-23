@@ -15,61 +15,61 @@ using System;
 [RequireComponent(typeof(Camera))]
 public class Viewport : MonoBehaviour
 {
-	private Camera _camera;
-	private float _aspect;
+    private Camera _camera;
+    private float _aspect;
 
-	/// <summary>
-	/// The height (in world units) of the viewport. This value is precomputed
-	/// </summary>
-	public float Height { get; private set; }
-	/// <summary>
-	/// The width (in world units) of the viewport. This value is precomputed
-	/// </summary>
-	public float Width { get; private set; }
-	/// <summary>
-	/// Half of viewport's height. This value is precomputed
-	/// </summary>
-	public float MaxY { get; private set; }
-	/// <summary>
-	/// Half of viewport's width. This value is precomputed
-	/// </summary>
-	public float MaxX { get; private set; }
-	/// <summary>
-	/// Radius of circle that can inscribe the whole viewport
-	/// </summary>
-	public float Radius => Mathf.Sqrt(MaxX * MaxX + MaxY * MaxY);
+    /// <summary>
+    /// The height (in world units) of the viewport. This value is precomputed
+    /// </summary>
+    public float Height { get; private set; }
+    /// <summary>
+    /// The width (in world units) of the viewport. This value is precomputed
+    /// </summary>
+    public float Width { get; private set; }
+    /// <summary>
+    /// Half of viewport's height. This value is precomputed
+    /// </summary>
+    public float MaxY { get; private set; }
+    /// <summary>
+    /// Half of viewport's width. This value is precomputed
+    /// </summary>
+    public float MaxX { get; private set; }
+    /// <summary>
+    /// Radius of circle that can inscribe the whole viewport
+    /// </summary>
+    public float Radius => Mathf.Sqrt(MaxX * MaxX + MaxY * MaxY);
 
-	/// <summary>
-	/// Camera that is being monitored by this viewport script
-	/// </summary>
-	public Camera Camera => _camera;
+    /// <summary>
+    /// Camera that is being monitored by this viewport script
+    /// </summary>
+    public Camera Camera => _camera;
 
-	public event Action CameraDimensionsChanged;
+    public event Action CameraDimensionsChanged;
 
-	private void Awake()
-	{
-		_camera = GetComponent<Camera>();
-		UpdateTrackedVariables();
-	}
+    private void Awake()
+    {
+        _camera = GetComponent<Camera>();
+        UpdateTrackedVariables();
+    }
 
-	private void Update() => UpdateTrackedVariables();
+    private void Update() => UpdateTrackedVariables();
 
-	public void UpdateTrackedVariables()
-	{
-		float newAspect = _camera.aspect;
-		if (_aspect != newAspect)
-		{
-			_aspect = newAspect;
-			OnTrackedVariableChanged();
-		}
-	}
+    public void UpdateTrackedVariables()
+    {
+        float newAspect = _camera.aspect;
+        if (_aspect != newAspect)
+        {
+            _aspect = newAspect;
+            OnTrackedVariableChanged();
+        }
+    }
 
-	private void OnTrackedVariableChanged()
-	{
-		MaxY = _camera.orthographicSize;
-		MaxX = _aspect * _camera.orthographicSize;
-		Height = MaxY * 2;
-		Width = MaxX * 2;
-		CameraDimensionsChanged?.Invoke();
-	}
+    private void OnTrackedVariableChanged()
+    {
+        MaxY = _camera.orthographicSize;
+        MaxX = _aspect * _camera.orthographicSize;
+        Height = MaxY * 2;
+        Width = MaxX * 2;
+        CameraDimensionsChanged?.Invoke();
+    }
 }

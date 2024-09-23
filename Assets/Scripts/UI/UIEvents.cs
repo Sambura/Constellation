@@ -7,9 +7,9 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class UIEvents : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-	public event Action<PointerEventData> PointerDown;
-	public event Action<PointerEventData> PointerUp;
+    public event Action<PointerEventData> PointerDown;
+    public event Action<PointerEventData> PointerUp;
 
-	public void OnPointerDown(PointerEventData eventData) { PointerDown?.Invoke(eventData); }
-	public void OnPointerUp(PointerEventData eventData) { PointerUp?.Invoke(eventData); }
+    public void OnPointerDown(PointerEventData eventData) { PointerDown?.Invoke(eventData); }
+    public void OnPointerUp(PointerEventData eventData) { PointerUp?.Invoke(eventData); }
 }
