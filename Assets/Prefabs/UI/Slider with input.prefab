@@ -53,15 +53,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _label: {fileID: 2712113876901685089}
-  _slider: {fileID: 2712113877822587864}
   _inputField: {fileID: 2712113877676417123}
-  _keepSliderConstraints: 1
+  _value: 0.3
   _minValue: 0
   _maxValue: 10
-  _value: 0.3
+  _wholeNumbers: 0
   _inputFormatting: 0.000
   _inputRegex: ([-+]?[0-9]*\.?[0-9]+)
   _regexGroupIndex: 1
+  _slider: {fileID: 2712113877822587864}
+  _keepSliderConstraints: 1
 --- !u!114 &7424931314065921173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112,7 +113,7 @@ MonoBehaviour:
       AnchorMin: {x: 0, y: 0}
       AnchorMax: {x: 0.13, y: 1}
       OffsetMin: {x: 0, y: 0}
-      OffsetMax: {x: 0, y: 0}
+      OffsetMax: {x: -10, y: 0}
       LocalRotation: {x: 0, y: 0, z: 0, w: 1}
     - Object: {fileID: 2712113877822587865}
       Pivot: {x: 0.5, y: 0.5}

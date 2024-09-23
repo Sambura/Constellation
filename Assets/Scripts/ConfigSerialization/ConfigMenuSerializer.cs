@@ -46,12 +46,19 @@ namespace ConfigSerialization
 		private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _propertyControlCreators;
 		private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _readonlyPropertyControlCreators;
 
+		/// <summary>
+		/// Configuration for a menu tab to generate. Contains name and the list of scripts 
+		/// containing the ConfigProperty-ies to serialize to the tab
+		/// </summary>
 		[Serializable] private class ConfigTab
 		{
 			public string Name;
 			public List<MonoBehaviour> ConfigSources;
 		}
 
+		/// <summary>
+		/// Simplest member of UI tree, only contains information about its relative order under the parent node
+		/// </summary>
 		private class Orderable
 		{
 			public int? DisplayIndex { get; set; }
@@ -65,16 +72,46 @@ namespace ConfigSerialization
 
 		private class Group : Orderable
 		{
+			/// <summary>
+			/// Displayed group title
+			/// </summary>
 			public string Name { get; set; }
+			/// <summary>
+			/// Group unique id
+			/// </summary>
 			public string Id { get; set; }
+			/// <summary>
+			/// Group index. This index is local to the group's defining container (class)
+			/// </summary>
 			public int? LocalIndex { get; set; }
-			public object DefiningContainer { get; set; }
+            /// <summary>
+            /// The object that defined this group. Typically a MonoBehaviour script
+            /// </summary>
+            public object DefiningContainer { get; set; }
+			/// <summary>
+			/// Rendering layout mode
+			/// </summary>
 			public ConfigGroupLayout Layout { get; set; } = ConfigGroupLayout.Default;
+			/// <summary>
+			/// Should group be indented when rendering?
+			/// </summary>
 			public bool? Indent { get; set; }
+			/// <summary>
+			/// Parent group
+			/// </summary>
 			public Group Parent { get; set; }
+			/// <summary>
+			/// Needed internally for error messages
+			/// </summary>
 			public string LastInvalidUpdatePropertyName { get; private set; }
 
+			/// <summary>
+			/// Children groups
+			/// </summary>
 			public List<Group> Subgroups { get; } = new List<Group>();
+			/// <summary>
+			/// Children members. Each member corresponds to a UI control bound to a ConfigProperty
+			/// </summary>
 			public List<Member> Members { get; } = new List<Member>();
 
 			public bool GetIndent() => Indent ?? true;
@@ -134,10 +171,10 @@ namespace ConfigSerialization
 
 		private enum ControlType
 		{
-			Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
+			Unknown, Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
 			Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader,
 			TexturePickerButton, ColorIndicator, NumericInputField, FilePathSelector,
-			TextInputField
+			TextInputField, NullableControl
 		}
 
 		private class UINode
@@ -175,20 +212,23 @@ namespace ConfigSerialization
 			public UINode() { }
 		}
 
-		public void Serialize()
+		/// <summary>
+		/// The main function. Analyzes tab config and generates the UI for all the defined ConfigProperty-ies
+		/// </summary>
+		public void GenerateMenuUI()
 		{
 			// Global dictionary of groups that have IDs
 			var idGroups = new Dictionary<string, Group>();
-			// group -> (toggle_property, invert_toggle)
-			var groupToggles = new Dictionary<Group, (PropertyInfo, bool)>();
+			// Property -> (resolved bound groups, unresolved group ids)
+			var groupToggles = new Dictionary<PropertyInfo, (List<Group>[], List<string>[])>();
+            // Groups already bound to some property
+			var boundGroups = new Dictionary<Group, PropertyInfo>();
 			// UINode without a real GameObject behind it. Used to collect all the tab's UINodes as children
 			UINode rootNode = new UINode();
 
-			// UI generation
-
-			foreach (ConfigTab tab in _tabs)
+            // UI generation
+            foreach (ConfigTab tab in _tabs)
 			{
-				var idGroupToggles = new Dictionary<string, (PropertyInfo, bool)>();
 				// Pseudo group used to collect all the top-level groups and members as its children
 				Group baseGroup = new Group();
 
@@ -210,7 +250,7 @@ namespace ConfigSerialization
 						InvokableMethod invokableMethod = member.GetCustomAttribute<InvokableMethod>();
 						if (configProperty == null && invokableMethod == null) continue;
 						ConfigGroupToggleAttribute toggleAttribute = member.GetCustomAttribute<ConfigGroupToggleAttribute>();
-						if (toggleAttribute != null)
+						if (toggleAttribute is { })
 						{
 							if (member is PropertyInfo property)
 								localToggles.Add((property, toggleAttribute));
@@ -223,17 +263,43 @@ namespace ConfigSerialization
 					foreach (var toggleInfo in localToggles)
 					{
 						ConfigGroupToggleAttribute toggleParams = toggleInfo.Item2;
+						object[] rawBindingMap = toggleParams.Mapping;
+						List<string>[] groupIds = new List<string>[rawBindingMap.Length];
+						List<Group>[] toggledGroups = new List<Group>[rawBindingMap.Length];
 
-						if (toggleParams.GroupIndex != null)
-							groupToggles.Add(localGroups[(int)toggleParams.GroupIndex], (toggleInfo.Item1, toggleParams.InvertToggle));
-						else
-							idGroupToggles.Add(toggleParams.GroupId, (toggleInfo.Item1, toggleParams.InvertToggle));
+						for (int i = 0; i < rawBindingMap.Length; i++)
+						{
+							groupIds[i] = new List<string>(); toggledGroups[i] = new List<Group>();
 
-						if (toggleParams.InverseGroupIndex != null)
-							groupToggles.Add(localGroups[(int)toggleParams.InverseGroupIndex], (toggleInfo.Item1, !toggleParams.InvertToggle));
-						else if (toggleParams.InverseGroupId != null)
-							idGroupToggles.Add(toggleParams.InverseGroupId, (toggleInfo.Item1, !toggleParams.InvertToggle));
-					}
+							ProcessBinding(rawBindingMap[i]);
+
+                            void ProcessBinding(object entry)
+							{
+                                if (entry is null) return;
+                                if (entry.GetType() == typeof(int))
+                                {
+                                    if (!localGroups.TryGetValue((int)entry, out Group toggledGroup))
+                                        Debug.LogWarning($"Failed to resolve toggle binding for {toggleInfo.Item1}: group index {(int)entry} not found");
+									toggledGroups[i].Add(toggledGroup);
+                                }
+                                else if (entry.GetType() == typeof(string))
+                                {
+                                    groupIds[i].Add((string)entry);
+                                }
+                                else if (entry.GetType().IsArray)
+								{
+									Array array = (Array)entry;
+									for (int j = 0; j < array.Length; j++) ProcessBinding(array.GetValue(j));
+								} else
+                                {
+                                    Debug.LogWarning($"Failed to resolve toggle binding for {toggleInfo.Item1}: binding {i} has unsupported " +
+                                        $"type ({entry.GetType()}). The binding type should be null, int, string, or an array of these types");
+                                }
+                            }
+                        }
+
+						groupToggles.Add(toggleInfo.Item1, (toggledGroups, groupIds));
+                    }
 
 					MergeGroups(baseGroup, localGroups, ungroupedMembers);
 
@@ -292,38 +358,79 @@ namespace ConfigSerialization
 					}
 				}
 
-				foreach (var toggleInfo in idGroupToggles)
-					groupToggles.Add(idGroups[toggleInfo.Key], toggleInfo.Value);
-
-				FinilizeContainer(baseGroup, tabNode, tabTransform);
+                FinalizeContainer(baseGroup, tabNode, tabTransform);
 				UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(tabTransform);
 			}
 
-			// Binding toggles to groups
-
-			List<UINode> uiNodes = UnwindUITree(rootNode);
-
-			foreach (var toggleInfo in groupToggles)
+			// Resolve toggle bindings
+			var resolvedGroupToggles = new Dictionary<PropertyInfo, List<Group>[]>();
+			foreach (var toggleBinding in groupToggles)
 			{
-				if (toggleInfo.Value.Item1.PropertyType != typeof(bool)) {
-					Debug.LogError($"Config group toggle is not supported for properties of type {toggleInfo.Value.Item1.PropertyType}");
-					continue;
-				}
+				PropertyInfo property = toggleBinding.Key;
+                List<Group>[] bindingMap = toggleBinding.Value.Item1;
+				List<string>[] unresolvedIds = toggleBinding.Value.Item2;
+				for (int i = 0; i < bindingMap.Length; i++)
+				{
+					for (int j = 0; j < bindingMap[i].Count; j++)
+					{
+						if (boundGroups.TryGetValue(bindingMap[i][j], out PropertyInfo masterProperty) && masterProperty != property)
+						{
+							Debug.LogWarning($"Failed to resolve toggle binding for {property}: group already bound to {boundGroups[bindingMap[i][j]]}");
+							bindingMap[i].RemoveAt(j--);
+						}
+					}
 
-				Group targetGroup = toggleInfo.Key;
-				UINode groupNode = uiNodes.Find(x => x.Type == ControlType.Container && x.Group == targetGroup);
-				UINode toggleNode = uiNodes.Find(x => x.Member == toggleInfo.Value.Item1);
-				BindBoolToObject(toggleInfo.Value.Item1, toggleNode.MemberContainer, groupNode.Control, toggleInfo.Value.Item2);
-				PlaceAfterInHierarchy(toggleNode.Control, groupNode.Control);
+					for (int j = 0; j < unresolvedIds[i].Count; j++)
+					{
+						if (idGroups.TryGetValue(unresolvedIds[i][j], out Group resolvedGroup))
+                            bindingMap[i].Add(resolvedGroup); 
+						else 
+							Debug.LogWarning($"Failed to resolve toggle binding for {property}: could not find group `{unresolvedIds[i][j]}`");
+                    }
+
+					for (int j = 0; j < unresolvedIds[i].Count; j++)
+					{
+                        if (!boundGroups.ContainsKey(bindingMap[i][j])) boundGroups.Add(bindingMap[i][j], property);
+                    }
+                }
+
+                resolvedGroupToggles.Add(property, bindingMap);
+			}
+
+            List<UINode> uiNodes = UnwindUITree(rootNode);
+
+            // Binding toggles to groups
+			foreach (var toggleInfo in resolvedGroupToggles)
+			{
+				UINode toggleNode = uiNodes.Find(x => x.Member == toggleInfo.Key);
+				RectTransform lastControl = toggleNode.Control;
+				List<Transform>[] transforms = new List<Transform>[toggleInfo.Value.Length];
+				bool reorder = !toggleInfo.Key.GetCustomAttribute<ConfigGroupToggleAttribute>().DoNotReorder;
+
+				for (int i = 0; i < transforms.Length; i++)
+				{
+					List<Group> targetGroups = toggleInfo.Value[i];
+					transforms[i] = new List<Transform>();
+
+					for (int j = 0; j < targetGroups.Count; j++)
+					{
+						Group targetGroup = targetGroups[j];
+						UINode groupNode = uiNodes.Find(x => x.Type == ControlType.Container && x.Group == targetGroup);
+
+						if (reorder) PlaceAfterInHierarchy(lastControl, groupNode.Control);
+                        lastControl = groupNode.Control;
+                        transforms[i].Add(lastControl);
+					}
+                }
+
+				BindPropertyToObjects(toggleInfo.Key, toggleNode.MemberContainer, transforms);
 			}
 
 			_tabView.SelectTab(_selectedTab);
 
-
 			// ##################################################################
+			// ###################       Local functions	 ####################
 			// ##################################################################
-			// ##################################################################
-
 
 			List<UINode> UnwindUITree(UINode root, List<UINode> output = null)
 			{
@@ -342,10 +449,10 @@ namespace ConfigSerialization
 			{
 				UINode node = CreateGroupContainer(group, parent, parentExtraIndent + (group.GetIndent() ? 20 : 0));
 
-				FinilizeContainer(group, node, node.Control, 0);
+                FinalizeContainer(group, node, node.Control, 0);
 			}
 
-			void FinilizeContainer(Group group, UINode containerNode, RectTransform groupTransform, float parentExtraIndent = 20)
+			void FinalizeContainer(Group group, UINode containerNode, RectTransform groupTransform, float parentExtraIndent = 20)
 			{
 				List<Orderable> orderedList = new List<Orderable>();
 				List<Orderable> unorderedObjects = new List<Orderable>();
@@ -412,7 +519,13 @@ namespace ConfigSerialization
 
 				baseGroup.Members.AddRange(ungroupedMembers);
 			}
-		}
+        } // End of GenerateMenuUI
+
+		private void IndentContainer(UINode container, float indent)
+		{
+            RectTransform groupTransform = container.Control;
+            groupTransform.offsetMin = new Vector2(indent, groupTransform.offsetMin.y);
+        }
 
 		private UINode CreateGroupContainer(Group group, UINode parent, float indent, bool collapsable = true)
 		{
@@ -426,37 +539,107 @@ namespace ConfigSerialization
 			}
 
 			UINode containerNode = CreateContainer(parent);
-			containerNode.Group = group;
-			RectTransform groupTransform = containerNode.Control;
-			groupTransform.offsetMin = new Vector2(indent, groupTransform.offsetMin.y);
+            IndentContainer(containerNode, indent);
+            containerNode.Group = group;
 
 			if (header is { } && collapsable)
-				BindToggleToObject(header, groupTransform, false);
+				BindToggleToObject(header, containerNode.Control, false);
 
 			return containerNode;
 		}
 
-		private void BindToggleToObject(GameObject toggleObject, Transform gameObject, bool invertToggle)
+		private void BindToggleToObject(GameObject toggleObject, Transform gameObject, bool invertToggle = false)
 		{
 			Toggle toggle = toggleObject.GetComponent<Toggle>();
 			if (toggle is null) throw new ArgumentException("Provided toggleNode does not contain a toggle Component");
 
 			PropertyInfo isChecked = typeof(Toggle).GetProperty(nameof(Toggle.IsChecked));
-			BindBoolToObject(isChecked, toggle, gameObject, invertToggle);
+			Transform[] binding = invertToggle ? new Transform[] { null, gameObject } : new Transform[] { gameObject };
+			BindPropertyToObjects(isChecked, toggle, binding);
 		}
 
-		private void BindBoolToObject(PropertyInfo toggleProperty, object propertyObject, Transform gameObject, bool invertToggle)
-		{
-			EventInfo toggleEvent = GetEvent(toggleProperty);
-			bool initialValue = (bool)toggleProperty.GetValue(propertyObject);
+        /// <summary>
+        /// Binds a bool/Enum property to multiple objects. For more information on idea of binding group to properties, see 
+		/// <see cref="ConfigGroupToggleAttribute"/>
+        /// </summary>
+        /// <param name="property">Property to bind to an object. Should have a corresponding PropertyChanged event in defining class</param>
+        /// <param name="propertyObject">Object that defines `property` and its PropertyChanged event</param>
+        /// <param name="gameObjects">Transforms of the objects to bind to the property. There should be at least 1 element in the array</param>
+        private void BindPropertyToObjects(PropertyInfo property, object propertyObject, List<Transform>[] gameObjects)
+        {
+            EventInfo toggleEvent = GetEvent(property);
+            object initialValue = property.GetValue(propertyObject);
+			Type propertyType = property.PropertyType;
+			Func<object, int> indexer = propertyType == typeof(bool) ? BoolToIndex :
+										propertyType == typeof(int) ? IntToIndex :
+										propertyType.IsEnum ? (Func<object, int>)EnumToIndex : null;
 
-			BindBoolToObjectImplementation(toggleEvent, propertyObject, initialValue, gameObject, invertToggle);
-		}
+			if (indexer is null) {
+				Debug.LogWarning($"Cannot bind property {property} to object : type {propertyType} not supported");
+				return;
+			}
 
-		private void BindBoolToObjectImplementation(EventInfo toggleEvent, object eventObject, bool initialValue, Transform gameObject, bool invertToggle)
+			Type genericBinderType = typeof(PTOBinder<>).MakeGenericType(propertyType);
+			object binder = Activator.CreateInstance(genericBinderType, gameObjects, indexer);
+			MethodInfo binderInfo = genericBinderType.GetMethod(nameof(PTOBinder<int>.EventHandler));
+            Delegate binderMethod = binderInfo.CreateDelegate(typeof(Action<>).MakeGenericType(propertyType), binder);
+            toggleEvent.AddEventHandler(propertyObject, binderMethod);
+            binderMethod.DynamicInvoke(initialValue);
+
+            int BoolToIndex(object value) => (bool)value ? 0 : 1;
+
+			int IntToIndex(object value) => (int)value;
+
+			int EnumToIndex(object value)
+			{
+				Array enumValues = propertyType.GetEnumValues();
+				for (int i = 0; i < enumValues.Length; i++)
+					if (enumValues.GetValue(i).Equals(value)) return i;
+
+				return -1;
+			}
+        }
+
+		// Same but only 1 object per property value, for convinience
+        private void BindPropertyToObjects(PropertyInfo property, object propertyObject, Transform[] gameObjects)
+        {
+			List<Transform>[] wrappedObjects = new List<Transform>[gameObjects.Length];
+			for (int i = 0; i < wrappedObjects.Length; i++) {
+				wrappedObjects[i] = new List<Transform>() { gameObjects[i] };
+			}
+
+			BindPropertyToObjects(property, propertyObject, wrappedObjects);
+        }
+
+        /// <summary>
+        /// Have not figured out an easier way to make an event handler for dynamically resolved enum types
+        /// </summary>
+        /// <typeparam name="T">Property type</typeparam>
+        private class PTOBinder<T>
 		{
-			toggleEvent.AddEventHandler(eventObject, (Action<bool>)(x => gameObject.gameObject.SetActive(invertToggle ^ x)));
-			gameObject.gameObject.SetActive(invertToggle ^ initialValue);
+			public List<Transform>[] GameObjects;
+			public Func<object, int> Indexer;
+
+			public void EventHandler(T newValue)
+			{
+                foreach (List<Transform> transforms in GameObjects)
+					foreach (Transform transform in transforms)
+						transform?.gameObject.SetActive(false);
+
+                int objectIndex = Indexer.Invoke(newValue);
+                if (objectIndex < 0 || objectIndex >= GameObjects.Length) return;
+
+				List<Transform> toActivate = GameObjects[objectIndex];
+				
+				foreach (Transform transform in toActivate)
+                    transform?.gameObject.SetActive(true);
+            }
+
+			public PTOBinder(List<Transform>[] gameObjects, Func<object, int> indexer)
+			{
+				GameObjects = gameObjects;
+				Indexer = indexer;
+			}
 		}
 
 		private void PlaceAfterInHierarchy(Transform baseObject, Transform targetObject)
@@ -494,7 +677,7 @@ namespace ConfigSerialization
 		/// </summary>
 		private UINode DecorateControl(UINode control)
 		{
-			if (control == null) return null;
+			if (control == null || control.Type == ControlType.Container) return null;
 
 			List<MemberInfo> members = control.SerializedMembers ?? new List<MemberInfo>() { control.Member };
 
@@ -584,7 +767,7 @@ namespace ConfigSerialization
 			foreach (var creator in controlCreators)
 				if (creator.Key(property.PropertyType)) return creator.Value(property, container, parent);
 
-			Debug.LogError($"Failed to create control for {property} on {container} : not implemented!");
+			Debug.LogWarning($"Failed to create control for {property} on {container} : not implemented!");
 
 			return null;
 		}
@@ -688,14 +871,29 @@ namespace ConfigSerialization
 			);
 		}
 
-		/// <summary>
-		/// converterGenerator should return (prop2ui, ui2prop)
-		/// </summary>
-		private UINode CreateUniversal<T, V>(PropertyInfo property, GameObject prefab, object memberContainer,
+        /// <summary>
+        /// Universal method for creating controls
+        /// </summary>
+        /// <typeparam name="T">Type of the config property. Use ConfigProperty if no specific type exists</typeparam>
+        /// <typeparam name="V">Type of the script for UI control to create</typeparam>
+        /// <param name="property">PropertyInfo to bind to the control</param>
+        /// <param name="prefab">Prefab for the UI control. The root object should contain component with type `V`</param>
+        /// <param name="memberContainer">The object that defines target property (and corresponding PropertyChanged event)</param>
+        /// <param name="parent">UINode that should become a parent for the new control</param>
+        /// <param name="initDelegate">Delegate for control initialization. Should accept three arguments: instance of UI control (type `V`), 
+		///		instance of ConfigProperty, and instance of attribute of type `V`. The third argument may be null if no such attribute was found</param>
+        /// <param name="propertyName">Property name on the type `V` that should be bound to target property</param>
+        /// <param name="controlType">The type of control being created</param>
+        /// <param name="converterGenerator">Function that returns two delegates: first converts property value to UI, second from UI to property value.
+		///		If the target property and property on UI control have the same type and do not require conversion, leave this argument as null.
+		///		Simple converter should accept value from one property, and return a value to assign to another property</param>
+        /// <param name="readonlyProperty">When `true`, UI control can only display the value of the property, but cannot change it</param>
+        /// <returns></returns>
+        private UINode CreateUniversal<T, V>(PropertyInfo property, GameObject prefab, object memberContainer,
 			UINode parent, Action<V, ConfigProperty, T> initDelegate, string propertyName, ControlType controlType,
 			Func<V, T, (Delegate, Delegate)> converterGenerator = null, bool readonlyProperty = false) where T : ConfigProperty where V : Component
 		{
-			ConfigProperty configProperty = property.GetCustomAttribute<ConfigProperty>();
+			ConfigProperty configProperty = GetConfigProperty<ConfigProperty>(property, memberContainer);
 			T specificAttribute = configProperty as T;
 			Type configType = configProperty.GetType();
 
@@ -712,21 +910,18 @@ namespace ConfigSerialization
 			var controlEvent = GetEvent(specificProperty);
 			Delegate handler = (Delegate)(
 				readonlyProperty
-				? 
-				GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
-				.MakeGenericMethod(property.PropertyType, specificProperty.PropertyType).Invoke(null, new object[] { specificProperty, specificControl, null })
+				?
+                    MakeDirectionalHandler(specificProperty, specificControl, property.PropertyType)
 				: 
 				GetType().GetMethod(nameof(GetUniversalHandler), BindingFlags.Static | BindingFlags.NonPublic)
-				.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl })
+					.MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl })
 			);
 			Delegate propToUiHandler = handler, uiToPropHandler = handler;
 			if (converterGenerator != null)
 			{
 				(Delegate prop2ui, Delegate ui2prop) = converterGenerator(specificControl, specificAttribute);
-				propToUiHandler = (Delegate)GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
-				.MakeGenericMethod(property.PropertyType, specificProperty.PropertyType).Invoke(null, new object[] { specificProperty, specificControl, prop2ui });
-				uiToPropHandler = (Delegate)GetType().GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
-				.MakeGenericMethod(specificProperty.PropertyType, property.PropertyType).Invoke(null, new object[] { property, memberContainer, ui2prop });
+				propToUiHandler = MakeDirectionalHandler(specificProperty, specificControl, property.PropertyType, prop2ui);
+				uiToPropHandler = MakeDirectionalHandler(property, memberContainer, specificProperty.PropertyType, ui2prop);
 
 				specificProperty.SetValue(specificControl, prop2ui.DynamicInvoke(property.GetValue(memberContainer)));
 			} else
@@ -753,7 +948,7 @@ namespace ConfigSerialization
 			};
 		}
 
-		private static Delegate GetUniversalHandler<T>(PropertyInfo prop1, PropertyInfo prop2, object cont1, object cont2)
+        private static Delegate GetUniversalHandler<T>(PropertyInfo prop1, PropertyInfo prop2, object cont1, object cont2)
 		{
 			return (Action<T>)(x =>
 			{
@@ -764,6 +959,14 @@ namespace ConfigSerialization
 				if (set2) prop2.SetValue(cont2, x);
 			});
 		}
+
+		private static Delegate MakeDirectionalHandler(PropertyInfo targetProperty, object declaringObject, Type eventValueType = null, Delegate converter = null)
+		{
+			if (eventValueType is null) eventValueType = targetProperty.PropertyType;
+
+			return (Delegate)typeof(ConfigMenuSerializer).GetMethod(nameof(GetDirectionalHandler), BindingFlags.Static | BindingFlags.NonPublic)
+					.MakeGenericMethod(eventValueType, targetProperty.PropertyType).Invoke(null, new object[] { targetProperty, declaringObject, converter });
+        }
 
 		/// <summary>
 		/// property is a Property that is going to be updated by this handler
@@ -783,21 +986,122 @@ namespace ConfigSerialization
 
 		private UINode CreateToggle(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			RadioButtonsProperty radioButtonProperty = property.GetCustomAttribute<RadioButtonsProperty>();
-
-			if (radioButtonProperty != null)
+			if (GetConfigProperty<RadioButtonsProperty>(property, memberContainer) is { })
 				return CreateRadioButtons(property, memberContainer, parent);
 
 			return CreateUniversal<ConfigProperty, Toggle>(
-				property, _togglePrefab, memberContainer, parent, (x, y, z) =>
-				{ x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name); },
+				property, _togglePrefab, memberContainer, parent, (x, y, z) => { x.LabelText = MakeControlLabel(property, y); },
 				nameof(Toggle.IsChecked), ControlType.Toggle
 			);
 		}
 
+		/// <summary>
+		/// Extended version of property.GetCustomAttribute. This method should be used in order to support proxied property
+		/// serialization (e.g. for nullable properties)
+		/// </summary>
+		/// <typeparam name="T">Attribute type to get</typeparam>
+		/// <param name="property">The property</param>
+		/// <param name="declaringObject">The object defining the property</param>
+		/// <returns>Instance of the requested attribute, or null if it is not found</returns>
+		private T GetConfigProperty<T>(PropertyInfo property, object declaringObject) where T : ConfigProperty
+		{
+			if (typeof(IPropertyProxy).IsAssignableFrom(property.DeclaringType))
+				return declaringObject.GetType().GetProperty(nameof(IPropertyProxy.Attribute)).GetValue(declaringObject) as T;
+
+			return property.GetCustomAttribute<T>();
+        }
+
+        private UINode CreateNullableControl(PropertyInfo property, object memberContainer, UINode parent)
+        {
+			Type nullableType = property.PropertyType.GetGenericArguments()[0];
+			Type proxyType = typeof(NullableBinderProxy<>).MakeGenericType(nullableType);
+			ConfigProperty configProperty = GetConfigProperty<ConfigProperty>(property, memberContainer);
+            object proxy = Activator.CreateInstance(proxyType, configProperty);
+			PropertyInfo hasValueProperty = proxyType.GetProperty(nameof(NullableBinderProxy<int>.HasValue));
+			PropertyInfo valueProperty = proxyType.GetProperty(nameof(NullableBinderProxy<int>.Value));
+			PropertyInfo nullableValueProperty = proxyType.GetProperty(nameof(NullableBinderProxy<int>.NullableValue));
+            UINode container = CreateContainer(parent, $"Nullable control for {property.Name}");
+
+            GetEvent(property)?.AddEventHandler(memberContainer, MakeDirectionalHandler(nullableValueProperty, proxy));
+            GetEvent(nullableValueProperty).AddEventHandler(proxy, MakeDirectionalHandler(property, memberContainer));
+
+			PropertyInfo name = typeof(ConfigProperty).GetProperty(nameof(ConfigProperty.Name));
+
+			string configPropertyName = name.GetValue(configProperty) as string;
+			bool nullName = configPropertyName is null;
+			if (nullName) name.SetValue(configProperty, MakeControlLabel(property, configProperty)); 
+			UINode toggle = CreateToggle(hasValueProperty, proxy, container);
+            UINode valueContainer = CreateContainer(container);
+			IndentContainer(valueContainer, 20);
+			if (nullName) name.SetValue(configProperty, null);
+
+            name.SetValue(configProperty, "Value");
+			UINode valueControl = CreatePropertyControl(valueProperty, proxy, valueContainer);
+            name.SetValue(configProperty, configPropertyName);
+
+            ApplyLayout(valueContainer.Control.gameObject, ConfigGroupLayout.Default);
+            ApplyLayout(container.Control.gameObject, ConfigGroupLayout.Default);
+			BindToggleToObject(toggle.Control.gameObject, valueContainer.Control);
+
+			nullableValueProperty.SetValue(proxy, property.GetValue(memberContainer));
+
+            return new UINode(parent)
+            {
+                Control = container.Control,
+                Member = property,
+                MemberContainer = memberContainer,
+                Type = ControlType.NullableControl,
+                Metadata = null
+            };
+        }
+
+		private interface IPropertyProxy { public ConfigProperty Attribute { get; } }
+
+		private class NullableBinderProxy<T> : IPropertyProxy where T : struct
+		{
+			private T _value;
+			private bool _hasValue;
+			private readonly ConfigProperty _attribute;
+
+			public T Value
+			{
+				get => _value;
+				set { if (Equals(_value, value)) return; _value = value; HasValue = true; ValueChanged?.Invoke(_value); EmitChange(); }
+			}
+
+			public bool HasValue
+			{
+				get => _hasValue;
+				set { if (_hasValue == value) return; _hasValue = value; HasValueChanged?.Invoke(_hasValue); EmitChange(); }
+			}
+
+			public T? NullableValue
+			{
+				get => HasValue ? Value : new Nullable<T>();
+				set
+				{
+					if (!HasValue && !value.HasValue) return;
+					if (HasValue && value.HasValue && Equals(Value, value.Value)) return;
+					HasValue = value.HasValue;
+					if (HasValue) Value = value.Value;
+					NullableValueChanged?.Invoke(NullableValue);
+                }
+			}
+
+			private void EmitChange() => NullableValueChanged?.Invoke(NullableValue);
+
+            public ConfigProperty Attribute => _attribute;
+
+            public event Action<T> ValueChanged;
+			public event Action<bool> HasValueChanged;
+			public event Action<T?> NullableValueChanged;
+
+			public NullableBinderProxy(ConfigProperty attribute) { _attribute = attribute; }
+		}
+
         private UINode CreateStringPropertyControl(PropertyInfo property, object memberContainer, UINode parent)
         {
-            if (property.GetCustomAttribute<FilePathProperty>() is { })
+            if (GetConfigProperty<FilePathProperty>(property, memberContainer) is { })
                 return CreateFilePathSelector(property, memberContainer, parent);
 
 			return CreateTextInputField(property, memberContainer, parent);
@@ -816,7 +1120,7 @@ namespace ConfigSerialization
 
         private UINode CreateFilePathSelector(PropertyInfo property, object memberContainer, UINode parent)
         {
-            FilePathProperty filePathProperty = property.GetCustomAttribute<FilePathProperty>();
+            FilePathProperty filePathProperty = GetConfigProperty<FilePathProperty>(property, memberContainer);
 
             return CreateUniversal<FilePathProperty, FilePathSelector>(
                 property, _filePathSelectorPrefab, memberContainer, parent, (x, y, z) =>
@@ -831,12 +1135,14 @@ namespace ConfigSerialization
             );
         }
 
+		private string MakeControlLabel(PropertyInfo property, ConfigProperty configProperty) => configProperty.Name ?? SplitAndLowerCamelCase(property.Name);
+
         private UINode CreateNumericPropertyControl(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			if (property.GetCustomAttribute<MinMaxSliderProperty>() is { })
+			if (GetConfigProperty<MinMaxSliderProperty>(property, memberContainer) is { })
 				return CreateMinMaxSlider(property, memberContainer, parent);
 
-			if (property.GetCustomAttribute<InputFieldPropertyAttribute>() is { })
+			if (GetConfigProperty<InputFieldPropertyAttribute>(property, memberContainer) is { })
 				return CreateNumericInputField(property, memberContainer, parent);
 
 			return CreateSlider(property, memberContainer, parent);
@@ -889,7 +1195,7 @@ namespace ConfigSerialization
 
 		private UINode CreateRadioButtons(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			RadioButtonsProperty radioButtonsProperty = property.GetCustomAttribute<RadioButtonsProperty>();
+			RadioButtonsProperty radioButtonsProperty = GetConfigProperty<RadioButtonsProperty>(property, memberContainer);
 			if (property.PropertyType == typeof(bool) && radioButtonsProperty.RadioNames.Length != 2)
 				throw new ArgumentException("Can only create 2 radio buttons for bool property");
 
@@ -941,7 +1247,7 @@ namespace ConfigSerialization
 
 		private UINode CreateMinMaxSlider(PropertyInfo property, object memberContainer, UINode parent)
 		{
-			MinMaxSliderProperty sliderProperty = property.GetCustomAttribute<MinMaxSliderProperty>();
+			MinMaxSliderProperty sliderProperty = GetConfigProperty<MinMaxSliderProperty>(property, memberContainer);
 			if (sliderProperty.HigherPropertyName == null) return null;
 
 			PropertyInfo lower = property;
@@ -1019,9 +1325,9 @@ namespace ConfigSerialization
 			};
 		}
 
-		private UINode CreateContainer(UINode parent, string name = null)
+		private UINode CreateContainer(UINode parent, string inspectorName = null)
 		{
-			GameObject container = new GameObject(name ?? "Container"); // Default game object name is longer...
+			GameObject container = new GameObject(inspectorName ?? "Container"); // Default game object name is longer...
 			RectTransform transform = container.AddComponent<RectTransform>();
 			transform.SetParent(parent.Control, false);
 			transform.anchorMin = new Vector2(0, 1);
@@ -1051,7 +1357,7 @@ namespace ConfigSerialization
 
 		private static EventInfo GetEvent(PropertyInfo property) => property.DeclaringType.GetEvent(property.Name + "Changed");
 
-		private void Start() { if (_serializeOnStart) Serialize(); }
+		private void Start() { if (_serializeOnStart) GenerateMenuUI(); }
 
 		public ConfigMenuSerializer() : base()
 		{
@@ -1064,7 +1370,8 @@ namespace ConfigSerialization
 				{ x => x == typeof(Gradient), CreateGradientButton },
 				{ x => x == typeof(AnimationCurve), CreateCurveButton },
 				{ x => x == typeof(Texture2D), CreateTextureButton },
-				{ x => x == typeof(string), CreateStringPropertyControl }
+				{ x => x == typeof(string), CreateStringPropertyControl },
+				{ x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>), CreateNullableControl }
 			};
 			_readonlyPropertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
 			{
