@@ -10,6 +10,13 @@ public class BenchmarkSuiteConfig
     public string Description { get; set; }
     public FullScreenMode FullscreenMode { get; set; } = FullScreenMode.ExclusiveFullScreen;
     public int FpsCap { get; set; } = 0;
+    public float? BenchmarkDurationOverride { get; set; } = null;
+    public float? CooldownDurationOverride { get; set; } = null;
+    public float? WarmupDurationOverride { get; set; } = null;
+    public int RepeatCount { get; set; } = 1;
+    public bool ShuffleBenchmarks { get; set; } = false;
+
+    // not to be serialized
     public List<BenchmarkConfig> Configs { get; set; } // TODO - make so that this is not serialized
     public int ConfigsFailedToLoad { get; protected set; }
 

@@ -1460,6 +1460,7 @@ MonoBehaviour:
   _fileDialog: {fileID: 1545749630}
   _uiObject: {fileID: 1929529151}
   _particleController: {fileID: 144636867}
+  _mainVisualizer: {fileID: 144636865}
   _fpsCounter: {fileID: 519420033}
   _viewport: {fileID: 519420034}
   _perfDialog: {fileID: 2057954985}
@@ -7162,7 +7163,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMax.x

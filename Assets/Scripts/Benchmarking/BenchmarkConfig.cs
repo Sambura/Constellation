@@ -6,7 +6,9 @@ public class BenchmarkConfig
     public string BenchmarkVersion { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public float BenchmarkDuration { get; set; }
+    public float? BenchmarkDuration { get; set; } = null;
+    public float? WarmupTime { get; set; } = null;
+    public float? CooldownTime { get; set; } = null;
     public string SimulationConfigPath { get; set; }
 
     public static BenchmarkConfig FromFile(string configPath)
