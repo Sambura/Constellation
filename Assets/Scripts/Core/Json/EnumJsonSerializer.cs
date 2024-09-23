@@ -6,11 +6,11 @@ namespace Core.Json
 {
 	public class EnumJsonSerializer : IJsonPropertySerializer<Enum>
 	{
-		public string ToJson(object obj, bool prettyPrint)
+		public string ToJson(object obj)
 		{
 			Enum enumValue = obj as Enum;
 			
-            return DefaultJsonSerializer.Default.ToJson(enumValue.ToString(), prettyPrint);
+            return DefaultJsonSerializer.Default.ToJson(enumValue.ToString());
 		}
 
 		public object FromJson(string json, Type type, bool ignoreUnknownProperties = false)

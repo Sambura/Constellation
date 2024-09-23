@@ -4,6 +4,7 @@ namespace Core
     /// <summary>
     /// Replacement for System.Collections.Generic.List
     /// Has less restrictive interface and should be more performant overall
+    /// Can be useful when there is a need to frequently clear the list and fill it again
     /// </summary>
     public class FastList<T>
     {

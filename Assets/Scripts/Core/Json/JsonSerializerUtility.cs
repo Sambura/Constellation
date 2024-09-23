@@ -12,6 +12,7 @@ namespace Core.Json
     public static class JsonSerializerUtility
     {
         public static IReadOnlyDictionary<Type, IJsonPropertySerializer> CustomSerializers { get; private set; }
+        public static IReadOnlyDictionary<Type, Type> CustomGenericSerializers { get; private set; }
 
         public const string PrettyCharacters = " \t\n\r";
 
@@ -21,6 +22,7 @@ namespace Core.Json
         public static Dictionary<Type, IJsonPropertySerializer> RefreshCustomSerializers()
         {
             Dictionary<Type, IJsonPropertySerializer> serializers = new Dictionary<Type, IJsonPropertySerializer>();
+            Dictionary<Type, Type> genericSerializers = new Dictionary<Type, Type>();
 
             var allTypes = Assembly.GetAssembly(typeof(JsonSerializerUtility)).GetTypes();
 
@@ -30,12 +32,21 @@ namespace Core.Json
                 var inface = type.GetInterfaces().FirstOrDefault(x => x.IsInterface && x.IsGenericType);
                 if (inface == null) continue;
                 if (inface.GetGenericTypeDefinition() != typeof(IJsonPropertySerializer<>)) continue;
+                Type serializerType = inface.GenericTypeArguments[0];
 
-                object serializer = type.GetConstructor(Type.EmptyTypes).Invoke(Type.EmptyTypes);
-                serializers.Add(inface.GenericTypeArguments[0], serializer as IJsonPropertySerializer);
+                if (type.ContainsGenericParameters)
+                {
+                    serializerType = serializerType.GetGenericTypeDefinition();
+                    genericSerializers.Add(serializerType, type);
+                } else
+                {
+                    object serializer = type.GetConstructor(Type.EmptyTypes).Invoke(null);
+                    serializers.Add(serializerType, serializer as IJsonPropertySerializer);
+                }
             }
 
             CustomSerializers = serializers;
+            CustomGenericSerializers = genericSerializers;
             return serializers;
         }
 
@@ -243,7 +254,7 @@ namespace Core.Json
         public static void SerializeDefault(StringBuilder json, string name, object value)
         {
             PrintPropertyName(json, name);
-            json.Append(DefaultJsonSerializer.Default.ToJson(value, false));
+            json.Append(DefaultJsonSerializer.Default.ToJson(value));
             json.Append(',');
         }
 
@@ -257,24 +268,30 @@ namespace Core.Json
             json.Append("\":");
         }
 
-        public static IJsonPropertySerializer GetSuperSerializer(Type type, Type baseSerializer)
+        public static IJsonPropertySerializer GetSuperSerializer(Type targetType, Type baseSerializer)
         {
+            Type type = targetType;
+
             while (type != baseSerializer)
             {
                 if (CustomSerializers.TryGetValue(type, out IJsonPropertySerializer serializer))
                     return serializer;
 
-                type = type.BaseType;
+                if (CustomGenericSerializers.TryGetValue(type, out Type serializerType))
+                {
+                    Type constructedType = serializerType.MakeGenericType(targetType.GetGenericArguments());
+                    return Activator.CreateInstance(constructedType) as IJsonPropertySerializer;
+                }
+
+                type = type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : type.BaseType;
                 if (type == null) throw new Exception("Null base type reached");
             }
 
             return null;
         }
 
-        public static string Prettify(string json, bool prettify = true)
+        public static string Prettify(string json)
         {
-            if (prettify == false) return json;
-
             // Below code is (supposed to be) effectively equivalent to this one:
             //
             // json = json.Replace("{", "{\n").Replace("}", "\n}")

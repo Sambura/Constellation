@@ -8,12 +8,12 @@ namespace Core.Json
     /// </summary>
     public class StringJsonSerializer : IJsonPropertySerializer<string>
     {
-        public string ToJson(object obj, bool prettyPrint)
+        public string ToJson(object obj)
         {
             if (obj == null) return "null";
 
-            string str = obj as string; // TODO: Make this check in the base class/interface/idk
-            if (str == null) throw new ArgumentException("The object to serialize is not of type string");
+            // TODO: Make this check in the base class/interface/idk
+            if (!(obj is string str)) throw new ArgumentException("The object to serialize is not of type string");
 
             StringBuilder json = new StringBuilder(str.Length * 2); // pretty arbitrary
             json.Append('"');

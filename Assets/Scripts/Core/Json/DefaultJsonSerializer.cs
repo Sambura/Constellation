@@ -33,13 +33,13 @@ namespace Core.Json
             return value + ".0";
         }
 
-        public string ToJson(object obj, bool prettyPrint)
+        public string ToJson(object obj)
         {
             if (obj == null) return "null";
 
             Type type = obj.GetType();
             var customSerializer = JsonSerializerUtility.GetSuperSerializer(type, typeof(object));
-            if (customSerializer != null) return customSerializer.ToJson(obj, prettyPrint);
+            if (customSerializer != null) return customSerializer.ToJson(obj);
 
             StringBuilder json = new StringBuilder();
 
@@ -58,7 +58,7 @@ namespace Core.Json
 
                 foreach (object item in array)
                 {
-                    json.Append(ToJson(item, false));
+                    json.Append(ToJson(item));
                     json.Append(',');
                 }
 
@@ -96,7 +96,7 @@ namespace Core.Json
                 JsonSerializerUtility.EndObject(json);
             }
 
-            return JsonSerializerUtility.Prettify(json.ToString(), false);
+            return json.ToString();
         }
 
         public object FromJson(string json, Type type, bool ignoreUnknownProperties = false)

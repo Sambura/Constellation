@@ -114,7 +114,7 @@ public class ConfigSerializer : MonoBehaviour
 
         JsonSerializerUtility.EndObject(json);
 
-        return JsonSerializerUtility.Prettify(json.ToString(), prettyPrint);
+        return prettyPrint ? JsonSerializerUtility.Prettify(json.ToString()) : json.ToString();
 	}
 
     public int MultipleObjectOverwriteFromJson(string json, string[] names, object[] objects)

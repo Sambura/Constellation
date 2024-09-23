@@ -24,7 +24,7 @@ namespace UnityCore
 			set => mTextureManager = value;
 		}
 
-		public string ToJson(object obj, bool prettyPrint)
+		public string ToJson(object obj)
 		{
 			if (obj == null) return "null";
 
@@ -42,7 +42,7 @@ namespace UnityCore
 			JsonSerializerUtility.StripComma(json);
 			json.Append('}');
 
-			return JsonSerializerUtility.Prettify(json.ToString(), prettyPrint);
+			return json.ToString();
 		}
 
 		public object FromJson(string json, Type type, bool ignoreUnknownProperties = false)

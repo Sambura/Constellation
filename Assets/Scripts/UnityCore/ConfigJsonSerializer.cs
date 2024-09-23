@@ -31,7 +31,7 @@ namespace UnityCore
 
             JsonSerializerUtility.EndObject(json);
 
-            return JsonSerializerUtility.Prettify(json.ToString(), prettyPrint);
+            return prettyPrint ? JsonSerializerUtility.Prettify(json.ToString()) : json.ToString();
         }
 
         /// <summary>

@@ -410,7 +410,7 @@ public class AnalyticsCore : MonoBehaviour
 	private string GenerateSummaryJson() {
         FrameStatistics stats = new FrameStatistics();
         stats.SetFrameTimings(_tracker.FrameTimings);
-		return DefaultJsonSerializer.Default.ToJson(stats, false);
+		return DefaultJsonSerializer.Default.ToJson(stats);
 	}
 
     public bool DoSaveFile(string path, Action<string> fileSaveDelegate, string errorCaption = "Could not save file: {0}")
