@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class BenchmarkSuiteConfig
 {
-    public string BenchmarkSuiteVersion { get; set; }
+    public string BenchmarkSuiteVersion { get; set; } = "1.2.0";
     public string Name { get; set; }
     public string Description { get; set; }
     public FullScreenMode FullscreenMode { get; set; } = FullScreenMode.ExclusiveFullScreen;
@@ -16,9 +16,8 @@ public class BenchmarkSuiteConfig
     public int RepeatCount { get; set; } = 1;
     public bool ShuffleBenchmarks { get; set; } = false;
 
-    // not to be serialized
-    public List<BenchmarkConfig> Configs { get; set; } // TODO - make so that this is not serialized
-    public int ConfigsFailedToLoad { get; protected set; }
+    [NoJsonSerialization] public List<BenchmarkConfig> Configs { get; set; }
+    [NoJsonSerialization] public int ConfigsFailedToLoad { get; protected set; }
 
     public static BenchmarkSuiteConfig FromFile(string configPath)
     {
@@ -28,11 +27,13 @@ public class BenchmarkSuiteConfig
             throw new System.ArgumentException("The provided file is not recognized as a benchmark suite config");
 
         var config = (BenchmarkSuiteConfig)DefaultJsonSerializer.Default.FromJson(json, typeof(BenchmarkSuiteConfig), true);
-        
-        DirectoryInfo confgisDir = Directory.CreateDirectory(Path.GetDirectoryName(configPath));
+        if (Core.Algorithm.ParseVersion(config.BenchmarkSuiteVersion) is null)
+            throw new System.ArgumentException("Invalid benchmark suite version");
+
+        DirectoryInfo configsDir = new DirectoryInfo(Path.GetDirectoryName(configPath));
         config.Configs = new List<BenchmarkConfig>();
         config.ConfigsFailedToLoad = 0;
-        foreach (FileInfo file in confgisDir.EnumerateFiles("*-benchmark.json", SearchOption.TopDirectoryOnly))
+        foreach (FileInfo file in configsDir.EnumerateFiles("*-benchmark.json", SearchOption.TopDirectoryOnly))
         {
             try
             {

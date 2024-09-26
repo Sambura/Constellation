@@ -33,5 +33,25 @@ namespace Core
         {
             return (float)Math.Sqrt(values.Average(v => (float)Math.Pow(v - averageValue, 2)));
         }
+
+        public static int[] ParseVersion(string version) => ParseVersion(version, 3);
+
+        public static int[] ParseVersion(string version, int depth) => ParseVersion(version, depth, depth);
+
+        public static int[] ParseVersion(string version, int minDepth, int maxDepth)
+        {
+            if (version is null) return null;
+            string[] numbers = version.Split(new char[] { '.' }, StringSplitOptions.None);
+            if (numbers.Length < minDepth || numbers.Length > maxDepth) return null;
+            int[] ints = new int[numbers.Length];
+            for (int i = 0; i < numbers.Length; i++)
+            {
+                if (!int.TryParse(numbers[i], out ints[i])) return null;
+                if (numbers[i][numbers[i].Length - 1] == '0' && numbers[i].Length > 1) return null;
+                if (ints[i] < 0) return null;
+            }
+
+            return ints;
+        }
     }
 }

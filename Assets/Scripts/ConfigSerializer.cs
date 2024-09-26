@@ -88,18 +88,21 @@ public class ConfigSerializer : MonoBehaviour
     /// </summary>
     /// <param name="path">Path to a file to read config from</param>
     /// <returns>Non-negative number of loaded properties</returns>
-    public int DeserializeConfig(string path)
+    public int DeserializeConfigFromFile(string path)
     {
         string json = File.ReadAllText(path);
-        int deserealized = 0;
+        return DeserializeJsonConfig(json);
+    }
 
-        // Two times to ensure min/max properties deserialized correctly
+    public int DeserializeJsonConfig(string json)
+    {
+        // Two times to ensure min/max properties deserialized correctly (hack)
         MultipleObjectOverwriteFromJson(json, _names, _objects);
-        deserealized = MultipleObjectOverwriteFromJson(json, _names, _objects);
-
-        // Restard the simulation
+        int deserialized = MultipleObjectOverwriteFromJson(json, _names, _objects);
+    
+        // Restart the simulation
         _particleController.RestartSimulation();
-        return deserealized;
+        return deserialized;
     }
 
     public string MultipleObjectsToJson(string[] names, object[] objects, bool prettyPrint)
@@ -207,7 +210,7 @@ public class ConfigSerializer : MonoBehaviour
 
         try
         {
-            deserealized = DeserializeConfig(fileInfo.FullName);
+            deserealized = DeserializeConfigFromFile(fileInfo.FullName);
             if (deserealized == 0)
             {
                 _fileDialog.Manager.ShowMessageBox("Warning", "No Constellation properties were found in the " + 
