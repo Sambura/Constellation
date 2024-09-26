@@ -21,7 +21,7 @@ namespace Core.Json
     /// </summary>
     public class DefaultJsonSerializer : IJsonPropertySerializer<object>
     {
-        public static readonly DefaultJsonSerializer Default = new DefaultJsonSerializer();
+        public static DefaultJsonSerializer Default { get; } = new DefaultJsonSerializer();
 
         private static readonly Type[] ParseMethodArguments = new Type[] { typeof(string) };
 
@@ -73,6 +73,8 @@ namespace Core.Json
                 if (_typeSpecificFlags.ContainsKey(type)) flags = _typeSpecificFlags[type];
                 foreach (MemberInfo member in members)
                 {
+                    NoJsonSerializationAttribute config = member.GetCustomAttribute<NoJsonSerializationAttribute>();
+                    if (config is { } && !config.AllowToJson) continue;
                     switch (member.MemberType)
                     {
                         case MemberTypes.Field:
@@ -140,6 +142,9 @@ namespace Core.Json
             foreach (var jsonProperty in properties)
             {
                 MemberInfo member = members.FirstOrDefault(x => x.Name == jsonProperty.Key);
+                NoJsonSerializationAttribute config = member.GetCustomAttribute<NoJsonSerializationAttribute>();
+                if (config is { } && !config.AllowFromJson) continue;
+
                 if (member is null)
                 {
                     if (ignoreUnknownProperties) continue;

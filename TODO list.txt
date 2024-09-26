@@ -29,8 +29,6 @@ To-do list:
 		+ LinePlot: improve the model, allow to add several different plots to a single LinePlot instance
 		+ Adjust averaged plot's averaging parameters
 		+ Add color pickers for plots
-	- Benchmark: ability to export all info: simulation config, report summary AND raw timings
-	- Benchmark: add presets (possibly hardcoded) and benchmark suites (a number of different simul. configs simulated one after another automatically)
 	- Config properties: Add `default value` to config properties (or any other way to add backward compatibility to older simulation configs)
 		+ when loading a config and some properties are missing: ask whether to apply default values or leave unchanged
 	- Scale particles depending on velocity

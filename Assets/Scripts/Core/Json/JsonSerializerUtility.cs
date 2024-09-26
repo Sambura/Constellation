@@ -191,7 +191,7 @@ namespace Core.Json
         /// Finds the index of the closing brace considering the nesting and skipping quoted `"` parts, accounting for 
         /// backslash escaping. The arguments are the index of the opening brace and the character for a closing one.
         /// Does not work in case opening and closing brace is the same character (try using FindQuotedTokenEnd).
-        /// In case of failre, a JsonSerializerException is thrown, or -1 is returned, depending on throwOnError argument
+        /// In case of failure, a JsonSerializerException is thrown, or -1 is returned, depending on throwOnError argument
         /// </summary>
         public static int FindClosingBrace(string json, int startIndex, char closingChar, bool throwOnError = true)
         {
@@ -211,8 +211,9 @@ namespace Core.Json
 
         /// <summary>
         /// Finds the index of the closing brace of a token, given the beginning of the token and the closing
-        /// character to look for. Backslash espape could be optionally disabled. Start index should point to the
-        /// opening brace/quote. In case of failre, -1 is returned.
+        /// character to look for. Backslash escape could be optionally disabled. Start index should point to the
+        /// opening brace/quote. In case of failure, -1 is returned.
+        /// <br></br>
         /// Example: given string `"hello \"world\""` and startIndex = 0, function will return 16, the index of last quote
         /// </summary>
         public static int FindQuotedTokenEnd(string json, int startIndex, char closingChar = '"', bool enableEscaping = true, bool throwOnError = true)
@@ -362,6 +363,34 @@ namespace Core.Json
             }
 
             return prettyJson.ToString();
+        }
+
+        /// <summary>
+        /// De-prettifies the json by removing extra spaces / tabs / newlines.
+        /// Advanced compression techniques were not implemented as of now.
+        /// </summary>
+        public static string Compress(string json)
+        {
+            StringBuilder compressed = new StringBuilder(json.Length);
+            // current base: first uncopied character, index - current position
+            int currentBase = 0, index = 0;
+
+            while (index < json.Length)
+            {
+                int increment = 1;
+                index = FindCharOrPrettyChar(json, index, '"');
+                if (index < json.Length && json[index] == '"')
+                {
+                    index = FindQuotedTokenEnd(json, index) + 1;
+                    increment = 0;
+                }
+
+                compressed.Append(json.Substring(currentBase, index - currentBase));
+                index = currentBase = index + increment;
+            }
+            if (currentBase < json.Length) compressed.Append(json.Substring(currentBase, index - currentBase));
+
+            return compressed.ToString();
         }
     }
 }
