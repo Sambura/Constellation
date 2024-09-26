@@ -305,6 +305,8 @@ public class AnalyticsCore : MonoBehaviour
                 BenchmarkDurationOverride = newSuite.BenchmarkDurationOverride;
                 WarmupDurationOverride = newSuite.WarmupDurationOverride;
                 CooldownDurationOverride = newSuite.CooldownDurationOverride;
+                BenchmarkSuiteRepeatCount = newSuite.RepeatCount;
+                ShuffleBenchmarks = newSuite.ShuffleBenchmarks;
             }
             catch (JsonSerializerException e)
             {

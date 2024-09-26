@@ -136,7 +136,7 @@ namespace ConstellationUI
 
         private static float SelectTickStep(float canvasSize, float dataSize, float minUnitsPerTick, float[] spacings)
         {
-            float currentSpacing = 1;
+            float currentSpacing = spacings.Length > 0 ? spacings[0] : 1;
 
             // increase spacings
             for (int i = 0; ; i++)
@@ -153,7 +153,7 @@ namespace ConstellationUI
                 if (GetUnitsPerTicks(currentSpacing) >= minUnitsPerTick) break;
             }
 
-            // decrease spacings (beyound values in `spacings`)
+            // decrease spacings (beyond values in `spacings`)
             float prevSpacing = currentSpacing;
             while (GetUnitsPerTicks(currentSpacing) >= minUnitsPerTick)
             {
@@ -169,7 +169,7 @@ namespace ConstellationUI
         private void MakePlotTicksAndLabels()
         {
             float xTickStep = SelectTickStep(_canvasTransform.rect.width, PointCount, _minPixelsPerXTick / PlotScale.x, XTickSpacings);
-            float yTickStep = SelectTickStep(_canvasTransform.rect.height, YRange, _minPixelsPerYTick / PlotScale.y, YTickSpacings);
+            float yTickStep = SelectTickStep(_canvasTransform.rect.height, DisplayedYRange, _minPixelsPerYTick / PlotScale.y, YTickSpacings);
             int majorXTickCapacity = _majorXTickCapacity;
             while (xTickStep < 1) // xTickStep should be at least 1 
             {
@@ -179,6 +179,7 @@ namespace ConstellationUI
 
             foreach (GameObject go in _labels) Destroy(go);
             _labels.Clear();
+            if (PointCount < 2) return;
 
             float baseX = Mathf.Ceil(XMin);
             MakeAxisTicks(_horizontalAxis, baseX, XMin, XMax, xTickStep, majorXTickCapacity, PlotOffset.x, PlotScale.x, new Vector2(5, 19),
