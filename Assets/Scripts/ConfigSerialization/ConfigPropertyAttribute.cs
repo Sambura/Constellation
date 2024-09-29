@@ -6,6 +6,8 @@ namespace ConfigSerialization
     {
         public string Name { get; set; }
         public bool HasEvent { get; }
+        public bool? IsPollingAllowed { get; private set; }
+        public bool AllowPolling { get => false; set => IsPollingAllowed = value; }    
 
         public ConfigProperty(string name = null, bool hasEvent = true)
         {

@@ -6,6 +6,7 @@ using UnityEngine;
 using ConstellationUI;
 using ConfigSerialization.Structuring;
 using static Core.Utility;
+using Core;
 
 namespace ConfigSerialization
 {
@@ -27,6 +28,7 @@ namespace ConfigSerialization
 
         [Header("No-input property control prefabs")]
         [SerializeField] private GameObject _colorIndicatorPrefab;
+        [SerializeField] private GameObject _labelPrefab;
 
         [Header("Other prefabs")]
         [SerializeField] private GameObject _collapsableHeaderPrefab;
@@ -42,6 +44,7 @@ namespace ConfigSerialization
         [Header("Parameters")]
         [SerializeField] private int _selectedTab;
         [SerializeField] private bool _serializeOnStart = false;
+        [SerializeField] private float _pollFrequency = 15;
 
         private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _propertyControlCreators;
         private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _readonlyPropertyControlCreators;
@@ -174,7 +177,7 @@ namespace ConfigSerialization
             Unknown, Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
             Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader,
             TexturePickerButton, ColorIndicator, NumericInputField, FilePathSelector,
-            TextInputField, NullableControl
+            TextInputField, NullableControl, OutputLabel
         }
 
         private class UINode
@@ -568,6 +571,12 @@ namespace ConfigSerialization
         private void BindPropertyToObjects(PropertyInfo property, object propertyObject, List<Transform>[] gameObjects)
         {
             EventInfo toggleEvent = GetEvent(property);
+            if (toggleEvent is null)
+            {
+                Debug.LogError($"Failed to bind {property} value to objects: event not found");
+                return;
+            }
+
             object initialValue = property.GetValue(propertyObject);
             Type propertyType = property.PropertyType;
             Func<object, int> indexer = propertyType == typeof(bool) ? BoolToIndex :
@@ -783,6 +792,33 @@ namespace ConfigSerialization
             );
         }
 
+        private UINode CreateOutputLabel(PropertyInfo property, object memberContainer, UINode parent)
+        {
+            return CreateUniversal<LabelPropertyAttribute, LabeledUIElement>(
+                property, _labelPrefab, memberContainer, parent, null,
+                nameof(LabeledUIElement.LabelText), ControlType.OutputLabel, (x, y) =>
+                {
+                    IObjectConverter<string> converter = y?.GetConverter(MakeControlLabel(property, y)) ?? LabelPropertyAttribute.GetDefaultConverter();
+
+                    // these 3 lines are just making a Func<T, string> out of Func<object, string> (otherwise it doesn't bind to events)
+                    var proxy = Activator.CreateInstance(typeof(ObjectConverterProxy<,>).MakeGenericType(property.PropertyType, typeof(string)), converter);
+                    MethodInfo typedConverterInfo = proxy.GetType().GetMethod(nameof(ObjectConverterProxy<int, int>.Convert));
+                    Delegate typedConverter = typedConverterInfo.CreateDelegate(typeof(Func<,>).MakeGenericType(property.PropertyType, typeof(string)), proxy);
+
+                    return (typedConverter, null);
+                }, readonlyProperty: true
+            );
+        }
+
+        private class ObjectConverterProxy<T, V>
+        {
+            private IObjectConverter<V> ObjectConverter { get; }
+
+            public V Convert(T value) { return ObjectConverter.Convert(value); }
+
+            public ObjectConverterProxy(IObjectConverter<V> objectConverter) { ObjectConverter = objectConverter; }
+        }
+
         private UINode CreateGradientButton(PropertyInfo property, object memberContainer, UINode parent)
         {
             return CreateUniversal<GradientPickerButtonProperty, GradientPickerButton>(
@@ -905,13 +941,18 @@ namespace ConfigSerialization
 
             GameObject newControl = Instantiate(prefab, parent.Control);
             V specificControl = newControl.GetComponent<V>();
-            initDelegate(specificControl, configProperty, specificAttribute);
+            if (specificControl is null)
+            {
+                Debug.LogError($"Prefab {prefab} does not contain a component of type {typeof(V)}");
+                return null;
+            }
+            if (initDelegate is { }) initDelegate(specificControl, configProperty, specificAttribute);
             var specificProperty = typeof(V).GetProperty(propertyName);
             var controlEvent = GetEvent(specificProperty);
             Delegate handler = (Delegate)(
                 readonlyProperty
                 ?
-                    MakeDirectionalHandler(specificProperty, specificControl, property.PropertyType)
+                    (converterGenerator is null ? MakeDirectionalHandler(specificProperty, specificControl, property.PropertyType) : null)
                 : 
                 GetType().GetMethod(nameof(GetUniversalHandler), BindingFlags.Static | BindingFlags.NonPublic)
                     .MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { property, specificProperty, memberContainer, specificControl })
@@ -921,7 +962,7 @@ namespace ConfigSerialization
             {
                 (Delegate prop2ui, Delegate ui2prop) = converterGenerator(specificControl, specificAttribute);
                 propToUiHandler = MakeDirectionalHandler(specificProperty, specificControl, property.PropertyType, prop2ui);
-                uiToPropHandler = MakeDirectionalHandler(property, memberContainer, specificProperty.PropertyType, ui2prop);
+                if (!readonlyProperty) uiToPropHandler = MakeDirectionalHandler(property, memberContainer, specificProperty.PropertyType, ui2prop);
 
                 specificProperty.SetValue(specificControl, prop2ui.DynamicInvoke(property.GetValue(memberContainer)));
             } else
@@ -934,7 +975,13 @@ namespace ConfigSerialization
             {
                 var parentEvent = GetEvent(property);
                 if (parentEvent == null)
-                    Debug.LogWarning($"Event not found for property {property} on {memberContainer}; Monitoring disabled");
+                {
+                    if (configProperty.IsPollingAllowed == null) 
+                        Debug.LogWarning($"Event not found for property {property} on {memberContainer}; Falling back to polling");
+
+                    if (configProperty.IsPollingAllowed.GetValueOrDefault(true))
+                        OnPoll += () => propToUiHandler.DynamicInvoke(property.GetValue(memberContainer));
+                }
                 else
                     parentEvent.AddEventHandler(memberContainer, propToUiHandler);
             }
@@ -1359,6 +1406,23 @@ namespace ConfigSerialization
 
         private void Start() { if (_serializeOnStart) GenerateMenuUI(); }
 
+        private float _lastPoll;
+        private float PollInterval => 1 / PollFrequency;
+
+        private event Action OnPoll;
+
+        public float PollFrequency { get => _pollFrequency; set => _pollFrequency = value; }
+
+        private void Update()
+        {
+            float timeSinceLast = Time.unscaledTime - _lastPoll;
+            if (timeSinceLast > PollInterval)
+            {
+                OnPoll?.Invoke();
+                _lastPoll = Time.unscaledTime;
+            }
+        }
+
         public ConfigMenuSerializer() : base()
         {
             _propertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
@@ -1376,6 +1440,7 @@ namespace ConfigSerialization
             _readonlyPropertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
             {
                 { x => x == typeof(Color), CreateColorIndicator },
+                { x => true, CreateOutputLabel }
             };
         }
     }

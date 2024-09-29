@@ -4930,7 +4930,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6080415379645549205, guid: f6539bbd80a7cfa48ac5ee6ed25b838e, type: 3}
       propertyPath: m_RootOrder
-      value: 10
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 6080415379645549205, guid: f6539bbd80a7cfa48ac5ee6ed25b838e, type: 3}
       propertyPath: m_AnchorMax.x
@@ -5195,7 +5195,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_RootOrder
-      value: 12
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMax.x
@@ -8820,6 +8820,7 @@ MonoBehaviour:
   _textInputFieldPrefab: {fileID: 1313137866628742332, guid: 01f9899fe9b203f419f76876aeeaa437, type: 3}
   _filePathSelectorPrefab: {fileID: 2263990515473673909, guid: 4fadaf381f9c72f47b6992a9ba86806d, type: 3}
   _colorIndicatorPrefab: {fileID: 3910889304232484068, guid: 2f9bda56b9ef186458e4700e87d60543, type: 3}
+  _labelPrefab: {fileID: 6718685849855497418, guid: 839bf9baef8eeae4e945503295424e83, type: 3}
   _collapsableHeaderPrefab: {fileID: 9203055433040285812, guid: a5d0535cb1072b547a4c0dad663af467, type: 3}
   _groupHeaderPrefab: {fileID: 9203055433040285812, guid: 71da2459154ceb54d855e69a80f85c83, type: 3}
   _buttonPrefab: {fileID: 3877502789024712507, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
@@ -8843,6 +8844,7 @@ MonoBehaviour:
   _tabView: {fileID: 1278842191}
   _selectedTab: 1
   _serializeOnStart: 1
+  _pollFrequency: 20
 --- !u!1 &1285933241
 GameObject:
   m_ObjectHideFlags: 0
@@ -9510,7 +9512,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_RootOrder
-      value: 11
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 3877502789024712506, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
       propertyPath: m_AnchorMax.x

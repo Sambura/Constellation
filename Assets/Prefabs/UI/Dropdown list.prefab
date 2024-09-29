@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6080415379645549205}
   - component: {fileID: 6714978872440298755}
+  - component: {fileID: 2184744333326137146}
   m_Layer: 5
   m_Name: Dropdown list
   m_TagString: Untagged
@@ -52,6 +53,66 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _label: {fileID: 6080415379687491527}
   _dropdown: {fileID: 6080415381334213265}
+--- !u!114 &2184744333326137146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6080415379645549204}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8663d3f62bfd534d93c17a920f07add, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _configurations:
+  - Name: Compact
+    UIElements:
+    - Object: {fileID: 6080415379687491526}
+      Pivot: {x: 0, y: 0}
+      AnchorMin: {x: 0, y: 0}
+      AnchorMax: {x: 0.45, y: 1}
+      OffsetMin: {x: 0, y: 0}
+      OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+    - Object: {fileID: 6080415381334213264}
+      Pivot: {x: 1, y: 0.5}
+      AnchorMin: {x: 0.45, y: 0}
+      AnchorMax: {x: 1, y: 1}
+      OffsetMin: {x: 19.685242, y: 2}
+      OffsetMax: {x: -20.217346, y: -2}
+      LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+    - Object: {fileID: 6080415379645549205}
+      Pivot: {x: 0.5, y: 0.5}
+      AnchorMin: {x: 0, y: 1}
+      AnchorMax: {x: 1, y: 1}
+      OffsetMin: {x: 0, y: -25}
+      OffsetMax: {x: 0, y: 25}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  - Name: Extended
+    UIElements:
+    - Object: {fileID: 6080415379687491526}
+      Pivot: {x: 0, y: 0}
+      AnchorMin: {x: 0, y: 0.5}
+      AnchorMax: {x: 1, y: 1}
+      OffsetMin: {x: 0, y: 0}
+      OffsetMax: {x: 0, y: 0}
+      LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+    - Object: {fileID: 6080415381334213264}
+      Pivot: {x: 1, y: 0.5}
+      AnchorMin: {x: 0, y: 0}
+      AnchorMax: {x: 1, y: 0.5}
+      OffsetMin: {x: 20, y: 2}
+      OffsetMax: {x: -90, y: 0}
+      LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+    - Object: {fileID: 6080415379645549205}
+      Pivot: {x: 0.5, y: 0.5}
+      AnchorMin: {x: 0, y: 1}
+      AnchorMax: {x: 1, y: 1}
+      OffsetMin: {x: 0, y: -45}
+      OffsetMax: {x: 0, y: 45}
+      LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  _selectedConfiguration: 0
 --- !u!1 &6080415379687491525
 GameObject:
   m_ObjectHideFlags: 0

@@ -42,6 +42,9 @@ public class ApplicationController : MonoBehaviour
         _pendingMode = Screen.fullScreenMode;
     }
 
+    /// <summary>
+    /// Close the application (or stop the play mode in editor)
+    /// </summary>
     [ConfigGroupMember("Other", 2, GroupId = "Misc+other", SetDisplayIndex = -1)]
     [InvokableMethod("Exit")]
     public void Quit()

@@ -27,6 +27,7 @@ public class AnalyticsCore : MonoBehaviour
 
     private FrameTimingTracker _tracker;
     private StaticTimeFPSCounter _helperFpsCounter;
+    private bool _benchmarkInProgress = false;
 
     #region Config properties
 
@@ -45,6 +46,7 @@ public class AnalyticsCore : MonoBehaviour
     private int _benchmarkRepeatCount = 1;
     private int _suiteRepeatCount = 1;
     private bool _shuffleBenchmarks = false;
+    private SystemAction _postBenchmarkAction;
 
     private BenchmarkConfig _currentBenchmarkConfig;
     private BenchmarkSuiteConfig _currentBenchmarkSuiteConfig;
@@ -201,8 +203,43 @@ public class AnalyticsCore : MonoBehaviour
     }
 
     [ConfigGroupMember]
-    [ConfigGroupToggle(20, 21)]
     [ConfigMemberOrder(4)]
+    [LabelProperty(typeof(DurationToStringConverter), TextColor = "#cfe0ff", AllowPolling = true)] public float TotalDuration
+    {
+        get
+        {
+            if (BenchmarkMode != BenchmarkMode.BenchmarkSuite)
+                return BenchmarkRepeatCount * (BenchmarkDuration + WarmupDuration + CooldownDuration + (AutomaticBufferSize ? FPSMeasuringDuration : 0));
+            if (_currentBenchmarkSuiteConfig is null) return -1;
+
+            float suiteTotal = (AutomaticBufferSize ? FPSMeasuringDuration : 0) * _currentBenchmarkSuiteConfig.Configs.Count;
+            foreach (BenchmarkConfig config in _currentBenchmarkSuiteConfig.Configs)
+            {
+                suiteTotal += BenchmarkDurationOverride.GetValueOrDefault(config.BenchmarkDuration.GetValueOrDefault(1));
+                suiteTotal += CooldownDurationOverride.GetValueOrDefault(config.CooldownTime.GetValueOrDefault(0));
+                suiteTotal += WarmupDurationOverride.GetValueOrDefault(config.WarmupTime.GetValueOrDefault(0));
+            }
+
+            return suiteTotal * BenchmarkSuiteRepeatCount;
+        }
+    }
+
+    [ConfigGroupMember]
+    [ConfigMemberOrder(5)]
+    [SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Extended")]
+    [ConfigProperty(Name = "Action after benchmark finish:")]
+    [ConfigGroupToggle(null, null, 30, null)]
+    public SystemAction PostBenchmarkAction
+    {
+        get => _postBenchmarkAction;
+        set { if (_postBenchmarkAction != value) { _postBenchmarkAction = value; PostBenchmarkActionChanged?.Invoke(value); } }
+    }
+
+    [ConfigGroupMember(30, parentIndex: 0)] [ConfigProperty(AllowPolling = true)] public bool QuitAndLockOnFocusLoss { get; set; } = true;
+
+    [ConfigGroupMember]
+    [ConfigGroupToggle(20, 21)]
+    [ConfigMemberOrder(6)]
     [ConfigProperty]
     public bool AutomaticBufferSize
     {
@@ -256,6 +293,7 @@ public class AnalyticsCore : MonoBehaviour
     public event Action<int> BenchmarkRepeatCountChanged;
     public event Action<int> BenchmarkSuiteRepeatCountChanged;
     public event Action<bool> ShuffleBenchmarksChanged;
+    public event Action<SystemAction> PostBenchmarkActionChanged;
 
     private void SetBenchmarkFilePath(string value)
     {
@@ -373,6 +411,7 @@ public class AnalyticsCore : MonoBehaviour
     /// <param name="exportPath">Path where the benchmark reports should be saved to, or null if there is no need to export reports</param>
     private IEnumerator RunBenchmarkQueue(Action<List<BenchmarkConfig>> onQueueFinish, string exportPath = null)
     {
+        _benchmarkInProgress = true;
         string previousConfig = _configSerializer.GetCurrentConfigJson(false);
         bool wasFpsCounterEnabled = DisableUI();
         List<BenchmarkConfig> failedBenchmarks = new List<BenchmarkConfig>();
@@ -433,10 +472,52 @@ public class AnalyticsCore : MonoBehaviour
                     DoSaveReport(Path.Combine(exportPath, benchmark.BaseFilename + "-report.json"), currentResult);
             }
         }
-        finally { RestoreUI(wasFpsCounterEnabled); }
+        finally { RestoreUI(wasFpsCounterEnabled); _benchmarkInProgress = false; }
 
         onQueueFinish?.Invoke(failedBenchmarks);
         _configSerializer.DeserializeJsonConfig(previousConfig);
+        PerformSystemAction(PostBenchmarkAction);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public extern static void LockWorkStation(); // TODO: move this out of here
+
+    private void PerformSystemAction(SystemAction action)
+    {
+        switch (action)
+        {
+            case SystemAction.Nothing:
+                return;
+            case SystemAction.Quit:
+                _applicationController.Quit();
+                return;
+            case SystemAction.Shutdown:
+#if UNITY_EDITOR
+                Debug.Log("PC Shutdown");
+#else
+                var psi = new System.Diagnostics.ProcessStartInfo("shutdown", "/s /t 0")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                System.Diagnostics.Process.Start(psi);
+#endif
+                _applicationController.Quit();
+                return;
+            case SystemAction.QuitAndLock:
+                LockWorkStation();
+                _applicationController.Quit();
+                return;
+        }
+    }
+
+    private void OnApplicationFocus(bool focus)
+    {
+        if (!QuitAndLockOnFocusLoss || focus) return;
+        if (!_benchmarkInProgress) return;
+        if (PostBenchmarkAction != SystemAction.QuitAndLock) return;
+        _benchmarkInProgress = false; // to avoid infinite locking loops?
+        LockWorkStation();
+        _applicationController.Quit();
     }
 
     /// <summary>
@@ -518,7 +599,7 @@ public class AnalyticsCore : MonoBehaviour
         _applicationController.FullScreenMode = _currentBenchmarkSuiteConfig.FullscreenMode;
         _applicationController.TargetFrameRate = _currentBenchmarkSuiteConfig.FpsCap;
 
-        yield return null; // wait one frame for viewport dimensions to update (due to changing fullscreen mode)
+        yield return null; // wait one frame for viewport dimensions to update (due to changing full screen mode)
 
         StartCoroutine(RunBenchmarkQueue(OnSuiteFinish, exportPath));
 
@@ -695,6 +776,8 @@ public class AnalyticsCore : MonoBehaviour
     }
 
     public delegate void DataExporter(string path, BenchmarkResult data);
+
+    public enum SystemAction { Nothing, Quit, QuitAndLock, Shutdown }
 }
 
 public enum BenchmarkMode { Custom, BenchmarkFile, BenchmarkSuite }
@@ -744,5 +827,27 @@ public class BenchmarkSuiteNameGetter : IStringTransformer
         {
             return "<color=red>Error!</color>";
         }
+    }
+}
+
+public class DurationToStringConverter : IObjectConverter<string>
+{
+    public string Convert(object input)
+    {
+        float duration = (float)input;
+        if (duration < 0) return "Unknown";
+
+        float seconds = duration % 60;
+        int minutes = (int)(duration / 60 % 60);
+        int hours = (int)(duration / 3600 % 24);
+        int days = (int)(duration / (3600 * 24));
+
+        string result = "";
+        if (days > 0) result += $"{days}d ";
+        if (hours > 0) result += $"{hours}h ";
+        if (minutes > 0) result += $"{minutes}m ";
+        if (duration < 3600 && seconds > 0)
+            result += duration >= 60 ? ((int)seconds > 0 ? $"{(int)seconds}s" : "") : $"{seconds:0.0}s";
+        return result;
     }
 }
