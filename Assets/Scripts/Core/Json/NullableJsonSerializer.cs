@@ -12,12 +12,9 @@ namespace Core.Json
             Type nullableType = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
             if (nullableType != typeof(Nullable<>)) throw new ArgumentException("Type should be System.Nullable<>");
 
-            if (json == "null") return Activator.CreateInstance(type);
+            if (json == "null") return (Nullable<T>)(null);
 
-            Type valueType = type.GetGenericArguments()[0];
-            object value = DefaultJsonSerializer.Default.FromJson(json, valueType);
-
-            return Activator.CreateInstance(type, value);
+            return new Nullable<T>((T)DefaultJsonSerializer.Default.FromJson(json, typeof(T), ignoreUnknownProperties));
         }
 
         public void FromJsonOverwrite(string json, object obj, bool ignoreUnknownProperties = false)

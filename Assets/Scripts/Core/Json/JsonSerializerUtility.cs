@@ -103,6 +103,10 @@ namespace Core.Json
 
         public static void EndObject(StringBuilder json) { StripComma(json); json.Append('}'); }
 
+        public static void BeginArray(StringBuilder json) { json.Append('['); }
+
+        public static void EndArray(StringBuilder json) { StripComma(json); json.Append(']'); }
+
         public static void PrintProperty(StringBuilder json, string name, string value)
         {
             PrintPropertyName(json, name);

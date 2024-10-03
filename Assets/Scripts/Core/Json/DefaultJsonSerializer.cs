@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System;
+using System.Globalization;
 
 namespace Core.Json
 {
@@ -46,8 +47,8 @@ namespace Core.Json
             if (type.IsPrimitive)
             {
                 if (type == typeof(bool)) { json.Append(obj.ToString().ToLowerInvariant()); }
-                else if (type == typeof(float)) { json.Append(FormatFloat(((float)obj).ToString("G9"))); }
-                else if (type == typeof(double)) { json.Append(FormatFloat(((double)obj).ToString("G17"))); }
+                else if (type == typeof(float)) { json.Append(FormatFloat(((float)obj).ToString("G9", CultureInfo.InvariantCulture))); }
+                else if (type == typeof(double)) { json.Append(FormatFloat(((double)obj).ToString("G17", CultureInfo.InvariantCulture))); }
                 else { json.Append(obj.ToString()); }
             }
             else if (type.IsArray)
@@ -108,6 +109,13 @@ namespace Core.Json
             var customSerializer = JsonSerializerUtility.GetSuperSerializer(type, typeof(object));
             if (customSerializer != null) return customSerializer.FromJson(json, type);
 
+            if (type == typeof(float)) {
+                if (float.TryParse(json, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)) return value;
+                throw new JsonSerializerException($"Failed to parse {json} as {type}");
+            } else if (type == typeof(double)) {
+                if (double.TryParse(json, NumberStyles.Float, CultureInfo.InvariantCulture, out double value)) return value;
+                throw new JsonSerializerException($"Failed to parse {json} as {type}");
+            } else
             if (type.IsPrimitive)
             {
                 MethodInfo parser = type.GetMethod("Parse", ParseMethodArguments);
