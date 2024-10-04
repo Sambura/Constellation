@@ -5,8 +5,8 @@
     "FullscreenMode": "ExclusiveFullScreen",
     "FpsCap": 0,
     "BenchmarkDurationOverride": 120,
-    "CooldownDurationOverride": 0,
+    "CooldownDurationOverride": 60,
     "WarmupDurationOverride": 60,
-    "RepeatCount": 5,
+    "RepeatCount": 10,
     "ShuffleBenchmarks": true
 }

@@ -278,6 +278,12 @@ public class AnalyticsCore : MonoBehaviour
         }
     }
 
+    [ConfigGroupMember] [ConfigMemberOrder(-1)]
+    [LabelProperty(DisplayPropertyName = false, TextColor = "#b0b0b0", AllowPolling = false)]
+    [SetComponentProperty(typeof(TMPro.TextMeshProUGUI), nameof(TMPro.TextMeshProUGUI.fontSize), 24)]
+    [SetComponentProperty(typeof(TMPro.TextMeshProUGUI), nameof(TMPro.TextMeshProUGUI.horizontalAlignment), TMPro.HorizontalAlignmentOptions.Right)]
+    public string ConstellationVersion => $"Constellation v{Application.version}{(Application.isEditor ? "-live" : "")}";
+
     public event Action<float> BenchmarkDurationChanged;
     public event Action<float> WarmupDurationChanged;
     public event Action<float> CooldownDurationChanged;
@@ -427,6 +433,7 @@ public class AnalyticsCore : MonoBehaviour
                     continue;
                 }
                 _particleController.RestartSimulation();
+                float benchmarkDuration = benchmark.BenchmarkDuration.Value;
 
                 if (_tracker is { }) { Destroy(_tracker); _tracker = null; }
                 _tracker = gameObject.AddComponent<FrameTimingTracker>();
@@ -434,12 +441,10 @@ public class AnalyticsCore : MonoBehaviour
                 {
                     _helperFpsCounter = gameObject.AddComponent<StaticTimeFPSCounter>();
                     _helperFpsCounter.TimeWindow = FPSMeasuringDuration;
-                }
 
-                yield return new WaitForSeconds(AutomaticBufferSize ? FPSMeasuringDuration : 0);
-                if (AutomaticBufferSize)
-                {
-                    FrameTimingBufferSize = Mathf.RoundToInt(_helperFpsCounter.CurrentFps * BenchmarkDuration * (1 + AutomaticBufferSizeMargin));
+                    yield return new WaitForSeconds(FPSMeasuringDuration);
+
+                    FrameTimingBufferSize = Mathf.RoundToInt(_helperFpsCounter.CurrentFps * benchmarkDuration * (1 + AutomaticBufferSizeMargin));
                     DestroyImmediate(_helperFpsCounter);
                 }
                 _tracker.BufferSize = FrameTimingBufferSize;
@@ -462,7 +467,7 @@ public class AnalyticsCore : MonoBehaviour
 
                 _tracker.StartTracking();
 
-                yield return new WaitForSeconds(benchmark.BenchmarkDuration.Value);
+                yield return new WaitForSeconds(benchmarkDuration);
 
                 _tracker.StopTracking();
                 BenchmarkResult currentResult = new BenchmarkResult(benchmark, _tracker.FrameTimings);
@@ -724,7 +729,7 @@ public class AnalyticsCore : MonoBehaviour
     {
         System.Text.StringBuilder report = new System.Text.StringBuilder();
         JsonSerializerUtility.BeginObject(report);
-        JsonSerializerUtility.SerializeDefault(report, "ReportVersion", "1.1.0");
+        JsonSerializerUtility.SerializeDefault(report, "ReportVersion", "1.2.0");
         JsonSerializerUtility.SerializeDefault(report, "ConstellationVersion", Application.version);
         JsonSerializerUtility.SerializeDefault(report, "ReportDateTime", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
         JsonSerializerUtility.SerializeDefault(report, "BuiltPlayer", !Application.isEditor);
@@ -733,6 +738,8 @@ public class AnalyticsCore : MonoBehaviour
         JsonSerializerUtility.SerializeDefault(report, "BenchmarkConfigName", data.BenchmarkConfig.Name ?? data.BenchmarkConfig.BaseFilename);
         JsonSerializerUtility.SerializeDefault(report, "CooldownDuration", data.BenchmarkConfig.CooldownTime);
         JsonSerializerUtility.SerializeDefault(report, "WarmupDuration", data.BenchmarkConfig.WarmupTime);
+        JsonSerializerUtility.SerializeDefault(report, "DeviceModel", SystemInfo.deviceModel);
+        JsonSerializerUtility.SerializeDefault(report, "OperatingSystem", SystemInfo.operatingSystem);
         JsonSerializerUtility.PrintProperty(report, "Summary", GenerateSummaryJson(data.Timings));
         JsonSerializerUtility.SerializeDefault(report, "Timings", GenerateTimingsCsv(data.Timings));
         JsonSerializerUtility.PrintProperty(report, "SimulationConfig", data.BenchmarkConfig.SimulationConfigJson);

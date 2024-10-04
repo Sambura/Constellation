@@ -18,7 +18,10 @@ namespace ConfigSerialization
         /// </summary>
         public LabelPropertyAttribute(Type converterType = null, string name = null, bool hasEvent = true) : base(name, hasEvent)
         {
-            RawConverter = Activator.CreateInstance(converterType) as IObjectConverter<string>;
+            if (converterType is { })
+            {
+                RawConverter = Activator.CreateInstance(converterType) as IObjectConverter<string>;
+            }
         }
 
         public static IObjectConverter<string> GetDefaultConverter(string color = null) => new DefaultConverter(color);
