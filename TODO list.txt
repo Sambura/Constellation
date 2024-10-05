@@ -18,7 +18,7 @@ To-do list:
 	- Try to split particle class to a bunch of native arrays and measure performance effect [data oriented approach at max]
 	- try switching to il2cpp (if not already)
 	- fix fragmentation : when a lot of particles are off-screen they are gathered in a small subset of fragments, which makes performance worse. Proposed solution: add another set of fragments that are completely off-screen and ignore these fragments when calculating lines/triangles
-	- try making spiral attracter fully acceleration-based (right now it works weird when active and cursor moving around)
+	- try making spiral attractor fully acceleration-based (right now it works weird when active and cursor moving around)
 	- implement random color configuration (HSV limits at least)
 	- add option to make particles change color over time (randomly)
 	- menu should become transparent/hide when the cursor is not over it for long enough time.
@@ -36,8 +36,9 @@ To-do list:
 	- Add ability to create collapsable groups of config properties to be collapsed on UI generation (if not already available)
 	- Config: when saving a configuration, add switch for absolute/relative paths (e.g., for particle sprites)
 	- Add real particle trails? i.e., rendered separately as a triangle or other polygon with fading shader
-	- Allow dialogs to be off-screen, but return to their place by clicking on button that spawned them (already funcitonal) or maybe double-triple click on dialog brings it fully into viewport?
+	- Allow dialogs to be off-screen, but return to their place by clicking on button that spawned them (already functional) or maybe double-triple click on dialog brings it fully into viewport?
 	- Add particle rotation
+	- cpu/gpu timing readings in benchmarks / outside benchmarks?
 
 New interactors ideas:
 	- Brush: when enabled, particles nearby the cursor react to the cursor's movement, and do not react to stationary cursor

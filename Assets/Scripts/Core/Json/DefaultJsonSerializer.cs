@@ -159,18 +159,25 @@ namespace Core.Json
                     throw new JsonSerializerException($"Could not find member {jsonProperty.Key} on type {type}");
                 }
 
-                switch (member.MemberType)
+                try
                 {
-                    case MemberTypes.Field:
-                        FieldInfo field = member as FieldInfo;
-                        field.SetValue(newObj, FromJson(jsonProperty.Value, field.FieldType));
-                        break;
-                    case MemberTypes.Property:
-                        PropertyInfo property = member as PropertyInfo;
-                        property.SetValue(newObj, FromJson(jsonProperty.Value, property.PropertyType));
-                        break;
-                    default:
-                        throw new JsonSerializerException($"Unexpected member type {member.MemberType}");
+                    switch (member.MemberType)
+                    {
+                        case MemberTypes.Field:
+                            FieldInfo field = member as FieldInfo;
+                            field.SetValue(newObj, FromJson(jsonProperty.Value, field.FieldType));
+                            break;
+                        case MemberTypes.Property:
+                            PropertyInfo property = member as PropertyInfo;
+                            property.SetValue(newObj, FromJson(jsonProperty.Value, property.PropertyType));
+                            break;
+                        default:
+                            throw new JsonSerializerException($"Unexpected member type {member.MemberType}");
+                    }
+                }
+                catch (JsonSerializerException e)
+                {
+                    throw new JsonSerializerException($"Failed to deserialize json property \"{member.Name}\": {e.Message}", e);
                 }
             }
 

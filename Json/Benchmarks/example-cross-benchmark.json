@@ -1,0 +1,18 @@
+{
+    "CrossBenchmarkVersion": "1.0.0",
+    "BenchmarkSequence": [
+        {
+            "ExecutablePath": null,
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/SimpleSuite/test-suite.json",
+            "ResultsOutputPath": "../../example-output-folder/orig-reports"
+        },
+        {
+            "ExecutablePath": "../v1.1.13/Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/SimpleSuite/test-suite.json",
+            "ResultsOutputPath": "../../example-output-folder/rerun-reports"
+        }
+    ],
+    "TemporaryConfig": false,
+    "PostBenchmarkAction": "QuitAndLock",
+    "QuitAndLockOnFocusLoss": true
+}

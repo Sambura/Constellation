@@ -120,6 +120,15 @@ namespace ConstellationUI
             gameObject.SetActive(false);
             DialogClosed?.Invoke(this, result);
         }
+
+        /// <summary>
+        /// Close dialog without triggering any registered callbacks
+        /// </summary>
+        public virtual void CloseDialog()
+        {
+            OnDialogClosing = null;
+            gameObject.SetActive(false);
+        }
     }
 
     public delegate void DialogOpenedHandler(MonoDialog sender);

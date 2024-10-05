@@ -23,15 +23,15 @@ namespace Core.Json
                 string valuePropertyName = "value__";
                 Dictionary<string, string> properties = JsonSerializerUtility.GetProperties(json);
                 if (properties.Count < 1 || !properties.ContainsKey(valuePropertyName))
-                    throw new JsonSerializerException($"Failed to deserialize {json} as an Enum {type} : expected {valuePropertyName} property");
+                    throw new JsonSerializerException($"{json} could not be interpreted as an enum : expected {valuePropertyName} property");
                 if (properties.Count > 1 && !ignoreUnknownProperties)
-                    throw new JsonSerializerException($"Failed to deserialize {json} as an Enum {type} : unexpected property {properties.First(x => x.Key != valuePropertyName)}");
+                    throw new JsonSerializerException($"{json} has an unexpected property \"{properties.First(x => x.Key != valuePropertyName)}\" for an enum");
 
                 int enumValue = (int)DefaultJsonSerializer.Default.FromJson(properties[valuePropertyName], typeof(int), ignoreUnknownProperties);
                 if (Enum.IsDefined(type, enumValue))
                     return Enum.ToObject(type, enumValue);
 
-                throw new JsonSerializerException($"Failed to deserialize {properties[valuePropertyName]} as an Enum {type} : invalid value");
+                throw new JsonSerializerException($"{properties[valuePropertyName]} is an invalid value for enum {type}");
             }
 
             string value = DefaultJsonSerializer.Default.FromJson(json, typeof(string), ignoreUnknownProperties) as string;
@@ -40,7 +40,7 @@ namespace Core.Json
                 return Enum.Parse(type, value, false);
             }
             catch (Exception e) { 
-                throw new JsonSerializerException($"Failed to deserialize {json} as an Enum {type}", e);
+                throw new JsonSerializerException($"{json} is not a valid {type}", e);
             }
         }
 

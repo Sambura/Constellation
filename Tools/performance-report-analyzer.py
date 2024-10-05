@@ -17,6 +17,13 @@ root = None
 timing_data = None
 data_groups = None
 
+def is_integer(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 def parse_groups(dir1, dir2):
     global data_groups
 
@@ -26,7 +33,7 @@ def parse_groups(dir1, dir2):
     groups = set()
     for file in files1 + files2:
         parts = file.split('-')
-        if len(parts) > 2:
+        if len(parts) > 2 and is_integer(parts[-2]):
             prefix = '-'.join(parts[:-2])
         else:
             prefix = file
@@ -94,6 +101,8 @@ def plot_groups(group_name):
     if n * (n - 1) >= len(data): m -= 1
 
     fig, axs = plt.subplots(n, m, figsize=(n*6, m*4))
+    if not hasattr(axs, '__len__'): axs = np.array([[axs]])
+    if not hasattr(axs[0], '__len__'): axs = np.array([axs]).reshape(-1, 1)
     for i, filename in enumerate(data):
         ax = axs[i // m, i % m]
         ax.set_title(filename)
@@ -113,6 +122,8 @@ def plot_groups_framings(group_name):
     if n * (n - 1) >= len(data): m -= 1
 
     fig, axs = plt.subplots(n, m, figsize=(n*6, m*4))
+    if not hasattr(axs, '__len__'): axs = np.array([[axs]])
+    if not hasattr(axs[0], '__len__'): axs = np.array([axs]).reshape(-1, 1)
     for i, filename in enumerate(data):
         ax = axs[i // m, i % m]
         ax.set_title(filename)

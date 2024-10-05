@@ -108,6 +108,8 @@ namespace ConstellationUI
             _messageBox.ShowDialog(title, actualCallback, text, GetMessageBoxIcon(icon), true);
         }
 
+        public void HideMessageBox() => _messageBox.CloseDialog();
+
         public void ShowInputFieldDialog(string title, string initialInput, Func<InputFieldDialog, bool, bool> callback, bool cancelButton = true, MonoDialog parent = null)
         {
             if (_inputFieldDialog == null)

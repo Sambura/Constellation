@@ -1,0 +1,12 @@
+{
+    "BenchmarkSuiteVersion": "1.2.0",
+    "Name": "Simple suite",
+    "Description": "Basic performance benchmarks",
+    "FullscreenMode": "ExclusiveFullScreen",
+    "FpsCap": 0,
+    "BenchmarkDurationOverride": 1,
+    "CooldownDurationOverride": 0,
+    "WarmupDurationOverride": 0,
+    "RepeatCount": 1,
+    "ShuffleBenchmarks": true
+}

@@ -25,9 +25,15 @@ public class AnalyticsCore : MonoBehaviour
     [SerializeField] private InteractionCore _interactionCore;
     [SerializeField] private ApplicationController _applicationController;
 
+    [Header("Parameters")]
+    [SerializeField] private bool _enableCrossBenchmark = true;
+
     private FrameTimingTracker _tracker;
     private StaticTimeFPSCounter _helperFpsCounter;
     private bool _benchmarkInProgress = false;
+    private CrossBenchmarkConfig _crossBenchmarkConfig = null;
+    public string CrossBenchmarkPath { get; set; } = ".cross-benchmark.json";
+    public float CrossBenchmarkStartDelay { get; set; } = 10;
 
     #region Config properties
 
@@ -374,6 +380,37 @@ public class AnalyticsCore : MonoBehaviour
 
     public float FPSMeasuringDuration { get; set; } = 1f;
 
+    private void Start()
+    {
+        if (!_enableCrossBenchmark || !File.Exists(CrossBenchmarkPath)) return;
+
+        try
+        {
+            _crossBenchmarkConfig = CrossBenchmarkConfig.FromFile(CrossBenchmarkPath);
+            if (_crossBenchmarkConfig.BenchmarkSequence.Count == 0) throw new Exception("No benchmark entries");
+            CrossBenchmark crossBenchmark = _crossBenchmarkConfig.BenchmarkSequence[0];
+            Coroutine coroutine = StartCoroutine(DelayCall(StartCrossBenchmark, CrossBenchmarkStartDelay));
+
+            void StartCrossBenchmark()
+            {
+                _fileDialog.Manager.HideMessageBox();
+                BenchmarkSuiteFilePath = crossBenchmark.BenchmarkSuitePath;
+                PostBenchmarkAction = _crossBenchmarkConfig.PostBenchmarkAction;
+                QuitAndLockOnFocusLoss = _crossBenchmarkConfig.QuitAndLockOnFocusLoss;
+                StartCoroutine(DoStartBenchmarkSuite(crossBenchmark.ResultsOutputPath));
+            }
+
+            _fileDialog.Manager.ShowOkCancelMessageBox("Cross-benchmark starting", $"Cross benchmark will start in {(int)CrossBenchmarkStartDelay} seconds. " +
+                $"Click Cancel to abort", StandardMessageBoxIcons.Warning, x => { StopCoroutine(coroutine); if (x) StartCrossBenchmark(); return true; });
+        }
+        catch (Exception e)
+        {
+            _fileDialog.Manager.ShowMessageBox("Cross-Benchmark Error", $"Failed to load cross-benchmark config: {e.Message}",
+                StandardMessageBoxIcons.Error);
+            return;
+        }
+    }
+
     /// <summary>
     /// Loads SimulationConfigJson specified in benchmark config.
     /// If any error is encountered returns false, and shows an error message box (if verbose is true)
@@ -481,7 +518,13 @@ public class AnalyticsCore : MonoBehaviour
 
         onQueueFinish?.Invoke(failedBenchmarks);
         _configSerializer.DeserializeJsonConfig(previousConfig);
-        PerformSystemAction(PostBenchmarkAction);
+        if (!IsStartingCrossBenchmark()) PerformSystemAction(PostBenchmarkAction);
+    }
+
+    private bool IsStartingCrossBenchmark()
+    {
+        if (_crossBenchmarkConfig is null) return false;
+        return _crossBenchmarkConfig.BenchmarkSequence.Count > 0;
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")] public extern static void LockWorkStation(); // TODO: move this out of here
@@ -524,6 +567,11 @@ public class AnalyticsCore : MonoBehaviour
         LockWorkStation();
         _applicationController.Quit();
     }
+
+    /// <summary>
+    /// Execute `action` in `delay` seconds. Call using StartCoroutine
+    /// </summary>
+    private IEnumerator DelayCall(Action action, float delay) { yield return new WaitForSeconds(delay); action(); }
 
     /// <summary>
     /// "Start benchmark" button in UI menu
@@ -603,6 +651,7 @@ public class AnalyticsCore : MonoBehaviour
 
         _applicationController.FullScreenMode = _currentBenchmarkSuiteConfig.FullscreenMode;
         _applicationController.TargetFrameRate = _currentBenchmarkSuiteConfig.FpsCap;
+        Directory.CreateDirectory(exportPath);
 
         yield return null; // wait one frame for viewport dimensions to update (due to changing full screen mode)
 
@@ -622,7 +671,29 @@ public class AnalyticsCore : MonoBehaviour
             _fileDialog.Manager.ShowMessageBox("Benchmark suite finished",
                 $"{successful} / {_benchmarksQueue.Count} benchmark runs executed successfully.{failedMessage}",
                 StandardMessageBoxIcons.Success);
+
+            if (_crossBenchmarkConfig is { }) StartNextCrossBenchmark();
         }
+    }
+
+    private void StartNextCrossBenchmark()
+    {
+        if (_crossBenchmarkConfig.TemporaryConfig) File.Delete(CrossBenchmarkPath);
+        
+        _crossBenchmarkConfig.BenchmarkSequence.RemoveAt(0); // the current benchmark
+        _crossBenchmarkConfig.TemporaryConfig = true; // force temporary file for further benchmarks
+
+        if (_crossBenchmarkConfig.BenchmarkSequence.Count == 0) {
+            _crossBenchmarkConfig = null;
+            return;
+        }
+
+        string nextExecutable = _crossBenchmarkConfig.BenchmarkSequence[0].ExecutablePath;
+        string nextConfigPath = Path.Combine(Path.GetDirectoryName(nextExecutable), CrossBenchmarkPath);
+        File.WriteAllText(nextConfigPath, DefaultJsonSerializer.Default.ToJson(_crossBenchmarkConfig));
+
+        System.Diagnostics.Process.Start(Path.GetFullPath(nextExecutable));
+        _applicationController.Quit();
     }
 
     private bool DisableUI()
@@ -783,11 +854,11 @@ public class AnalyticsCore : MonoBehaviour
     }
 
     public delegate void DataExporter(string path, BenchmarkResult data);
-
-    public enum SystemAction { Nothing, Quit, QuitAndLock, Shutdown }
 }
 
 public enum BenchmarkMode { Custom, BenchmarkFile, BenchmarkSuite }
+
+public enum SystemAction { Nothing, Quit, QuitAndLock, Shutdown }
 
 public class BenchmarkResult
 {

@@ -79,8 +79,8 @@ MonoBehaviour:
       Pivot: {x: 1, y: 0.5}
       AnchorMin: {x: 0.45, y: 0}
       AnchorMax: {x: 1, y: 1}
-      OffsetMin: {x: 19.685242, y: 2}
-      OffsetMax: {x: -20.217346, y: -2}
+      OffsetMin: {x: 19.7016, y: 2}
+      OffsetMax: {x: -20.298431, y: -2}
       LocalRotation: {x: -0, y: -0, z: -0, w: 1}
     - Object: {fileID: 6080415379645549205}
       Pivot: {x: 0.5, y: 0.5}
@@ -93,7 +93,7 @@ MonoBehaviour:
     UIElements:
     - Object: {fileID: 6080415379687491526}
       Pivot: {x: 0, y: 0}
-      AnchorMin: {x: 0, y: 0.5}
+      AnchorMin: {x: 0, y: 0.55}
       AnchorMax: {x: 1, y: 1}
       OffsetMin: {x: 0, y: 0}
       OffsetMax: {x: 0, y: 0}
@@ -101,16 +101,16 @@ MonoBehaviour:
     - Object: {fileID: 6080415381334213264}
       Pivot: {x: 1, y: 0.5}
       AnchorMin: {x: 0, y: 0}
-      AnchorMax: {x: 1, y: 0.5}
+      AnchorMax: {x: 1, y: 0.55}
       OffsetMin: {x: 20, y: 2}
-      OffsetMax: {x: -90, y: 0}
+      OffsetMax: {x: -90, y: -2}
       LocalRotation: {x: -0, y: -0, z: -0, w: 1}
     - Object: {fileID: 6080415379645549205}
       Pivot: {x: 0.5, y: 0.5}
       AnchorMin: {x: 0, y: 1}
       AnchorMax: {x: 1, y: 1}
-      OffsetMin: {x: 0, y: -45}
-      OffsetMax: {x: 0, y: 45}
+      OffsetMin: {x: 0, y: -47.5}
+      OffsetMax: {x: 0, y: 47.5}
       LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   _selectedConfiguration: 0
 --- !u!1 &6080415379687491525
