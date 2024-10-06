@@ -1177,6 +1177,7 @@ namespace ConfigSerialization
                     x.CheckFileExists = z.CheckFileExists;
                     x.FileFilters = z.Filters;
                     x.DialogTitle = z.DialogTitle;
+                    x.FileDialogPlugin = z.EnablePlugin;
                 },
                 nameof(FilePathSelector.SelectedPath), ControlType.FilePathSelector
             );

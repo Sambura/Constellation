@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using System.IO;
 using TMPro;
+using System;
 
 namespace ConstellationUI
 {
@@ -21,6 +23,10 @@ namespace ConstellationUI
         [SerializeField] private TMP_InputField _fileNameInputField;
         [SerializeField] private List<FileFilter> _fileFilters;
 
+        [SerializeField] private GameObject _pluginContainer;
+        [SerializeField] private UIArranger _uiArranger;
+        [SerializeField] private List<FileDialogPlugin> _plugins;
+
         [System.Serializable] public struct FileFilter
         {
             public string Description;
@@ -31,7 +37,7 @@ namespace ConstellationUI
         private DirectoryInfo _currentDirectory;
         private ListEntry _selected;
         private string _fileFilter;
-        private Dictionary<object, DirectoryInfo> _bindedCallersDirectories = new Dictionary<object, DirectoryInfo>();
+        private Dictionary<object, DirectoryInfo> _boundCallersDirectories = new Dictionary<object, DirectoryInfo>();
         private object _currentCaller;
 
         public string FileName
@@ -57,10 +63,12 @@ namespace ConstellationUI
             set
             {
                 _currentDirectory = value;
-                if (_currentCaller != null) _bindedCallersDirectories[_currentCaller] = value;
+                if (_currentCaller != null) _boundCallersDirectories[_currentCaller] = value;
                 if (DialogActive) UpdateFileView();
             }
         }
+
+        public event Action<string> SelectedFileChanged;
 
         protected override void Awake()
         {
@@ -74,6 +82,7 @@ namespace ConstellationUI
             OnFileFilterChanged(_fileFilterDropdown.value);
             DialogOpened += x => _currentCaller = null;
             DialogOpened += x => UpdateFileView();
+            DialogOpened += x => DisablePlugins();
         }
 
         private void UpdateFileFiltersDropdown()
@@ -127,6 +136,7 @@ namespace ConstellationUI
             _selected = file;
             _selected.Highlighted = true;
             _fileNameInputField.text = (file.Data as FileInfo).Name;
+            SelectedFileChanged?.Invoke(FileName);
         }
 
         private static FileInfo[] GetFilesByPattern(DirectoryInfo dir, string pattern)
@@ -153,7 +163,7 @@ namespace ConstellationUI
             }
             catch (System.Exception ex)
             {
-                Manager.ShowMessageBox("Error", "Sorry, but an error occured while trying to display files. " +
+                Manager.ShowMessageBox("Error", "Sorry, but an error occurred while trying to display files. " +
                     $"The message is:\n<color=red>{ex.Message}</color>", StandardMessageBoxIcons.Error, this);
                 return;
             }
@@ -182,6 +192,8 @@ namespace ConstellationUI
             {
                 foreach (FileInfo file in files)
                 {
+                    if (!CheckAgainstPlugins(file)) continue;
+
                     GameObject newFileObject = Instantiate(_filePrefab, _filesView);
                     _fileObjects.Add(newFileObject);
                     TextMeshProUGUI label = newFileObject.GetComponentInChildren<TextMeshProUGUI>();
@@ -196,6 +208,16 @@ namespace ConstellationUI
             }
         }
 
+        private bool CheckAgainstPlugins(FileInfo file)
+        {
+            foreach (var plugin in _plugins)
+            {
+                if (plugin.Enabled && !plugin.FilterFile(file.FullName)) return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Binds/syncs the current directory for the given caller object. Call this function after the ShowDialog() function,
         /// to make file dialog switch to the last directory that was opened with this caller object. If no directory was 
@@ -205,13 +227,26 @@ namespace ConstellationUI
         {
             _currentCaller = @object;
 
-            if (_bindedCallersDirectories.TryGetValue(@object, out DirectoryInfo directoryInfo))
+            if (_boundCallersDirectories.TryGetValue(@object, out DirectoryInfo directoryInfo))
             {
                 CurrentDirectory = directoryInfo;
                 return;
             }
 
-            _bindedCallersDirectories.Add(@object, CurrentDirectory);
+            _boundCallersDirectories.Add(@object, CurrentDirectory);
         }
+
+        public void EnablePlugins(params System.Type[] pluginTypes)
+        {
+            foreach (var plugin in _plugins) 
+                plugin.SetEnable(this, pluginTypes.Contains(plugin.GetType()));
+
+            bool anyEnabled = pluginTypes.Length > 0;
+            _uiArranger.SelectedConfigurationName = anyEnabled ? "Extended" : "Default";
+            _pluginContainer.SetActive(anyEnabled);
+            UpdateFileView();
+        }
+
+        public void DisablePlugins() => EnablePlugins();
     }
 }

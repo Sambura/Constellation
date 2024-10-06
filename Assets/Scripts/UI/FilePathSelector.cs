@@ -1,10 +1,8 @@
 ﻿using UnityEngine;
 using System;
-using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace ConstellationUI
 {
@@ -57,6 +55,8 @@ namespace ConstellationUI
             set => _fileFilters = value;
         }
 
+        public Type FileDialogPlugin { get; set; }
+
         public bool CheckFileExists
         {
             get => _checkFileExists;
@@ -107,6 +107,7 @@ namespace ConstellationUI
         {
             FileDialog.FileFilters = new List<FileDialog.FileFilter>(_fileFilters);
             FileDialog.ShowDialog(_dialogTitle, FileDialogCallback);
+            FileDialog.EnablePlugins(FileDialogPlugin);
             FileDialog.SyncCurrentDirectory(this);
         }
 

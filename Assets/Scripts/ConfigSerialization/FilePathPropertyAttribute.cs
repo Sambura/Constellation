@@ -6,10 +6,21 @@ namespace ConfigSerialization
 {
     public class FilePathProperty : ConfigProperty
     {
+        private Type _enablePlugin = null;
+
         public string DialogTitle { get; set; }
         public bool CheckFileExists { get; set; }
         public FileDialog.FileFilter[] Filters { get; set; }
         public Func<string, string> StringConverter { get; set; } = null;
+        public Type EnablePlugin
+        {
+            get => _enablePlugin;
+            set {
+                _enablePlugin = value;
+                if (EnablePlugin is { } && !typeof(FileDialogPlugin).IsAssignableFrom(EnablePlugin))
+                    throw new ArgumentException($"{EnablePlugin} is not a file dialog plugin type");
+            }
+        }
 
         public FilePathProperty(string dialogTitle = null, bool checkFileExists = false, string[] filters = null,
             Type displayedTextConverter = null, string name = null, bool hasEvent = true) : base(name, hasEvent)

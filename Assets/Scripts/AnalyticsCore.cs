@@ -72,7 +72,7 @@ public class AnalyticsCore : MonoBehaviour
     }
 
     [ConfigGroupMember(groupIndex: 1, parentIndex: 0)]
-    [FilePathProperty("Select benchmark config file", true, new string[] { "Json files", "*.json", "All files", "*" }, typeof(BenchmarkNameGetter), name: "Benchmark:")]
+    [FilePathProperty("Select benchmark config file", true, new string[] { "Json files", "*.json", "All files", "*" }, typeof(BenchmarkNameGetter), name: "Benchmark:", EnablePlugin = typeof(BenchmarkConfigFileDialogPlugin))]
     public string BenchmarkFilePath
     {
         get => _benchmarkFilePath;
@@ -81,7 +81,7 @@ public class AnalyticsCore : MonoBehaviour
 
     [ConfigGroupMember(groupIndex: 2, parentIndex: 0)]
     [SetComponentProperty(typeof(TMPro.TextMeshProUGUI), "color", typeof(Color), new object[] { 0.972549f, 0.9294117647f, 0.56470588f, 0.5f }, childName: "Labels/FilenameLabel")]
-    [FilePathProperty("Select benchmark suite config file", true, new string[] { "Json files", "*.json", "All files", "*" }, typeof(BenchmarkSuiteNameGetter), name: "Benchmark suite:")]
+    [FilePathProperty("Select benchmark suite config file", true, new string[] { "Json files", "*.json", "All files", "*" }, typeof(BenchmarkSuiteNameGetter), name: "Benchmark suite:", EnablePlugin = typeof(BenchmarkSuiteConfigFileDialogPlugin))]
     public string BenchmarkSuiteFilePath
     {
         get => _benchmarkSuiteFilePath;
