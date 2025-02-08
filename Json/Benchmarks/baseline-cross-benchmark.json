@@ -1,0 +1,58 @@
+{
+    "CrossBenchmarkVersion": "1.0.0",
+    "BenchmarkSequence": [
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run1"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run2"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run3"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run4"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run5"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run6"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run7"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run8"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run9"
+        },
+        {
+            "ExecutablePath": "Constellation.exe",
+            "BenchmarkSuitePath": "../../Constellation/Json/Benchmarks/BaselineSuite/baseline-suite.json",
+            "ResultsOutputPath": "../../BaselineBenchmark/run10"
+        }
+    ],
+    "TemporaryConfig": true,
+    "PostBenchmarkAction": "QuitAndLock",
+    "QuitAndLockOnFocusLoss": true
+}

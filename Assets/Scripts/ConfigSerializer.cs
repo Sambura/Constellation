@@ -36,7 +36,7 @@ public class ConfigSerializer : MonoBehaviour
     }
 
     /// <summary>
-    /// Openes file dialog to select config save location.
+    /// Opens file dialog to select config save location.
     /// When the file dialog is closed, an attempt to serialize config to disk is made
     /// </summary>
     public void SaveConfig()
@@ -48,7 +48,7 @@ public class ConfigSerializer : MonoBehaviour
     }
 
     /// <summary>
-    /// Openes file dialog to select config load location.
+    /// Opens file dialog to select config load location.
     /// When the file dialog is closed, an attempt to deserialize config from disk is made
     /// </summary>
     public void LoadConfig()
@@ -123,7 +123,7 @@ public class ConfigSerializer : MonoBehaviour
     public int MultipleObjectOverwriteFromJson(string json, string[] names, object[] objects)
     {
         Dictionary<string, string> jsons = JsonSerializerUtility.GetProperties(json);
-        int deserealized = 0;
+        int deserialized = 0;
 
         foreach (var keyValue in jsons)
         {
@@ -133,16 +133,16 @@ public class ConfigSerializer : MonoBehaviour
                 Debug.Log($"Unknown system encountered in specified config: {keyValue.Key}");
                 continue;
             }
-            deserealized += ConfigJsonSerializer.OverwriteConfigFromJson(keyValue.Value, objects[index]);
+            deserialized += ConfigJsonSerializer.OverwriteConfigFromJson(keyValue.Value, objects[index]);
         }
 
-        return deserealized;
+        return deserialized;
     }
 
     /// <summary>
     /// An OnDialogClose callback for a FileDialog, that is used by SaveConfig()
     /// If result if `false`, it just returns `true`, so that the dialog can be closed
-    /// Otherwise, it tries to save config to the selected file, returnting `true` on success
+    /// Otherwise, it tries to save config to the selected file, returning `true` on success
     /// or `false` on failure
     /// </summary>
     private bool TrySaveConfig(MonoDialog fileDialog, bool result)
@@ -184,7 +184,7 @@ public class ConfigSerializer : MonoBehaviour
     /// <summary>
     /// An OnDialogClose callback for a FileDialog, that is used by LoadConfig()
     /// If result if `false`, it just returns `true`, so that the dialog can be closed
-    /// Otherwise, it tries to load selected file as config, returnting `true` on success
+    /// Otherwise, it tries to load selected file as config, returning `true` on success
     /// or `false` on failure
     /// </summary>
     private bool TryLoadConfig(MonoDialog fileDialog, bool result)
@@ -192,7 +192,7 @@ public class ConfigSerializer : MonoBehaviour
         if (result == false) return true;
 
         FileInfo fileInfo = new FileInfo(_fileDialog.FileName);
-        int deserealized;
+        int deserialized;
 
         if (fileInfo.Exists == false)
         {
@@ -210,8 +210,8 @@ public class ConfigSerializer : MonoBehaviour
 
         try
         {
-            deserealized = DeserializeConfigFromFile(fileInfo.FullName);
-            if (deserealized == 0)
+            deserialized = DeserializeConfigFromFile(fileInfo.FullName);
+            if (deserialized == 0)
             {
                 _fileDialog.Manager.ShowMessageBox("Warning", "No Constellation properties were found in the " + 
                     "loaded file. You have probably selected wrong file to load.", StandardMessageBoxIcons.Warning, _fileDialog);
@@ -232,7 +232,7 @@ public class ConfigSerializer : MonoBehaviour
         }
 
         _fileDialog.Manager.ShowMessageBox("File loaded", $"Config has been loaded successfully. In total" +
-            $" {deserealized} Constellation properties were loaded.", StandardMessageBoxIcons.Success, _fileDialog);
+            $" {deserialized} Constellation properties were loaded.", StandardMessageBoxIcons.Success, _fileDialog);
         return true;
     }
 }

@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "100k Large particles render benchmark",
+    "Description": "Simple benchmark to measure performance of rendering large particles",
+    "BenchmarkDuration": 10.0
+}

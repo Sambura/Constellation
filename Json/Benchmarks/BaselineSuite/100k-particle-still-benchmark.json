@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "100k Still particles benchmark",
+    "Description": "Simple benchmark to measure performance of idle simulation with large amount of particles (no render)",
+    "BenchmarkDuration": 10.0
+}

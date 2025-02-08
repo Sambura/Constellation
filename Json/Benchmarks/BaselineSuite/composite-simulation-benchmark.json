@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Composite simulation benchmark",
+    "Description": "This benchmark allows to measure performance of a typical simulation: particles + lines + triangles rendering",
+    "BenchmarkDuration": 10.0
+}

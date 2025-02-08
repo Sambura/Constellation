@@ -1,0 +1,12 @@
+{
+    "BenchmarkSuiteVersion": "1.2.0",
+    "Name": "Baseline benchmark suite",
+    "Description": "Reduced set of basic benchmarks used to establish the baseline performance metrics and variations across runs",
+    "FullscreenMode": "ExclusiveFullScreen",
+    "FpsCap": 0,
+    "BenchmarkDurationOverride": 30,
+    "CooldownDurationOverride": 20,
+    "WarmupDurationOverride": 5,
+    "RepeatCount": 3,
+    "ShuffleBenchmarks": false
+}
