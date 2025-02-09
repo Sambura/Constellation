@@ -25,8 +25,9 @@ public class BenchmarkConfig
         if (Core.Algorithm.ParseVersion(config.BenchmarkVersion) is null)
             throw new System.ArgumentException("Invalid benchmark version");
 
+        string parentDir = Path.GetDirectoryName(configPath);
+
         if (config.SimulationConfigPath is null) {
-            string parentDir = Path.GetDirectoryName(configPath);
             string configsDir = Path.Combine(parentDir, "Configs");
             if (Path.GetFileName(configPath).EndsWith("-benchmark.json"))
             {
@@ -34,6 +35,9 @@ public class BenchmarkConfig
                 config.BaseFilename = configFilename.Substring(0, configFilename.LastIndexOf('-'));
                 config.SimulationConfigPath = Path.Combine(configsDir, config.BaseFilename + ".json");
             }
+        } else if (!Path.IsPathRooted(config.SimulationConfigPath))
+        {
+            config.SimulationConfigPath = Path.Combine(parentDir, config.SimulationConfigPath);
         }
 
         if (!File.Exists(config.SimulationConfigPath)) throw new FileNotFoundException("Could not find corresponding simulation config");

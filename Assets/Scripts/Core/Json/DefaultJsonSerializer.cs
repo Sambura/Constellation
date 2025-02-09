@@ -28,6 +28,8 @@ namespace Core.Json
 
         private readonly Dictionary<Type, JsonSerializerFlags> _typeSpecificFlags = new Dictionary<Type, JsonSerializerFlags>();
 
+        public Dictionary<string, object> CustomParameters { get; private set; } = new Dictionary<string, object>();
+
         private string FormatFloat(string value)
         {
             if (value.Contains(".")) return value;

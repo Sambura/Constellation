@@ -401,7 +401,10 @@ public class AnalyticsCore : MonoBehaviour
             }
 
             _fileDialog.Manager.ShowOkCancelMessageBox("Cross-benchmark starting", $"Cross benchmark will start in {(int)CrossBenchmarkStartDelay} seconds. " +
-                $"Click Cancel to abort", StandardMessageBoxIcons.Warning, x => { StopCoroutine(coroutine); if (x) StartCrossBenchmark(); return true; });
+                $"Click Cancel to abort", StandardMessageBoxIcons.Warning, x => { StopCoroutine(coroutine); if (x) StartCrossBenchmark(); 
+                    else if (_crossBenchmarkConfig.ExecuteActionOnCancel) PerformSystemAction(_crossBenchmarkConfig.PostBenchmarkAction); 
+                    return true; 
+                });
         }
         catch (Exception e)
         {

@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Line render benchmark",
+    "Description": "Benchmark for gauging performance of dynamic line rendering",
+    "BenchmarkDuration": 10.0
+}

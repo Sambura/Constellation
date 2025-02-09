@@ -7,11 +7,12 @@ using Core.Json;
 /// </summary>
 public class CrossBenchmarkConfig
 {
-    public string CrossBenchmarkVersion { get; set; } = "1.0.0";
+    public string CrossBenchmarkVersion { get; set; } = "1.0.1";
     public List<CrossBenchmark> BenchmarkSequence { get; set; }
     public bool TemporaryConfig { get; set; } = false;
     public SystemAction PostBenchmarkAction { get; set; } = SystemAction.Nothing;
     public bool QuitAndLockOnFocusLoss { get; set; } = true;
+    public bool ExecuteActionOnCancel { get; set; } = true;
 
     public static CrossBenchmarkConfig FromFile(string path)
     {

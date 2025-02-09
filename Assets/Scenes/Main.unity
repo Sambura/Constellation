@@ -1698,6 +1698,8 @@ MonoBehaviour:
     _texture: {fileID: 2800000, guid: 3f6f425fa5ad03743bfbce20e74df0f9, type: 3}
   - _path: 
     _texture: {fileID: 2800000, guid: 074ba47758f22c14e9c33a3255dcaf35, type: 3}
+  - _path: 
+    _texture: {fileID: 2800000, guid: c0d8a23e42280ea46afae336c93cbb36, type: 3}
 --- !u!114 &144636873
 MonoBehaviour:
   m_ObjectHideFlags: 0

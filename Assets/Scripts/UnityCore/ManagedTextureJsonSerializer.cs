@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Core.Json;
+using System.IO;
 
 namespace UnityCore
 {
@@ -32,15 +33,22 @@ namespace UnityCore
             if (texture == null) throw new ArgumentException("The object to serialize is not of type Texture2D");
 
             FileTexture fileTexture = TextureManager.FindTexture(texture);
+            string texturePath = fileTexture.Path;
+            if (texturePath is { })
+            {
+                if (DefaultJsonSerializer.Default.CustomParameters.TryGetValue("DestinationPath", out object path))
+                {
+                    texturePath = Path.Combine(Path.GetDirectoryName(path as string), texturePath);
+                }
+            }
 
             StringBuilder json = new StringBuilder(128); // pretty arbitrary
-            json.Append('{'); 
-            // So actually using string literals as property names makes it more likerly for old JSON's
+            JsonSerializerUtility.BeginObject(json);
+            // So actually using string literals as property names makes it more likely for old JSON's
             // to survive another code refactoring (i guess)
             JsonSerializerUtility.SerializeDefault(json, NamePropertyName, fileTexture.Texture.name);
-            JsonSerializerUtility.SerializeDefault(json, PathPropertyName, fileTexture.Path);
-            JsonSerializerUtility.StripComma(json);
-            json.Append('}');
+            JsonSerializerUtility.SerializeDefault(json, PathPropertyName, texturePath);
+            JsonSerializerUtility.EndObject(json);
 
             return json.ToString();
         }
