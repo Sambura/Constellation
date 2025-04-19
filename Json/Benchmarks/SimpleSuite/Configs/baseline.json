@@ -1,6 +1,6 @@
 {
     "Particles": {
-        "ParticleCount": 30000,
+        "ParticleCount": 0,
         "MinParticleVelocity": 0.100000001,
         "MaxParticleVelocity": 1.0,
         "BoundMargins": 0.0,
@@ -33,7 +33,7 @@
                     "outTangent": 1.18008745,
                     "inWeight": 0.0,
                     "outWeight": 0.0393374749,
-                    "weightedMode": "None",
+                    "weightedMode": "Both",
                     "tangentMode": 0
                 },
                 {
@@ -44,13 +44,13 @@
                     "inWeight": 0.333333343,
                     "outWeight": 0.0,
                     "weightedMode": "Both",
-                    "tangentMode": 1
+                    "tangentMode": 0
                 }
             ],
             "preWrapMode": "ClampForever",
             "postWrapMode": "ClampForever"
         },
-        "AlternateLineColor": true,
+        "AlternateLineColor": false,
         "LineColor": {
             "colorKeys": [
                 {
@@ -65,16 +65,16 @@
                 {
                     "color": {
                         "r": 0.0,
-                        "g": 1.0,
-                        "b": 0.325515985,
+                        "g": 0.679245293,
+                        "b": 0.223751381,
                         "a": 1.0
                     },
-                    "time": 0.991180301
+                    "time": 1.0
                 }
             ],
             "alphaKeys": [
                 {
-                    "alpha": 0.0,
+                    "alpha": 1.0,
                     "time": 0.0
                 },
                 {
@@ -92,23 +92,23 @@
             "b": 0.0,
             "a": 1.0
         },
-        "ConnectionDistance": 0.100000001,
+        "ConnectionDistance": 1.0,
         "StrongDistance": 0.0
     },
     "Fragmentation": {
-        "ShowCellBorders": true,
+        "ShowCellBorders": false,
         "CellBorderColor": {
-            "r": 0.0,
+            "r": 1.0,
             "g": 0.0,
             "b": 0.0,
-            "a": 1.0
+            "a": 0.4627451
         },
-        "ShowCells": true,
+        "ShowCells": false,
         "CellColor": {
             "r": 1.0,
-            "g": 1.0,
-            "b": 1.0,
-            "a": 0.128649637
+            "g": 0.921568632,
+            "b": 0.0156862754,
+            "a": 0.184313729
         },
         "ShowBounds": false,
         "BoundsColor": {

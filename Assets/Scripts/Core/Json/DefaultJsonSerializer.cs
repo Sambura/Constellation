@@ -10,7 +10,7 @@ namespace Core.Json
     [Flags]
     public enum JsonSerializerFlags
     {
-        Default = 1 | 2,
+        Default = SerializeFields | SerializeProperties,
         SerializeFields = 1,
         SerializeProperties = 2,
         SerializeReadonlyProperties = 4,
@@ -184,6 +184,11 @@ namespace Core.Json
             }
 
             return newObj;
+        }
+
+        public T FromJson<T>(string json, bool ignoreUnknownProperties = false) {
+            object result = FromJson(json, typeof(T), ignoreUnknownProperties);
+            return (T)result;
         }
 
         /// <summary>

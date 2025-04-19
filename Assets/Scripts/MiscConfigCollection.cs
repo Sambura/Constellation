@@ -9,7 +9,7 @@ public class MiscConfigCollection : MonoBehaviour
     [SerializeField] private StaticTimeFPSCounter _fpsCounter;
     [SerializeField] private GameObject _fpsCounterObject;
     [SerializeField] private TransparentWindow _transparentWindow;
-    [SerializeField] private ConfigSerializer _configSerializer;
+    [SerializeField] private SimulationConfigSerializer _configSerializer;
 
     [ConfigGroupToggle(3)] [ConfigGroupMember(GroupId = "AC+fps")]
     [ConfigProperty(hasEvent: false)] public bool ShowFPS

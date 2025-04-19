@@ -6,7 +6,7 @@ public class Particle
 {
     public System.Func<Particle, float> VelocityDelegate { get; set; }
     public Vector3 Velocity { get; set; }
-    public bool Visible { get; set; }
+    public bool Visible { get; set; } // needed?
     public Color Color { get; set; }
     public Sprite Sprite { get; set; }
     public Vector3 Position { get; set; }

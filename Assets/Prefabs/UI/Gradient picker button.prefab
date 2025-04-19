@@ -139,7 +139,7 @@ MonoBehaviour:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 0
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -243,9 +243,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3568f24456fc264b87b8b25187035bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _label: {fileID: 2263990515651820473}
   _viewport: {fileID: 2263990515302874612}
   _gradientPicker: {fileID: 0}
-  _label: {fileID: 2263990515651820473}
   _gradientPickerOffset: {x: 100, y: 40}
   _gradientPickerPivot: {x: 0, y: 0.5}
   _gradientPickerTitle: Select gradient

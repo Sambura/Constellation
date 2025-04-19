@@ -4,10 +4,11 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
 using UnityRawInput;
+using SimpleGraphics;
 
 public class TransparentWindow : MonoBehaviour
 {
-    [SerializeField] private Camera _cam;
+    [SerializeField] private ImmediateBatchRenderer _renderer;
     [SerializeField] private bool _autoRun = true;
 #if UNITY_EDITOR
     [SerializeField] private bool _debugMessages = true;
@@ -51,7 +52,7 @@ public class TransparentWindow : MonoBehaviour
     public void MakeTransparent()
     {
 #if UNITY_EDITOR
-        if (_debugMessages) Debug.Log("MakeTrnaparent() call");
+        if (_debugMessages) Debug.Log("MakeTransparent() call");
 #else
         hWnd = GetActiveWindow();
 
@@ -66,25 +67,18 @@ public class TransparentWindow : MonoBehaviour
 
         Application.runInBackground = true;
 
-        _cam.clearFlags = CameraClearFlags.SolidColor;
-        _cam.backgroundColor = new Color(0, 0, 0, 0);
+        _renderer.ClearColor = true;
         enabled = true;
 
         FindObjectOfType<MainVisualizer>().ClearColor = new Color(0, 0, 0, 0);
 
         RawInput.Start();
         RawInput.WorkInBackground = true;
-        RawInput.OnKeyDown += HandleKeyTest;
     }
 
     private void OnDisable()
     {
         RawInput.Stop();
-    }
-
-    private void HandleKeyTest(RawKey key)
-    {
-        print($"hello world { key}");
     }
 
     private void SetClickthrough(bool clickthrough)
@@ -100,7 +94,7 @@ public class TransparentWindow : MonoBehaviour
     // will only run if the script is enabled
     private void Update()
     {
-        // This one does not work when out of foces for whatever reason (double checked)
+        // This one does not work when out of focus for whatever reason (double checked)
         //SetClickthrough(!EventSystem.current.IsPointerOverGameObject());
 
         SetClickthrough(!IsPointerOverUIElement());

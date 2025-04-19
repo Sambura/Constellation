@@ -21,7 +21,7 @@ public class AnalyticsCore : MonoBehaviour
     [SerializeField] private StaticTimeFPSCounter _fpsCounter;
     [SerializeField] private Viewport _viewport;
     [SerializeField] private PerformanceReportDialog _perfDialog;
-    [SerializeField] private ConfigSerializer _configSerializer;
+    [SerializeField] private SimulationConfigSerializer _configSerializer;
     [SerializeField] private InteractionCore _interactionCore;
     [SerializeField] private ApplicationController _applicationController;
 
@@ -34,6 +34,8 @@ public class AnalyticsCore : MonoBehaviour
     private CrossBenchmarkConfig _crossBenchmarkConfig = null;
     public string CrossBenchmarkPath { get; set; } = ".cross-benchmark.json";
     public float CrossBenchmarkStartDelay { get; set; } = 10;
+
+    public bool BenchmarkInProgress => _benchmarkInProgress;
 
     #region Config properties
 
@@ -53,6 +55,7 @@ public class AnalyticsCore : MonoBehaviour
     private int _suiteRepeatCount = 1;
     private bool _shuffleBenchmarks = false;
     private SystemAction _postBenchmarkAction;
+    private int? _overrideRngSeed = null;
 
     private BenchmarkConfig _currentBenchmarkConfig;
     private BenchmarkSuiteConfig _currentBenchmarkSuiteConfig;
@@ -214,16 +217,17 @@ public class AnalyticsCore : MonoBehaviour
     {
         get
         {
+            float minWarmup = (AutomaticBufferSize ? FPSMeasuringDuration : 0) + FixedWarmupTime;
             if (BenchmarkMode != BenchmarkMode.BenchmarkSuite)
-                return BenchmarkRepeatCount * (BenchmarkDuration + WarmupDuration + CooldownDuration + (AutomaticBufferSize ? FPSMeasuringDuration : 0));
+                return BenchmarkRepeatCount * (BenchmarkDuration + Mathf.Max(WarmupDuration, minWarmup) + CooldownDuration);
             if (_currentBenchmarkSuiteConfig is null) return -1;
 
-            float suiteTotal = (AutomaticBufferSize ? FPSMeasuringDuration : 0) * _currentBenchmarkSuiteConfig.Configs.Count;
+            float suiteTotal = 0;
             foreach (BenchmarkConfig config in _currentBenchmarkSuiteConfig.Configs)
             {
                 suiteTotal += BenchmarkDurationOverride.GetValueOrDefault(config.BenchmarkDuration.GetValueOrDefault(1));
                 suiteTotal += CooldownDurationOverride.GetValueOrDefault(config.CooldownTime.GetValueOrDefault(0));
-                suiteTotal += WarmupDurationOverride.GetValueOrDefault(config.WarmupTime.GetValueOrDefault(0));
+                suiteTotal += Mathf.Max(WarmupDurationOverride.GetValueOrDefault(config.WarmupTime.GetValueOrDefault(0)), minWarmup);
             }
 
             return suiteTotal * BenchmarkSuiteRepeatCount;
@@ -284,6 +288,20 @@ public class AnalyticsCore : MonoBehaviour
         }
     }
 
+    [ConfigGroupMember]
+    [ConfigMemberOrder(7)]
+    [InputFieldProperty(name: "Fix simulation seed")]
+    public int? OverrideRngSeed
+    {
+        get => _overrideRngSeed;
+        set
+        {
+            if (_overrideRngSeed == value) return;
+            _overrideRngSeed = value;
+            OverrideRngSeedChanged?.Invoke(value);
+        }
+    }
+
     [ConfigGroupMember] [ConfigMemberOrder(-1)]
     [LabelProperty(DisplayPropertyName = false, TextColor = "#b0b0b0", AllowPolling = false)]
     [SetComponentProperty(typeof(TMPro.TextMeshProUGUI), nameof(TMPro.TextMeshProUGUI.fontSize), 24)]
@@ -306,6 +324,7 @@ public class AnalyticsCore : MonoBehaviour
     public event Action<int> BenchmarkSuiteRepeatCountChanged;
     public event Action<bool> ShuffleBenchmarksChanged;
     public event Action<SystemAction> PostBenchmarkActionChanged;
+    public event Action<int?> OverrideRngSeedChanged;
 
     private void SetBenchmarkFilePath(string value)
     {
@@ -357,6 +376,10 @@ public class AnalyticsCore : MonoBehaviour
                 CooldownDurationOverride = newSuite.CooldownDurationOverride;
                 BenchmarkSuiteRepeatCount = newSuite.RepeatCount;
                 ShuffleBenchmarks = newSuite.ShuffleBenchmarks;
+                OverrideRngSeed = newSuite.OverrideRngSeed;
+                FrameTimingBufferSize = newSuite.BufferSize.GetValueOrDefault(FrameTimingBufferSize);
+                AutomaticBufferSizeMargin = newSuite.AutoBufferMargin.GetValueOrDefault(AutomaticBufferSizeMargin);
+                AutomaticBufferSize = newSuite.AutoBufferMargin.HasValue || (AutomaticBufferSize && !newSuite.BufferSize.HasValue);
             }
             catch (JsonSerializerException e)
             {
@@ -379,6 +402,7 @@ public class AnalyticsCore : MonoBehaviour
     private List<BenchmarkResult> _benchmarkResults = new List<BenchmarkResult>();
 
     public float FPSMeasuringDuration { get; set; } = 1f;
+    public float FixedWarmupTime { get; set; } = 1.5f;
 
     private void Start()
     {
@@ -472,23 +496,11 @@ public class AnalyticsCore : MonoBehaviour
                     failedBenchmarks.Add(benchmark);
                     continue;
                 }
-                _particleController.RestartSimulation();
+
                 float benchmarkDuration = benchmark.BenchmarkDuration.Value;
 
                 if (_tracker is { }) { Destroy(_tracker); _tracker = null; }
                 _tracker = gameObject.AddComponent<FrameTimingTracker>();
-                if (AutomaticBufferSize)
-                {
-                    _helperFpsCounter = gameObject.AddComponent<StaticTimeFPSCounter>();
-                    _helperFpsCounter.TimeWindow = FPSMeasuringDuration;
-
-                    yield return new WaitForSeconds(FPSMeasuringDuration);
-
-                    FrameTimingBufferSize = Mathf.RoundToInt(_helperFpsCounter.CurrentFps * benchmarkDuration * (1 + AutomaticBufferSizeMargin));
-                    DestroyImmediate(_helperFpsCounter);
-                }
-                _tracker.BufferSize = FrameTimingBufferSize;
-                _tracker.PrepareTracking();
 
                 if (benchmark.CooldownTime.Value > 0)
                 {
@@ -503,8 +515,36 @@ public class AnalyticsCore : MonoBehaviour
                     _applicationController.TargetFrameRate = targetFps;
                 }
 
-                yield return new WaitForSeconds(benchmark.WarmupTime.Value);
+                _particleController.RestartSimulation();
+                // seems that rendering is a bit slower after we load a new config for a few seconds. Need this workaround for now
+                // at least to make sure auto buffer size is somewhat accurate
+                yield return new WaitForSeconds(FixedWarmupTime);
+                float postWarmupDuration = Mathf.Max(0, benchmark.WarmupTime.Value - FixedWarmupTime);
 
+                if (AutomaticBufferSize)
+                {
+                    _helperFpsCounter = gameObject.AddComponent<StaticTimeFPSCounter>();
+                    _helperFpsCounter.TimeWindow = FPSMeasuringDuration;
+                    postWarmupDuration = Mathf.Max(0, postWarmupDuration - FPSMeasuringDuration);
+
+                    yield return null; // this frame will probably peak, (try) to exclude it
+                    yield return new WaitForSeconds(FPSMeasuringDuration);
+
+                    FrameTimingBufferSize = Mathf.RoundToInt(_helperFpsCounter.CurrentFps * benchmarkDuration * (1 + AutomaticBufferSizeMargin));
+
+                    DestroyImmediate(_helperFpsCounter);
+                    _helperFpsCounter = null;
+                }
+                _tracker.BufferSize = FrameTimingBufferSize;
+                _tracker.PrepareTracking();
+
+                yield return new WaitForSeconds(postWarmupDuration);
+
+                if (benchmark.RngSeed.HasValue)
+                    UnityEngine.Random.InitState(benchmark.RngSeed.Value);
+                _particleController.RestartSimulation();
+
+                yield return null; // frame when we restart will probably be longer than average, exclude
                 _tracker.StartTracking();
 
                 yield return new WaitForSeconds(benchmarkDuration);
@@ -608,7 +648,7 @@ public class AnalyticsCore : MonoBehaviour
             return;
         }
 
-        BenchmarkConfig config = BenchmarkMode == BenchmarkMode.Custom ? null : _currentBenchmarkConfig;
+        BenchmarkConfig config = BenchmarkMode == BenchmarkMode.Custom ? null : _currentBenchmarkConfig.Copy();
         config ??= new BenchmarkConfig()
         {
             Name = "Custom benchmark",
@@ -620,6 +660,7 @@ public class AnalyticsCore : MonoBehaviour
         config.BenchmarkDuration = BenchmarkDuration;
         config.CooldownTime = CooldownDuration;
         config.WarmupTime = WarmupDuration;
+        config.RngSeed = OverrideRngSeed;
         for (int i = 0; i < BenchmarkRepeatCount; i++) _benchmarksQueue.Add(config);
 
         StartCoroutine(RunBenchmarkQueue(x => ShowReport()));
@@ -640,12 +681,22 @@ public class AnalyticsCore : MonoBehaviour
             copy.BenchmarkDuration = BenchmarkDurationOverride.GetValueOrDefault(copy.BenchmarkDuration.GetValueOrDefault(1));
             copy.CooldownTime = CooldownDurationOverride.GetValueOrDefault(copy.CooldownTime.GetValueOrDefault(0));
             copy.WarmupTime = WarmupDurationOverride.GetValueOrDefault(copy.WarmupTime.GetValueOrDefault(0));
+            copy.RngSeed ??= OverrideRngSeed;
 
-            for (int i = 0; i < BenchmarkSuiteRepeatCount; i++)
-            {
-                BenchmarkConfig instance = copy.Copy();
-                if (BenchmarkSuiteRepeatCount > 1) instance.BaseFilename += $"-{i + 1}";
-                _benchmarksQueue.Add(instance);
+            _benchmarksQueue.Add(copy);
+        }
+
+        if (BenchmarkSuiteRepeatCount > 1) {
+            List<BenchmarkConfig> instances = _benchmarksQueue;
+            _benchmarksQueue = new List<BenchmarkConfig>();
+
+            for (int i = 0; i < BenchmarkSuiteRepeatCount; i++) {
+                foreach (BenchmarkConfig config in instances)
+                {
+                    BenchmarkConfig copy = config.Copy();
+                    copy.BaseFilename += $"-{i + 1}";
+                    _benchmarksQueue.Add(copy);
+                }
             }
         }
 
@@ -694,8 +745,10 @@ public class AnalyticsCore : MonoBehaviour
         string nextExecutable = _crossBenchmarkConfig.BenchmarkSequence[0].ExecutablePath;
         string nextConfigPath = Path.Combine(Path.GetDirectoryName(nextExecutable), CrossBenchmarkPath);
         File.WriteAllText(nextConfigPath, DefaultJsonSerializer.Default.ToJson(_crossBenchmarkConfig));
-
-        System.Diagnostics.Process.Start(Path.GetFullPath(nextExecutable));
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(nextExecutable))
+        {
+            WorkingDirectory = Path.GetDirectoryName(nextExecutable)
+        });
         _applicationController.Quit();
     }
 

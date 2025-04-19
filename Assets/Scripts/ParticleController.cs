@@ -23,7 +23,7 @@ public class ParticleController : MonoBehaviour
     #region Config properties
 
     [ConfigGroupMember("Simulation parameters", GroupId = "PC+sim_params")]
-    [SliderProperty(0, 2500, 0, 100000, name: "Particles count")] public int ParticleCount
+    [SliderProperty(0, 2500, 0, 100000000, name: "Particles count")] public int ParticleCount
     {
         get => _particlesCount;
         set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
@@ -140,7 +140,6 @@ public class ParticleController : MonoBehaviour
 
         particle.Position = new Vector3(Random.Range(_left, _right),
             Random.Range(_bottom, _top));
-
     }
 
     private float GetParticleVelocity(Particle particle)
@@ -160,7 +159,7 @@ public class ParticleController : MonoBehaviour
     public int YSquareOffset => _ySquareOffset;
     public int MaxSquareX => _maxSquareX;
     public int MaxSquareY => _maxSquareY;
-    public float ConnectionDistance => _connectionDistance;
+    public float FragmentSize => _fragmentSize;
     public Viewport Viewport
     {
         get => _viewport;
@@ -171,9 +170,9 @@ public class ParticleController : MonoBehaviour
     public float BoundBottom => _bottom;
     public float BoundTop => _top;
 
-    public void SetConnectionDistance(float value)
+    public void SetFragmentSize(float value)
     {
-        _connectionDistance = value;
+        _fragmentSize = value;
 
         if (_particles != null) DoFragmentation();
     }
@@ -214,9 +213,10 @@ public class ParticleController : MonoBehaviour
 
     private void DoFragmentation()
     {
-        if (_connectionDistance <= 0) return;
-        int xSquareOffset = Mathf.FloorToInt(Viewport.MaxX / _connectionDistance) + 1;
-        int ySquareOffset = Mathf.FloorToInt(Viewport.MaxY / _connectionDistance) + 1;
+        if (_fragmentSize <= 0) return;
+        _fragmentSize = Mathf.Max(_fragmentSize, 0.02f); // TODO: fix
+        int xSquareOffset = Mathf.FloorToInt(Viewport.MaxX / _fragmentSize) + 1;
+        int ySquareOffset = Mathf.FloorToInt(Viewport.MaxY / _fragmentSize) + 1;
 
         if (_xSquareOffset == xSquareOffset && _ySquareOffset == ySquareOffset) return;
 
@@ -231,7 +231,7 @@ public class ParticleController : MonoBehaviour
                 _regionMap[i, j] = new FastList<Particle>(Mathf.CeilToInt(2 * AveragePerCell));
     }
 
-    private float _connectionDistance;
+    private float _fragmentSize;
     private List<Particle> _particles;
     private FastList<Particle>[,] _regionMap;
     private int _xSquareOffset;
@@ -284,10 +284,18 @@ public class ParticleController : MonoBehaviour
         }
     }
 
-    private void GetSquare(Vector3 location, out int sqrX, out int sqrY)
+    public Vector2 GetFragmentLocation(int xIndex, int yIndex)
     {
-        int xp = (int)System.Math.Floor(location.x / _connectionDistance) + _xSquareOffset;
-        int yp = (int)System.Math.Floor(location.y / _connectionDistance) + _ySquareOffset;
+        float x = (xIndex - _xSquareOffset + 0.5f) * _fragmentSize;
+        float y = (yIndex - _ySquareOffset + 0.5f) * _fragmentSize;
+        
+        return new Vector2(x, y);
+    }
+
+    public void GetSquare(Vector3 location, out int sqrX, out int sqrY)
+    {
+        int xp = (int)System.Math.Floor(location.x / _fragmentSize) + _xSquareOffset;
+        int yp = (int)System.Math.Floor(location.y / _fragmentSize) + _ySquareOffset;
         sqrX = Mathf.Clamp(xp, 0, _maxSquareX);
         sqrY = Mathf.Clamp(yp, 0, _maxSquareY);
     }

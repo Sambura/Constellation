@@ -14,6 +14,8 @@ namespace SimpleGraphics
         private IList<SimpleDrawBatch> _batchList;
         private int _batchesCount;
 
+        public bool ClearColor = false;
+
         private void Awake()
         {
             _cameraTransform = _camera.transform;
@@ -123,12 +125,15 @@ namespace SimpleGraphics
             }
         }
 
-        private void OnPostRender()
+        private void OnPreRender()
         {
             if (_enabled == false) return;
 
             GL.PushMatrix();
 
+            GL.Clear(true, ClearColor, new Color(0, 0, 0, 0));
+            GL.LoadProjectionMatrix(GetCameraProjectionMatrix());
+            GL.modelview = Matrix4x4.identity;
             for (int batchIndex = 0; batchIndex < _batchesCount; batchIndex++)
                 DrawBatch(_batchList[batchIndex]);
 

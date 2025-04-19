@@ -21,7 +21,7 @@ namespace ConstellationUI
             get => _viewport.Gradient;
             set { if (value != _viewport.Gradient) { _viewport.Gradient = value; GradientChanged?.Invoke(value); } }
         }
-        public event Action ButtonClick;
+        public event Action Click;
         public event Action<Gradient> GradientChanged;
 
         private RectTransform _transform;
@@ -45,7 +45,7 @@ namespace ConstellationUI
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            ButtonClick?.Invoke();
+            Click?.Invoke();
             OpenGradientPicker();
         }
 
@@ -57,8 +57,9 @@ namespace ConstellationUI
             Vector2 pivotPosition = zeroPosition + _transform.rect.size * _gradientPickerPivot;
             GradientPicker.ShowDialog(_gradientPickerTitle);
             GradientPicker.Position = pivotPosition + _gradientPickerOffset;
-            GradientPicker.Gradient = Gradient;
+            // change handler first so that previous handler (if any) doesn't get triggered by new gradient
             GradientPicker.OnGradientChanged = OnGradientPickerGradientChange;
+            GradientPicker.Gradient = Gradient;
         }
 
         private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Gradient = Gradient ?? new Gradient(); }

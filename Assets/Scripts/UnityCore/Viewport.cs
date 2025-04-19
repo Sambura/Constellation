@@ -38,6 +38,10 @@ public class Viewport : MonoBehaviour
     /// Radius of circle that can inscribe the whole viewport
     /// </summary>
     public float Radius => Mathf.Sqrt(MaxX * MaxX + MaxY * MaxY);
+    /// <summary>
+    /// Shorthand for Vector2(Width, Height). Full viewport size
+    /// </summary>
+    public Vector2 ViewportSize => new Vector2(Width, Height);
 
     /// <summary>
     /// Camera that is being monitored by this viewport script

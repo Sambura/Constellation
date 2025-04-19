@@ -3,13 +3,15 @@ using Core.Json;
 
 public class BenchmarkConfig
 {
-    public string BenchmarkVersion { get; set; } = "1.1.0";
+    // Same as the first Constellation version that supported it
+    public string BenchmarkVersion { get; set; } = "1.1.16";
     public string Name { get; set; }
     public string Description { get; set; }
     public float? BenchmarkDuration { get; set; } = null;
     public float? WarmupTime { get; set; } = null;
     public float? CooldownTime { get; set; } = null;
     public string SimulationConfigPath { get; set; }
+    public int? RngSeed { get; set; } = null;
 
     [NoJsonSerialization] public string SimulationConfigJson { get; set; }
     [NoJsonSerialization] public string BaseFilename { get; set; }

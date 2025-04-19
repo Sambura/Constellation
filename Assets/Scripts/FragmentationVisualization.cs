@@ -21,8 +21,6 @@ public class FragmentationVisualization : MonoBehaviour
     [SerializeField] private Color _boundsColor = Color.blue;
 
     private SimpleDrawBatch _renderBatch;
-    // Is _renderBatch added to the renderer?
-    private bool _isRendered = false;
 
     [ConfigGroupToggle(1)] [ConfigGroupMember("Fragmentation visualization")]
     [ConfigProperty]
@@ -92,22 +90,10 @@ public class FragmentationVisualization : MonoBehaviour
         UpdateRenderBatch();
     }
 
-    private void UpdateRenderBatch()
-    {
-        bool needsRendering = _showCellBorders || _showCells || _showBounds;
+    private void UpdateRenderBatch() => this.enabled = _showCellBorders || _showCells || _showBounds;
 
-        if (needsRendering && !_isRendered)
-        {
-            _isRendered = true;
-            _renderer.AddBatch(_renderQueueIndex, _renderBatch);
-        }
-
-        if (!needsRendering && _isRendered)
-        {
-            _isRendered = false;
-            _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
-        }
-    }
+    private void OnEnable() => _renderer.AddBatch(_renderQueueIndex, _renderBatch);
+    private void OnDisable() => _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
 
     private void Awake()
     {
@@ -120,12 +106,10 @@ public class FragmentationVisualization : MonoBehaviour
 
     private void Update()
     {
-        if (!_isRendered) return;
-
         _renderBatch.lines.PseudoClear();
         _renderBatch.quads.PseudoClear();
 
-        float connectionDistance = _fragmentator.ConnectionDistance;
+        float connectionDistance = _fragmentator.FragmentSize;
 
         if (_showCells)
         {

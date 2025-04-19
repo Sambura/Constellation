@@ -2,13 +2,35 @@ Shader "Unlit/GradientShader"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
         _Gradient ("Gradient texture", 2D) = "white" {}
         _KeysCount ("Gradient keys count", Float) = 2
+
+        // These are default properties for UI shaders (to make masking work)
+        _StencilComp ("Stencil Comparison", Float) = 8
+        _Stencil ("Stencil ID", Float) = 0
+        _StencilOp ("Stencil Operation", Float) = 0
+        _StencilWriteMask ("Stencil Write Mask", Float) = 255
+        _StencilReadMask ("Stencil Read Mask", Float) = 255
+
+        _ColorMask ("Color Mask", Float) = 15
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Opaque" "Queue" = "Transparent" }
+
+        Stencil
+        {
+            Ref [_Stencil]
+            Comp [_StencilComp]
+            Pass [_StencilOp]
+            ReadMask [_StencilReadMask]
+            WriteMask [_StencilWriteMask]
+        }
+
+        Cull Off
+        Lighting Off
+        ZWrite Off
+        ColorMask [_ColorMask]
 
         Pass
         {

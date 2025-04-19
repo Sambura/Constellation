@@ -1,7 +1,7 @@
 {
     "Particles": {
-        "ParticleCount": 5000,
-        "MinParticleVelocity": 1.0,
+        "ParticleCount": 0,
+        "MinParticleVelocity": 0.100000001,
         "MaxParticleVelocity": 1.0,
         "BoundMargins": 0.0,
         "BoundsShape": "Viewport"
@@ -22,8 +22,8 @@
         "ShowLines": false,
         "MeshLines": false,
         "LineWidth": 0.0199999996,
-        "ShowTriangles": true,
-        "TriangleFillOpacity": 0.100413717,
+        "ShowTriangles": false,
+        "TriangleFillOpacity": 0.300000012,
         "AlphaCurve": {
             "keys": [
                 {
@@ -33,7 +33,7 @@
                     "outTangent": 1.18008745,
                     "inWeight": 0.0,
                     "outWeight": 0.0393374749,
-                    "weightedMode": "None",
+                    "weightedMode": "Both",
                     "tangentMode": 0
                 },
                 {
@@ -44,7 +44,7 @@
                     "inWeight": 0.333333343,
                     "outWeight": 0.0,
                     "weightedMode": "Both",
-                    "tangentMode": 1
+                    "tangentMode": 0
                 }
             ],
             "preWrapMode": "ClampForever",
@@ -55,18 +55,18 @@
             "colorKeys": [
                 {
                     "color": {
-                        "r": 0.0911350399,
-                        "g": 0.514269531,
-                        "b": 0.680497229,
+                        "r": 0.0,
+                        "g": 0.679245293,
+                        "b": 0.223751381,
                         "a": 1.0
                     },
                     "time": 0.0
                 },
                 {
                     "color": {
-                        "r": 0.0911350399,
-                        "g": 0.514269531,
-                        "b": 0.680497229,
+                        "r": 0.0,
+                        "g": 0.679245293,
+                        "b": 0.223751381,
                         "a": 1.0
                     },
                     "time": 1.0
@@ -92,7 +92,7 @@
             "b": 0.0,
             "a": 1.0
         },
-        "ConnectionDistance": 0.5,
+        "ConnectionDistance": 1.0,
         "StrongDistance": 0.0
     },
     "Fragmentation": {

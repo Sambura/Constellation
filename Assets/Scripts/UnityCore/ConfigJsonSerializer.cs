@@ -11,7 +11,7 @@ namespace UnityCore
     /// <summary>
     /// Serializes objects, using ConfigProperty attributes as metadata
     /// If a property does not have a getter/setter or both, it is ignored
-    /// All subobjects are serialized using implementations of IJsonPropertySerializer's
+    /// All sub-objects are serialized using implementations of IJsonPropertySerializer's
     /// </summary>
     public static class ConfigJsonSerializer
     {
@@ -41,11 +41,11 @@ namespace UnityCore
         /// </summary>
         /// <param name="json">Json string with new property values</param>
         /// <param name="obj">Object whose properties should be overwritten</param>
-        /// <returns>The number of succesfully overwritten properties</returns>
+        /// <returns>The number of successfully overwritten properties</returns>
         public static int OverwriteConfigFromJson(string json, object obj)
         {
             Dictionary<string, string> data = JsonSerializerUtility.GetProperties(json);
-            int deserealized = 0;
+            int deserialized = 0;
             HashSet<string> deserializedProperties = new HashSet<string>();
 
             foreach (PropertyInfo property in obj.GetType().GetProperties())
@@ -63,16 +63,16 @@ namespace UnityCore
                     ConfigProperty attribute = property.GetCustomAttribute<ConfigProperty>();
                     if (attribute == null) { Debug.LogWarning("Invalid property deserialization attempt"); continue; }
                     property.SetValue(obj, DefaultJsonSerializer.Default.FromJson(value, type));
-                    deserealized++;
+                    deserialized++;
                 }
             }
 
-            if (data.Count != deserealized)
+            if (data.Count != deserialized)
             {
-                Debug.LogWarning($"Only {deserealized} properties deserialized out of {data.Count}.");
+                Debug.LogWarning($"Only {deserialized} properties deserialized out of {data.Count}.");
             }
 
-            return deserealized;
+            return deserialized;
         }
 
         // Since ConfigJsonSerializer contains Unity-dependent code right now, we might as well initialize the default serializer here

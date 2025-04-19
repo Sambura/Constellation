@@ -5,7 +5,8 @@ using UnityEngine;
 
 public class BenchmarkSuiteConfig
 {
-    public string BenchmarkSuiteVersion { get; set; } = "1.2.0";
+    // Let's keep this version equal to the first version of Constellation that supported it
+    public string BenchmarkSuiteVersion { get; set; } = "1.1.16";
     public string Name { get; set; }
     public string Description { get; set; }
     public FullScreenMode FullscreenMode { get; set; } = FullScreenMode.ExclusiveFullScreen;
@@ -13,8 +14,11 @@ public class BenchmarkSuiteConfig
     public float? BenchmarkDurationOverride { get; set; } = null;
     public float? CooldownDurationOverride { get; set; } = null;
     public float? WarmupDurationOverride { get; set; } = null;
+    public float? AutoBufferMargin { get;set; } = null;
+    public int? BufferSize { get; set; } = null;
     public int RepeatCount { get; set; } = 1;
     public bool ShuffleBenchmarks { get; set; } = false;
+    public int? OverrideRngSeed { get; set; } = null;
 
     [NoJsonSerialization] public List<BenchmarkConfig> Configs { get; set; }
     [NoJsonSerialization] public int ConfigsFailedToLoad { get; protected set; }
@@ -22,7 +26,6 @@ public class BenchmarkSuiteConfig
     public static BenchmarkSuiteConfig FromFile(string configPath)
     {
         string json = File.ReadAllText(configPath);
-
         if (!DefaultJsonSerializer.Default.ReadJsonProperty(json, nameof(BenchmarkSuiteVersion), out string _))
             throw new System.ArgumentException("The provided file is not recognized as a benchmark suite config");
 

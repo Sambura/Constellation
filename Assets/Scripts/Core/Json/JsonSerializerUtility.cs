@@ -81,6 +81,37 @@ namespace Core.Json
             return properties;
         }
 
+        /// <summary>
+        /// Completely parses the json down to a tree of properties and their values. 
+        /// Does not perform value deserialization.
+        /// </summary>
+        /// <param name="json">A valid input json string</param>
+        /// <param name="keepRawNodeValue">When false, only leaf nodes in the tree will have a non-null 
+        ///     Value field. When true, all nodes will have their raw json representations stored in 
+        ///     them as well</param>
+        /// <returns>JsonTree representation of the json. If input string only contains whitespaces, returns null</returns>
+        public static JsonTree ToJsonTree(string json, bool keepRawNodeValue = false) {
+            try { System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack(); }
+            catch (InsufficientExecutionStackException) { 
+                throw new ArgumentException("Provided json is too deep");
+            }
+
+            int startIndex = SkipPrettyChars(json, 0);
+            if (startIndex >= json.Length) return null;
+            if (json[startIndex] != '{') return new JsonTree() { Value = Compress(json) };
+            int endIndex = FindClosingBrace(json, startIndex, '}', throwOnError: true);
+
+            JsonTree tree = new JsonTree() { Properties = new Dictionary<string, JsonTree>() };
+            if (keepRawNodeValue) tree.Value = json.Substring(startIndex, endIndex - startIndex + 1);
+            Dictionary<string, string> properties = GetProperties(json);
+
+            foreach (KeyValuePair<string, string> property in properties) {
+                tree.Properties.Add(property.Key, ToJsonTree(property.Value, keepRawNodeValue));
+            }
+
+            return tree;
+        }
+
         public static List<string> GetArrayElements(string json)
         {
             int openingBrace = SkipPrettyChars(json, 0);
@@ -107,6 +138,10 @@ namespace Core.Json
 
         public static void EndArray(StringBuilder json) { StripComma(json); json.Append(']'); }
 
+        /// <summary>
+        /// Prints a property to json and puts a comma given property's string representation. Format: `name: value,`.
+        /// Use SerializeDefault function if your value is not serialized to json.
+        /// </summary>
         public static void PrintProperty(StringBuilder json, string name, string value)
         {
             PrintPropertyName(json, name);
@@ -177,7 +212,7 @@ namespace Core.Json
             string value = json.Substring(valueStart, valueEnd - valueStart + 1);
             index = SkipPrettyChars(json, valueEnd + 1);
             if (index == json.Length || json[index++] == ',') return value;
-            throw new JsonSerializerException($"Expected a comma after the {valueType}");
+            throw new JsonSerializerException($"Expected a comma after `{valueType}` property value");
         }
 
         /// <summary>
@@ -256,12 +291,8 @@ namespace Core.Json
         /// <summary>
         /// Serialize a given object to json using default serializer, putting a comma at the end
         /// </summary>
-        public static void SerializeDefault(StringBuilder json, string name, object value)
-        {
-            PrintPropertyName(json, name);
-            json.Append(DefaultJsonSerializer.Default.ToJson(value));
-            json.Append(',');
-        }
+        public static void SerializeDefault(StringBuilder json, string name, object value) => 
+            PrintProperty(json, name, DefaultJsonSerializer.Default.ToJson(value));
 
         /// <summary>
         /// Writes the given property name in the StringBuilder in a format <b>"propertyName":</b>
@@ -395,6 +426,34 @@ namespace Core.Json
             if (currentBase < json.Length) compressed.Append(json.Substring(currentBase, index - currentBase));
 
             return compressed.ToString();
+        }
+    }
+
+    public class JsonTree {
+        public Dictionary<string, JsonTree> Properties;
+        public string Value;
+        public bool IsLeaf => Properties == null;
+
+        /// <summary>
+        /// Makes a json string using JsonTree data. `Value` field is not used for non-leaf nodes.
+        /// The result is a minimal json representation, no prettyfication is performed.
+        /// </summary>
+        public string ToJson() {
+            if (IsLeaf) return Value;
+
+            StringBuilder json = new StringBuilder();
+            JsonSerializerUtility.BeginObject(json);
+            foreach (KeyValuePair<string, JsonTree> property in Properties)
+                JsonSerializerUtility.PrintProperty(json, property.Key, property.Value.ToJson());
+            JsonSerializerUtility.EndObject(json);
+            
+            return json.ToString();
+        }
+
+        public void Add(string key, JsonTree value) {
+            Properties ??= new Dictionary<string, JsonTree>();
+            
+            Properties.Add(key, value);
         }
     }
 }

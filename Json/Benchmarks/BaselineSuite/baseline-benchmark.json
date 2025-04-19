@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Baseline benchmark",
+    "Description": "Benchmark to evaluate the best baseline performance (no simulation, no rendering)",
+    "BenchmarkDuration": 10.0
+}
