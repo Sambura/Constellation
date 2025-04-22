@@ -8,7 +8,7 @@ using SimpleGraphics;
 
 public class TransparentWindow : MonoBehaviour
 {
-    [SerializeField] private ImmediateBatchRenderer _renderer;
+    [SerializeField] private MainVisualizer _visualizer;
     [SerializeField] private bool _autoRun = true;
 #if UNITY_EDITOR
     [SerializeField] private bool _debugMessages = true;
@@ -67,7 +67,7 @@ public class TransparentWindow : MonoBehaviour
 
         Application.runInBackground = true;
 
-        _renderer.ClearColor = true;
+        _visualizer.ColorBufferClearEnabled = true;
         enabled = true;
 
         FindObjectOfType<MainVisualizer>().ClearColor = new Color(0, 0, 0, 0);
@@ -121,6 +121,11 @@ public class TransparentWindow : MonoBehaviour
     //Gets all event system raycast results of current mouse or touch position.
     static List<RaycastResult> GetEventSystemRaycastResults()
     {
+        if (EventSystem.current == null) {
+            Debug.LogWarning("Transparent window: no event system detected");
+            return new List<RaycastResult>();
+        }
+
         PointerEventData eventData = new PointerEventData(EventSystem.current);
         eventData.position = Input.mousePosition;
         List<RaycastResult> raysastResults = new List<RaycastResult>();

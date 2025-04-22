@@ -24,6 +24,7 @@ public class AnalyticsCore : MonoBehaviour
     [SerializeField] private SimulationConfigSerializer _configSerializer;
     [SerializeField] private InteractionCore _interactionCore;
     [SerializeField] private ApplicationController _applicationController;
+    [SerializeField] private Camera _camera;
 
     [Header("Parameters")]
     [SerializeField] private bool _enableCrossBenchmark = true;
@@ -506,10 +507,13 @@ public class AnalyticsCore : MonoBehaviour
                 {
                     // look into disabling the renderer as well (I would like to make sure that exposing `enabled` field for write will not hinder its performance!)
                     int targetFps = _applicationController.TargetFrameRate;
+                    var clearFlags = _camera.clearFlags;
+                    _camera.clearFlags = CameraClearFlags.SolidColor; // so that the screen is cleared during cooldown
                     _applicationController.TargetFrameRate = 7; // frame rate too low == coroutines lag as well. 7 is arbitrary
                     _particleController.enabled = false;
                     _mainVisualizer.enabled = false;
                     yield return new WaitForSeconds(benchmark.CooldownTime.Value);
+                    _camera.clearFlags = clearFlags;
                     _particleController.enabled = true;
                     _mainVisualizer.enabled = true;
                     _applicationController.TargetFrameRate = targetFps;

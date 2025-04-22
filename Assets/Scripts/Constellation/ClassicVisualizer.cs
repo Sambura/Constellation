@@ -25,6 +25,10 @@ public class ClassicVisualizer : VisualizerBase
     private SimpleDrawBatch _mainBatch;
     private SimpleDrawBatch _particleBatch;
 
+    public override void SetClearColorBufferEnabled(bool enabled) {
+        _renderer.ClearColor = enabled;
+    }
+
     private void RecalculateIntermediates() {
         _connectionDistanceSquared = _connectionDistance * _connectionDistance;
         _lineIntensityDenominator = _connectionDistance - _strongDistance;
@@ -51,19 +55,6 @@ public class ClassicVisualizer : VisualizerBase
     {
         base.SetParticleSize(value);
         _halfParticleSize = value / 2;
-        if (ParticleController.Particles is null) return;
-
-        foreach (Particle p in ParticleController.Particles)
-            p.Size = value;
-    }
-
-    protected override void SetParticleColor(Color value)
-    {
-        base.SetParticleColor(value);
-        if (ParticleController.Particles is null) return;
-
-        foreach (Particle p in ParticleController.Particles)
-            p.Color = value;
     }
 
     protected override void SetParticleSprite(Texture2D value)
@@ -106,26 +97,30 @@ public class ClassicVisualizer : VisualizerBase
         };
         _backgroundBatch.quads.Add(new QuadEntry());
 
-        _renderer.AddBatch(_renderQueueIndex, _backgroundBatch);
-        _renderer.AddBatch(_renderQueueIndex + 1, _mainBatch);
-        _renderer.AddBatch(_renderQueueIndex + 2, _particleBatch);
-        _viewport.CameraDimensionsChanged += UpdateBackgroundQuad;
-
         //_renderer = _rendererObject.GetComponent<ImmediateBatchDirectRenderer>();
         //_renderer = new ImmediateBatchDirectRenderer();
         base.Awake();
 
-        ParticleController.ParticleCreated += OnParticleCreated;
+        _renderer.AddBatch(_renderQueueIndex, _backgroundBatch);
+        _renderer.AddBatch(_renderQueueIndex + 1, _mainBatch);
+        _renderer.AddBatch(_renderQueueIndex + 2, _particleBatch);
 
-        UpdateBackgroundQuad();
         //_renderer.Initialize(MainVisualizer);
     }
 
-    private void OnParticleCreated(Particle particle)
-    {
-        // particle.Visible = _showParticles;
-        particle.Color = _particlesColor;
-        particle.Size = _particlesSize;
+    protected override void OnEnable() {
+        base.OnEnable();
+
+        _viewport.CameraDimensionsChanged += UpdateBackgroundQuad;
+        _renderer.enabled = true;
+        UpdateBackgroundQuad();
+    }
+
+    protected override void OnDisable() {
+        base.OnDisable();
+
+        _viewport.CameraDimensionsChanged -= UpdateBackgroundQuad;
+        if (_renderer != null) _renderer.enabled = false;
     }
 
     private void Update()

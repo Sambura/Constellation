@@ -170,11 +170,14 @@ public class ParticleController : MonoBehaviour
     public float BoundBottom => _bottom;
     public float BoundTop => _top;
 
+    public event System.Action<float> FragmentSizeChanged;
+
     public void SetFragmentSize(float value)
     {
         _fragmentSize = value;
 
         if (_particles != null) DoFragmentation();
+        FragmentSizeChanged?.Invoke(_fragmentSize);
     }
 
     private void SetViewport(Viewport viewport)

@@ -9,7 +9,10 @@ public class FragmentationVisualization : MonoBehaviour
 {
     [Header("Objects")]
     [SerializeField] private ImmediateBatchRenderer _renderer;
+    [SerializeField] private ObjectMeshRenderer _newRenderer;
     [SerializeField] private ParticleController _fragmentator;
+    [SerializeField] private Material _lineMat;
+    [SerializeField] private Material _cellMat;
     [SerializeField] private int _renderQueueIndex = 1000;
 
     [Header("Debug")]
@@ -76,24 +79,40 @@ public class FragmentationVisualization : MonoBehaviour
     {
         _showCellBorders = value;
         UpdateRenderBatch();
+        OnFragmentSizeChanged(_fragmentator.FragmentSize);
     }
 
     private void SetShowCells(bool value)
     {
         _showCells = value;
         UpdateRenderBatch();
+        OnFragmentSizeChanged(_fragmentator.FragmentSize);
     }
 
     private void SetShowBounds(bool value)
     {
         _showBounds = value;
         UpdateRenderBatch();
+        OnFragmentSizeChanged(_fragmentator.FragmentSize);
+    }
+
+    private void OnFragmentSizeChanged(float fragmentSize) {
+        int count = _showBounds ? 4 : 0;
+        if (_showCellBorders) {
+            count += Mathf.CeilToInt((float)_fragmentator.Viewport.Width / _fragmentator.FragmentSize) + 2;
+            count += Mathf.CeilToInt((float)_fragmentator.Viewport.Height / _fragmentator.FragmentSize) + 2;
+        }
+        _newRenderer.ReserveLineCount(_lineMat, count);
+        _newRenderer.ReserveQuadCount(_cellMat, _showCells ? _fragmentator.CellCount : 0);
     }
 
     private void UpdateRenderBatch() => this.enabled = _showCellBorders || _showCells || _showBounds;
 
-    private void OnEnable() => _renderer.AddBatch(_renderQueueIndex, _renderBatch);
-    private void OnDisable() => _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
+    // private void OnEnable() =>_renderer.AddBatch(_renderQueueIndex, _renderBatch);
+    // private void OnDisable() => _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
+
+    private void OnEnable() => _newRenderer.enabled = true;
+    private void OnDisable() => _newRenderer.enabled = false;
 
     private void Awake()
     {
@@ -102,6 +121,8 @@ public class FragmentationVisualization : MonoBehaviour
         _renderBatch.quads = new FastList<QuadEntry>();
 
         UpdateRenderBatch();
+        _fragmentator.FragmentSizeChanged += OnFragmentSizeChanged;
+        OnFragmentSizeChanged(_fragmentator.FragmentSize);
     }
 
     private void Update()
@@ -123,17 +144,14 @@ public class FragmentationVisualization : MonoBehaviour
             for (int ry = 0; ry <= maxSquareY; ry++) {
                 for (int rx = 0; rx <= maxSquareX; rx++) {
                     int currentCount = regionMap[rx, ry]._count;
-
-                    if (_showCells)
-                    {
-                        float x = (rx - xSquareOffset) * connectionDistance;
-                        float y = (ry - ySquareOffset) * connectionDistance;
-                        Color currentColor = _cellColor;
-                        currentColor.a *= currentCount / averagePerCell;
-                        _renderBatch.quads.Add(new QuadEntry(
-                            x, y, x + connectionDistance, y, x + connectionDistance, y + connectionDistance, x, y + connectionDistance, currentColor
-                            ));
-                    }
+                    float x = (rx - xSquareOffset) * connectionDistance;
+                    float y = (ry - ySquareOffset) * connectionDistance;
+                    Color currentColor = _cellColor;
+                    currentColor.a *= currentCount / averagePerCell;
+                    // _renderBatch.quads.Add(new QuadEntry(
+                    //     x, y, x + connectionDistance, y, x + connectionDistance, y + connectionDistance, x, y + connectionDistance, currentColor
+                    //     ));
+                    _newRenderer.DrawQuad(x, y, x + connectionDistance, y, x + connectionDistance, y + connectionDistance, x, y + connectionDistance, _cellMat, currentColor);
                 }
             }
         }
@@ -145,22 +163,28 @@ public class FragmentationVisualization : MonoBehaviour
 
             for (float x = -Mathf.Floor(maxX / connectionDistance) * connectionDistance; x < maxX; x += connectionDistance)
             {
-                _renderBatch.lines.Add(new LineEntry(x, -maxY, x, maxY, _cellBorderColor));
+                //_renderBatch.lines.Add(new LineEntry(x, -maxY, x, maxY, _cellBorderColor));
+                _newRenderer.DrawLine(x, -maxY, x, maxY, _lineMat, _cellBorderColor);
             }
 
             for (float y = -Mathf.Floor(maxY / connectionDistance) * connectionDistance; y < maxY; y += connectionDistance)
             {
-                _renderBatch.lines.Add(new LineEntry(-maxX, y, maxX, y, _cellBorderColor));
+                //_renderBatch.lines.Add(new LineEntry(-maxX, y, maxX, y, _cellBorderColor));
+                _newRenderer.DrawLine(-maxX, y, maxX, y, _lineMat, _cellBorderColor);
             }
         }
 
         if (_showBounds)
         {
             (float left, float right, float bottom, float top) = (_fragmentator.BoundLeft, _fragmentator.BoundRight, _fragmentator.BoundBottom, _fragmentator.BoundTop);
-            _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
-            _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
-            _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
-            _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
+            // _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
+            // _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
+            // _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
+            // _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
+            _newRenderer.DrawLine(left, bottom, left, top, _lineMat, _boundsColor);
+            _newRenderer.DrawLine(right, bottom, right, top, _lineMat, _boundsColor);
+            _newRenderer.DrawLine(left, bottom, right, bottom, _lineMat, _boundsColor);
+            _newRenderer.DrawLine(left, top, right, top, _lineMat, _boundsColor);
         }
     }
 }

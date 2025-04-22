@@ -3,6 +3,7 @@ using UnityEngine;
 using SimpleGraphics;
 using ConfigSerialization;
 using ConfigSerialization.Structuring;
+using System.Collections.Generic;
 
 public class MainVisualizer : MonoBehaviour
 {
@@ -40,6 +41,16 @@ public class MainVisualizer : MonoBehaviour
     [SerializeField] private float _colorMaxValue = 1;
     [SerializeField] private float _colorMinFadeDuration = 2;
     [SerializeField] private float _colorMaxFadeDuration = 4;
+    [SerializeField] private string _selectedVisualizer = "Classic";
+
+    [Header("Visualizer implementations")]
+    [SerializeField] private List<VisualizerImplementation> _visualizers;
+
+    [System.Serializable]
+    struct VisualizerImplementation {
+        public string Name;
+        public MonoBehaviour Visualizer;
+    }
 
     #region Config properties
 
@@ -53,12 +64,12 @@ public class MainVisualizer : MonoBehaviour
     [ConfigGroupMember(2, 0)] [SliderProperty(0, 0.1f, 0, 10, name: "Size")] public float ParticleSize
     {
         get => _particlesSize;
-        set { if (_particlesSize != value) { _particlesSize = value; ParticleSizeChanged?.Invoke(value); } }
+        set { if (_particlesSize != value) { SetParticleSize(value); ParticleSizeChanged?.Invoke(value); } }
     }
     [ConfigGroupMember(2)] [ColorPickerButtonProperty(true, "Select Particles Color", "Color")] public Color ParticleColor
     {
         get => _particlesColor;
-        set { if (_particlesColor != value) { _particlesColor = value; ParticleColorChanged?.Invoke(value); } }
+        set { if (_particlesColor != value) { SetParticleColor(value); ParticleColorChanged?.Invoke(value); } }
     }
     [ConfigGroupMember(2)] [ConfigProperty("Sprite")] public Texture2D ParticleSprite
     {
@@ -137,6 +148,14 @@ public class MainVisualizer : MonoBehaviour
         get => _strongDistance;
         set { if (_strongDistance != value) { _strongDistance = value; StrongDistanceChanged?.Invoke(value); }; }
     }
+    // TODO: implement dynamic options for dropdowns?
+    [ConfigGroupMember] [Core.Json.NoJsonSerialization(AllowFromJson = true)]
+    [DropdownListProperty(new object[] { "None", "Classic", "Meshed" }, new string[] { "Disable rendering", "Classic (slower)", "Meshed (faster)" }, name: "Renderer")]
+    public string SelectedVisualizer
+    {
+        get => _selectedVisualizer;
+        set { if (_selectedVisualizer != value) { SetSelectedVisualizer(value); SelectedVisualizerChanged?.Invoke(value); } }
+    }
 
     public event System.Action<bool> ShowParticlesChanged;
     public event System.Action<Texture2D> ParticleSpriteChanged;
@@ -155,16 +174,23 @@ public class MainVisualizer : MonoBehaviour
     public event System.Action<bool> AlternateLineColorChanged;
     public event System.Action<float> MinColorFadeDurationChanged;
     public event System.Action<float> MaxColorFadeDurationChanged;
+    public event System.Action<string> SelectedVisualizerChanged;
 
     #endregion
 
     public ParticleController ParticleController { get; set; }
     public Gradient ActualLineColor => _currentLineColorGradient;
     public event System.Action<Gradient> ActualLineColorChanged;
+    public VisualizerBase Visualizer => _visualizers.Find(x => x.Name == SelectedVisualizer).Visualizer as VisualizerBase;
+    public bool ColorBufferClearEnabled {
+        get => _colorBufferClearEnabled;
+        set { _colorBufferClearEnabled = value; SetSelectedVisualizer(SelectedVisualizer); }
+    }
 
     private Gradient _currentLineColorGradient;
     private GradientColorKey[] _currentLineGradientColorKeys;
     private Coroutine _colorChanger;
+    private bool _colorBufferClearEnabled = false;
 
     private void RestartColorChanger()
     {
@@ -172,6 +198,24 @@ public class MainVisualizer : MonoBehaviour
             StopCoroutine(_colorChanger);
             _colorChanger = StartCoroutine(ColorChanger());
         }
+    }
+
+    private void SetParticleSize(float value)
+    {
+        _particlesSize = value;
+        if (ParticleController.Particles is null) return;
+
+        foreach (Particle p in ParticleController.Particles)
+            p.Size = value;
+    }
+
+    private void SetParticleColor(Color value)
+    {
+        _particlesColor = value;
+        if (ParticleController.Particles is null) return;
+
+        foreach (Particle p in ParticleController.Particles)
+            p.Color = value;
     }
 
     private void SetLineColor(Gradient value)
@@ -209,14 +253,59 @@ public class MainVisualizer : MonoBehaviour
         ParticleController.SetFragmentSize(distance);
     }
 
+    private void SetSelectedVisualizer(string value)
+    {
+        _selectedVisualizer = value;
+        MonoBehaviour toSelect = this;
+
+        foreach (var impl in _visualizers) {
+            if (impl.Name == value)
+                toSelect = impl.Visualizer;
+
+            if (impl.Visualizer is null) continue;
+            impl.Visualizer.enabled = false;            
+        }
+
+        if (toSelect == this) {
+            Debug.LogWarning($"Failed to find visualizer: `{value}`");
+            return;
+        }
+        if (toSelect is null) return;
+
+        toSelect.enabled = true;
+        (toSelect as VisualizerBase).SetClearColorBufferEnabled(ColorBufferClearEnabled);
+    }
+
     private void Awake()
     {
         ParticleController = FindObjectOfType<ParticleController>();
         _currentLineColorGradient = new Gradient();
 
+        SetParticleSize(_particlesSize);
+        SetParticleColor(_particlesColor);
         SetLineColor(_lineColor);
         SetAlternateLineColor(_alternateLineColor);
         SetConnectionDistance(_connectionDistance);
+
+        ParticleController.ParticleCreated += OnParticleCreated;
+    }
+
+    private void OnDisable() {
+        foreach (var impl in _visualizers) {
+            if (impl.Visualizer is null) continue;
+            impl.Visualizer.enabled = false;
+        }
+    }
+
+    private void OnEnable() {
+        SetSelectedVisualizer(_selectedVisualizer);
+    }
+
+    private void OnParticleCreated(Particle particle)
+    {
+        // particle.Visible = _showParticles;
+        particle.Color = _particlesColor;
+        particle.Size = _particlesSize;
     }
 
     private IEnumerator ColorChanger()
@@ -230,7 +319,7 @@ public class MainVisualizer : MonoBehaviour
             float progress = 0;
             if (fadeTime == 0)
             {
-                fadeTime = 0.01f;
+                fadeTime = 0.001f;
                 startTime -= 1;
             }
 

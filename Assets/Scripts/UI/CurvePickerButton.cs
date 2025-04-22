@@ -57,8 +57,8 @@ namespace ConstellationUI
             Vector2 pivotPosition = zeroPosition + _transform.rect.size * _curvePickerPivot;
             CurvePicker.ShowDialog(_curvePickerTitle);
             CurvePicker.Position = pivotPosition + _curvePickerOffset;
-            CurvePicker.OnCurveChanged = OnCurvePickerCurveChange;
             CurvePicker.Curve = Curve;
+            CurvePicker.OnCurveChanged = OnCurvePickerCurveChange;
         }
 
         private void Awake() { _transform = GetComponent<RectTransform>(); _viewport.Curve = Curve ?? new AnimationCurve(); }

@@ -2,7 +2,7 @@ Shader "Unlit/GradientShader"
 {
     Properties
     {
-        _Gradient ("Gradient texture", 2D) = "white" {}
+        _MainTex ("Gradient texture", 2D) = "white" {}
         _KeysCount ("Gradient keys count", Float) = 2
 
         // These are default properties for UI shaders (to make masking work)
@@ -52,7 +52,7 @@ Shader "Unlit/GradientShader"
                 float4 vertex : SV_POSITION;
             };
 
-            sampler2D _Gradient;
+            sampler2D _MainTex;
             float _KeysCount;
 
             v2f vert (appdata v)
@@ -65,13 +65,13 @@ Shader "Unlit/GradientShader"
 
             fixed3 get_gradient_color(float time) {
                 float firstPixel = 0.5 / _KeysCount;
-                fixed4 firstKey = tex2Dlod(_Gradient, float4(firstPixel, 0, 0, 0));
+                fixed4 firstKey = tex2Dlod(_MainTex, float4(firstPixel, 0, 0, 0));
                 if (firstKey.a >= time) return firstKey.rgb;
-                fixed4 lastKey = tex2Dlod(_Gradient, float4(1 - firstPixel, 0, 0, 0));
+                fixed4 lastKey = tex2Dlod(_MainTex, float4(1 - firstPixel, 0, 0, 0));
                 if (lastKey.a <= time) return lastKey.rgb;
 
                 for (float t = 1; ; t++) {
-                    lastKey = tex2Dlod(_Gradient, float4(firstPixel + t / _KeysCount, 0, 0, 0));
+                    lastKey = tex2Dlod(_MainTex, float4(firstPixel + t / _KeysCount, 0, 0, 0));
 
                     if (firstKey.a <= time && time <= lastKey.a) break;
                     firstKey = lastKey;

@@ -25,11 +25,20 @@ public class VisualizerBase : MonoBehaviour
     public bool RenderTriangles { get; set; }
     public bool RenderBackground { get; set; }
 
+    /// <summary>
+    /// Enables/disables color buffer clearing. Used for transparent window mode
+    /// </summary>
+    public virtual void SetClearColorBufferEnabled(bool enabled)
+    {
+        throw new System.NotImplementedException($"VisualizerBase does not implement {nameof(SetClearColorBufferEnabled)}");
+    }
+
     protected virtual void Awake() {
         MainVisualizer = FindObjectOfType<MainVisualizer>();
         ParticleController = FindObjectOfType<ParticleController>();
-        if (MainVisualizer == this) return;
+    }
 
+    protected virtual void OnEnable() {
         MainVisualizer.ShowParticlesChanged += SetShowParticles;
         MainVisualizer.ParticleSizeChanged += SetParticleSize;
         MainVisualizer.ParticleColorChanged += SetParticleColor;
@@ -45,6 +54,7 @@ public class VisualizerBase : MonoBehaviour
         MainVisualizer.TriangleFillOpacityChanged += SetTriangleFillOpacity;
         MainVisualizer.ParticleSpriteChanged += SetParticleSprite;
         MainVisualizer.ActualLineColorChanged += SetActualLineColor;
+        ParticleController.ParticleCountChanged += SetParticleCount;
 
         SetShowParticles(MainVisualizer.ShowParticles);
         SetParticleSize(MainVisualizer.ParticleSize);
@@ -61,6 +71,26 @@ public class VisualizerBase : MonoBehaviour
         SetTriangleFillOpacity(MainVisualizer.TriangleFillOpacity);
         SetParticleSprite(MainVisualizer.ParticleSprite);
         SetActualLineColor(MainVisualizer.ActualLineColor);
+        SetParticleCount(ParticleController.ParticleCount);
+    }
+
+    protected virtual void OnDisable() {
+        MainVisualizer.ShowParticlesChanged -= SetShowParticles;
+        MainVisualizer.ParticleSizeChanged -= SetParticleSize;
+        MainVisualizer.ParticleColorChanged -= SetParticleColor;
+        MainVisualizer.LineWidthChanged -= SetLineWidth;
+        MainVisualizer.MeshLinesChanged -= SetMeshLines;
+        MainVisualizer.ConnectionDistanceChanged -= SetConnectionDistance;
+        MainVisualizer.StrongDistanceChanged -= SetStrongDistance;
+        MainVisualizer.AlphaCurveChanged -= SetAlphaCurve;
+        MainVisualizer.LineColorChanged -= SetLineColor;
+        MainVisualizer.ShowLinesChanged -= SetShowLines;
+        MainVisualizer.ShowTrianglesChanged -= SetShowTriangles;
+        MainVisualizer.ClearColorChanged -= SetClearColor;
+        MainVisualizer.TriangleFillOpacityChanged -= SetTriangleFillOpacity;
+        MainVisualizer.ParticleSpriteChanged -= SetParticleSprite;
+        MainVisualizer.ActualLineColorChanged -= SetActualLineColor;
+        ParticleController.ParticleCountChanged -= SetParticleCount;
     }
 
     protected virtual void SetShowParticles(bool value) => _showParticles = value;
@@ -78,4 +108,5 @@ public class VisualizerBase : MonoBehaviour
     protected virtual void SetTriangleFillOpacity(float value) => _triangleFillOpacity = value;
     protected virtual void SetParticleSprite(Texture2D value) => _particleSprite = value;
     protected virtual void SetActualLineColor(Gradient value) => _actualLineColor = value;
+    protected virtual void SetParticleCount(int count) { }
 }

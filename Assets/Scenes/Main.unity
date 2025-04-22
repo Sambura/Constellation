@@ -1442,8 +1442,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 144636864}
-  - component: {fileID: 144636865}
+  - component: {fileID: 144636877}
   - component: {fileID: 144636867}
+  - component: {fileID: 144636865}
   - component: {fileID: 144636866}
   - component: {fileID: 144636868}
   - component: {fileID: 144636869}
@@ -1453,6 +1454,7 @@ GameObject:
   - component: {fileID: 144636873}
   - component: {fileID: 144636874}
   - component: {fileID: 144636876}
+  - component: {fileID: 144636875}
   m_Layer: 0
   m_Name: Controller
   m_TagString: Untagged
@@ -1487,7 +1489,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _drawer: {fileID: 519420030}
-  _newRenderer: {fileID: 0}
   _viewport: {fileID: 519420034}
   _particleController: {fileID: 144636867}
   _particleMaterial: {fileID: 2100000, guid: 98bc248b282298b4d836d33cc3e366e9, type: 2}
@@ -1507,17 +1508,17 @@ MonoBehaviour:
       inSlope: -0.06601588
       outSlope: -0.06601588
       tangentMode: 0
-      weightedMode: 0
+      weightedMode: 3
       inWeight: 0
-      outWeight: 0.09467456
+      outWeight: 0.33333334
     - serializedVersion: 3
       time: 1
       value: 0
-      inSlope: -2.6356888
+      inSlope: -1.7003053
       outSlope: 0.4281917
       tangentMode: 1
       weightedMode: 3
-      inWeight: 0.21104538
+      inWeight: 0.33333334
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -1565,6 +1566,14 @@ MonoBehaviour:
   _colorMaxValue: 1
   _colorMinFadeDuration: 3
   _colorMaxFadeDuration: 7
+  _selectedVisualizer: Meshed
+  _visualizers:
+  - Name: None
+    Visualizer: {fileID: 0}
+  - Name: Classic
+    Visualizer: {fileID: 144636876}
+  - Name: Meshed
+    Visualizer: {fileID: 144636875}
 --- !u!114 &144636866
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1578,7 +1587,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _renderer: {fileID: 519420030}
+  _newRenderer: {fileID: 519420029}
   _fragmentator: {fileID: 144636867}
+  _lineMat: {fileID: 2100000, guid: 1d61f330512a1a0459f6ba96164b0ffb, type: 2}
+  _cellMat: {fileID: 2100000, guid: a30e51614a69be049bbceb184aceffa4, type: 2}
   _renderQueueIndex: 1000
   _showCellBorders: 0
   _cellBorderColor: {r: 1, g: 0, b: 0, a: 0.4627451}
@@ -1656,8 +1668,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 509f936cc491ae849afa035abf30f1a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _cam: {fileID: 519420031}
-  _renderer: {fileID: 519420030}
+  _visualizer: {fileID: 144636865}
   _autoRun: 0
   _debugMessages: 0
   UILayer: 5
@@ -1737,8 +1748,28 @@ MonoBehaviour:
   _perfDialog: {fileID: 2057954985}
   _configSerializer: {fileID: 144636868}
   _interactionCore: {fileID: 144636869}
-  _applicationController: {fileID: 519420029}
+  _applicationController: {fileID: 144636877}
+  _camera: {fileID: 519420031}
   _enableCrossBenchmark: 1
+--- !u!114 &144636875
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 144636863}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5e3214bcd8a78f4fa04b072a5bdd34c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _camera: {fileID: 519420031}
+  _viewport: {fileID: 519420034}
+  _particleMat: {fileID: 2100000, guid: 9a627853fb02c0d448c1841901cee978, type: 2}
+  _lineMat: {fileID: 2100000, guid: 2376d2d7cc17572429a23f84cbdc59b9, type: 2}
+  _meshLineMat: {fileID: 2100000, guid: c713f08941a1bad41a1c07c8478cb796, type: 2}
+  _triangleMat: {fileID: 2100000, guid: 235385fd836f5934d847f96cc62d9085, type: 2}
+  _backgroundMat: {fileID: 2100000, guid: f6fb09730cda4a648b5ff433c61183c5, type: 2}
 --- !u!114 &144636876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1746,7 +1777,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 144636863}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0bccb93aac83b944ab0c62cba8247ea8, type: 3}
   m_Name: 
@@ -1755,6 +1786,18 @@ MonoBehaviour:
   _viewport: {fileID: 519420034}
   _particleMaterial: {fileID: 2100000, guid: 98bc248b282298b4d836d33cc3e366e9, type: 2}
   _renderQueueIndex: 0
+--- !u!114 &144636877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 144636863}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4509e3cf75555d438593050cc8c36a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &148348475 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7866888186923882996, guid: be5794c57cbe51f4bb49ba64bef15200, type: 3}
@@ -3595,11 +3638,10 @@ GameObject:
   m_Component:
   - component: {fileID: 519420032}
   - component: {fileID: 519420031}
-  - component: {fileID: 519420030}
   - component: {fileID: 519420033}
-  - component: {fileID: 519420029}
+  - component: {fileID: 519420030}
   - component: {fileID: 519420034}
-  - component: {fileID: 519420035}
+  - component: {fileID: 519420029}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -3614,11 +3656,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4509e3cf75555d438593050cc8c36a8, type: 3}
+  m_Script: {fileID: 11500000, guid: ae6f9ac2c4e5628489411d77323195ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _defaultMat: {fileID: 2100000, guid: 2376d2d7cc17572429a23f84cbdc59b9, type: 2}
 --- !u!114 &519420030
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3626,14 +3669,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9e2cb6537bffa1d4c9c8015b0b50c79f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _defaultMaterial: {fileID: 2100000, guid: 610d58bf15a1ab9468e9427e16ed7df2, type: 2}
   _camera: {fileID: 519420031}
-  _enabled: 1
   ClearColor: 0
 --- !u!20 &519420031
 Camera:
@@ -3671,7 +3713,7 @@ Camera:
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 0
-  m_HDR: 1
+  m_HDR: 0
   m_AllowMSAA: 0
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
@@ -3718,21 +3760,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb3821436f2f01042975a83f1e3d5657, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &519420035
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 519420028}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5ce0a4ffbfd7fec498eed8494d9dcdbf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _material: {fileID: 2100000, guid: 610d58bf15a1ab9468e9427e16ed7df2, type: 2}
-  _camera: {fileID: 519420031}
-  _enabled: 0
 --- !u!1 &521061375
 GameObject:
   m_ObjectHideFlags: 0
@@ -9193,7 +9220,7 @@ MonoBehaviour:
     - {fileID: 144636867}
   - Name: Misc
     ConfigSources:
-    - {fileID: 519420029}
+    - {fileID: 144636877}
     - {fileID: 144636871}
   - Name: Interaction
     ConfigSources:

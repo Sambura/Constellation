@@ -37,9 +37,10 @@ namespace ConstellationUI
         /// </summary>
         public WindowsManager Manager { get; set; }
         /// <summary>
-        /// Whether the dialog is enabled and its gameobject is active in hierarchy
+        /// Whether the dialog is enabled and its GameObject is active in hierarchy
         /// </summary>
-        public bool DialogActive => gameObject.activeInHierarchy && enabled;
+        public bool DialogActive => (this != null ? gameObject.activeInHierarchy : false) && enabled;
+        // note: the null check above is checking whether we are destroyed or not (custom unity != operator)
 
         /// <summary>
         /// A callback that is executed once when the dialog is closing via CloseDialog

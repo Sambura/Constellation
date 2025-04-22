@@ -7,8 +7,8 @@ namespace SimpleGraphics
     {
         [SerializeField] private Material _defaultMaterial;
         [SerializeField] private Camera _camera;
-        [SerializeField] private bool _enabled = true;
 
+        private bool _enabled = true;
         private Transform _cameraTransform;
         private SortedList<int, SimpleDrawBatch> _batches = new SortedList<int, SimpleDrawBatch>();
         private IList<SimpleDrawBatch> _batchList;
@@ -139,6 +139,13 @@ namespace SimpleGraphics
 
             GL.PopMatrix();
         }
+
+        private void OnEnable() {
+            _camera.clearFlags = CameraClearFlags.Nothing;
+            _enabled = true;
+        }
+
+        private void OnDisable() { _enabled = false; }
 
         /// <summary>
         /// Adds a batch in render queue with the specified index

@@ -12,7 +12,6 @@ namespace ConstellationUI
     {
         [SerializeField] private Gradient _gradient;
         private Image _image;
-        private readonly int GradientTexPropertyId = Shader.PropertyToID("_Gradient");
         private readonly int KeysCountPropertyId = Shader.PropertyToID("_KeysCount");
 
         private Texture2D _gradientTexture;
@@ -61,8 +60,8 @@ namespace ConstellationUI
             }
             _gradientTexture.Apply();
             
-            _image.materialForRendering.SetTexture(GradientTexPropertyId, _gradientTexture);
-            _image.material.SetTexture(GradientTexPropertyId, _gradientTexture);
+            _image.materialForRendering.mainTexture = _gradientTexture;
+            _image.material.mainTexture = _gradientTexture;
         }
     }
 }

@@ -893,13 +893,13 @@ namespace ConfigSerialization
                         mapping[i] = Convert.ToInt32(z.DisplayedOptions[i]);
                     }
 
-                    return ((Delegate, Delegate))GetType().GetMethod(nameof(GenerateDropdownListConverters), BindingFlags.Static | BindingFlags.NonPublic)
+                    return ((Delegate, Delegate))GetType().GetMethod(nameof(GenerateEnumDropdownListConverters), BindingFlags.Static | BindingFlags.NonPublic)
                             .MakeGenericMethod(property.PropertyType).Invoke(null, new object[] { mapping });
                 }
             );
         }
 
-        private static (Delegate, Delegate) GenerateDropdownListConverters<T>(List<int> mapping) where T : Enum
+        private static (Delegate, Delegate) GenerateEnumDropdownListConverters<T>(List<int> mapping) where T : Enum
         {
             return (
                 (Func<T, int>)(x => mapping.IndexOf(Convert.ToInt32(x))),
@@ -1151,7 +1151,35 @@ namespace ConfigSerialization
             if (GetConfigProperty<FilePathProperty>(property, memberContainer) is { })
                 return CreateFilePathSelector(property, memberContainer, parent);
 
+            if (GetConfigProperty<DropdownListProperty>(property, memberContainer) is { })
+                return CreateTextDropdownList(property, memberContainer, parent);
+
             return CreateTextInputField(property, memberContainer, parent);
+        }
+
+        private UINode CreateTextDropdownList(PropertyInfo property, object memberContainer, UINode parent)
+        {
+            return CreateUniversal<DropdownListProperty, DropdownList>(
+                property, _dropdownPrefab, memberContainer, parent, (x, y, z) =>
+                {
+                    x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
+                    if (z.DisplayedOptions is null) Debug.LogWarning($"DisplayedOptions property should be specified for string dropdown ({property} on {memberContainer})");
+                    object[] displayedOptions = z.DisplayedOptions ?? new object[0];
+                    string[] names = new string[displayedOptions.Length];
+                    for (int i = 0; i < displayedOptions.Length; i++) names[i] = SplitAndLowerCamelCase(displayedOptions[i].ToString());
+                    x.SetOptions(new List<string>(z.OptionNames ?? names));
+                },
+                nameof(DropdownList.SelectedValue), ControlType.DropdownList, (x, z) =>
+                {
+                    List<string> mapping = new List<string>();
+                    for (int i = 0; i < x.Options.Count; i++) mapping.Add(z.DisplayedOptions[i].ToString());
+
+                    return (
+                        (Func<string, int>)(x => mapping.IndexOf(x)),
+                        (Func<int, string>)(x => mapping[x])
+                    );
+                }
+            );
         }
 
         private UINode CreateTextInputField(PropertyInfo property, object memberContainer, UINode parent)

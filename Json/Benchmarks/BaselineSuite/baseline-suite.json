@@ -8,5 +8,7 @@
     "CooldownDurationOverride": 20,
     "WarmupDurationOverride": 5,
     "RepeatCount": 3,
-    "ShuffleBenchmarks": false
+    "ShuffleBenchmarks": false,
+    "OverrideRngSeed": 42,
+    "BufferSize": 1000000
 }

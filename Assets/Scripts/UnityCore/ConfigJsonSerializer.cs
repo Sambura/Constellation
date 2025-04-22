@@ -26,6 +26,8 @@ namespace UnityCore
             {
                 if (property.GetCustomAttribute<ConfigProperty>() is null) continue;
                 if (!property.CanWrite || !property.CanRead) continue;
+                var noSerialization = property.GetCustomAttribute<NoJsonSerializationAttribute>();
+                if (noSerialization is { } && !noSerialization.AllowToJson) continue;
                 JsonSerializerUtility.SerializeDefault(json, property.Name, property.GetValue(obj));
             }
 
