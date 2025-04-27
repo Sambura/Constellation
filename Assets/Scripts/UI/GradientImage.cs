@@ -38,7 +38,7 @@ namespace ConstellationUI
 
             if (_gradient == null)
             {
-                _gradientTexture.Resize(1, 1);
+                _gradientTexture.Reinitialize(1, 1);
                 _gradientTexture.SetPixel(0, 0, Color.magenta);
                 // sometimes materialForRendering is regenerated, hence need to change the base material as well
                 _image.materialForRendering.SetFloat(KeysCountPropertyId, 1);
@@ -48,7 +48,7 @@ namespace ConstellationUI
             {
                 GradientColorKey[] colorKeys = _gradient.colorKeys;
                 if (_gradientTexture.width != colorKeys.Length)
-                    _gradientTexture.Resize(colorKeys.Length, 1);
+                    _gradientTexture.Reinitialize(colorKeys.Length, 1);
                 for (int i = 0; i < colorKeys.Length; i++)
                 {
                     Color color = colorKeys[i].color;

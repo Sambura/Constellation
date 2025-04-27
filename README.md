@@ -47,5 +47,5 @@ You can find more screenshots in [screenshots directory](Docs/Screenshots/)
 
 ## Other
 
-* Unity editor version: 2020.3.16f1
+* Unity editor version: 6000.0.47f1
 * Platforms available: Only tested on Windows 10/11. Might be possible to run on non-windows systems, except for transparent mode feature
