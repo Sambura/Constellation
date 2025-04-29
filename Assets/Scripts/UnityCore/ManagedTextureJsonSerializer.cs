@@ -21,7 +21,7 @@ namespace UnityCore
         public static TextureManager TextureManager
         {
             // Can't really justify on why did I do it like this but I'm sure there's a reason...
-            get => mTextureManager ?? GameObject.FindObjectOfType<TextureManager>();
+            get => mTextureManager ?? GameObject.FindFirstObjectByType<TextureManager>();
             set => mTextureManager = value;
         }
 

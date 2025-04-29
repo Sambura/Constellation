@@ -34,8 +34,8 @@ public class VisualizerBase : MonoBehaviour
     }
 
     protected virtual void Awake() {
-        MainVisualizer = FindObjectOfType<MainVisualizer>();
-        ParticleController = FindObjectOfType<ParticleController>();
+        MainVisualizer = FindFirstObjectByType<MainVisualizer>();
+        ParticleController = FindFirstObjectByType<ParticleController>();
     }
 
     protected virtual void OnEnable() {

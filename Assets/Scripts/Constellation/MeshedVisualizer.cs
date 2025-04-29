@@ -107,8 +107,15 @@ public class MeshedVisualizer : VisualizerBase
 
             if (_lastTriUnitIndex == last)
             {
-                _lastTriIndex = 0;
-                _lastTriUnitIndex = 0;
+                _lastTriIndex = _triIndex = 0;
+                _lastTriUnitIndex = _triUnitIndex = 0;
+            }
+        }
+
+        foreach (var renderUnit in _triRenderUnits) {
+            for (int j = 0; j < renderUnit.VertexBuffer.Length; j++) {
+                renderUnit.VertexBuffer[j].x = 0;
+                renderUnit.VertexBuffer[j].y = 0;
             }
         }
 
@@ -158,8 +165,15 @@ public class MeshedVisualizer : VisualizerBase
 
             if (_lastLinUnitIndex == last)
             {
-                _lastLinIndex = 0;
-                _lastLinUnitIndex = 0;
+                _lastLinIndex = _linIndex = 0;
+                _lastLinUnitIndex = _linUnitIndex = 0;
+            }
+        }
+
+        foreach (var renderUnit in _linRenderUnits) {
+            for (int j = 0; j < renderUnit.VertexBuffer.Length; j++) {
+                renderUnit.VertexBuffer[j].x = 0;
+                renderUnit.VertexBuffer[j].y = 0;
             }
         }
 

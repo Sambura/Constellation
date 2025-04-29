@@ -13,7 +13,7 @@ public class FragmentationVisualization : MonoBehaviour
     [SerializeField] private ParticleController _fragmentator;
     [SerializeField] private Material _lineMat;
     [SerializeField] private Material _cellMat;
-    [SerializeField] private int _renderQueueIndex = 1000;
+    // [SerializeField] private int _renderQueueIndex = 1000;
 
     [Header("Debug")]
     [SerializeField] private bool _showCellBorders = false;

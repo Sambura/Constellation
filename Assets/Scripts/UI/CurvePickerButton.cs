@@ -26,7 +26,7 @@ namespace ConstellationUI
 
         public CurvePicker CurvePicker
         {
-            get => _curvePicker != null ? _curvePicker : (_findCurvePicker ? _curvePicker = FindObjectOfType<CurvePicker>(true) : null);
+            get => _curvePicker != null ? _curvePicker : (_findCurvePicker ? _curvePicker = FindFirstObjectByType<CurvePicker>(FindObjectsInactive.Include) : null);
             /* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
         }
 

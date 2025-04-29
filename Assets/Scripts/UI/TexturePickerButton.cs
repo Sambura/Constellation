@@ -32,7 +32,7 @@ namespace ConstellationUI
 
         public TexturePicker TexturePicker
         {
-            get => _texturePicker != null ? _texturePicker : (_findTexturePicker ? _texturePicker = FindObjectOfType<TexturePicker>(true) : null);
+            get => _texturePicker != null ? _texturePicker : (_findTexturePicker ? _texturePicker = FindFirstObjectByType<TexturePicker>(FindObjectsInactive.Include) : null);
             /* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
         }
 

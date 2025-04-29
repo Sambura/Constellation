@@ -1,0 +1,18 @@
+<linker>
+	<assembly fullname="UnityEngine">
+		<type fullname="UnityEngine.AnimationCurve">
+			<property signature="UnityEngine.WrapMode preWrapMode" />
+			<property signature="UnityEngine.WrapMode postWrapMode" />
+		</type>
+
+		<type fullname="UnityEngine.Gradient">
+			<property signature="UnityEngine.GradientMode mode" />
+		</type>
+
+		<type fullname="UnityEngine.Resolution">
+			<property signature="System.Int32 width" />
+			<property signature="System.Int32 height" />
+			<property signature="UnityEngine.RefreshRate refreshRateRatio" />
+		</type>
+	</assembly>
+</linker>

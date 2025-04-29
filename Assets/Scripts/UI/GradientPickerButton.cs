@@ -28,7 +28,7 @@ namespace ConstellationUI
 
         public GradientPicker GradientPicker
         {
-            get => _gradientPicker != null ? _gradientPicker : (_findGradientPicker ? _gradientPicker = FindObjectOfType<GradientPicker>(true) : null);
+            get => _gradientPicker != null ? _gradientPicker : (_findGradientPicker ? _gradientPicker = FindFirstObjectByType<GradientPicker>(FindObjectsInactive.Include) : null);
             /* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
         }
 

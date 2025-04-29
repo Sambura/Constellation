@@ -32,7 +32,7 @@ namespace ConstellationUI
 
         public ColorPicker ColorPicker
         {
-            get => _colorPicker != null ? _colorPicker : (_findColorPicker ? _colorPicker = FindObjectOfType<ColorPicker>(true) : null);
+            get => _colorPicker != null ? _colorPicker : (_findColorPicker ? _colorPicker = FindFirstObjectByType<ColorPicker>(FindObjectsInactive.Include) : null);
             /* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
         }
 

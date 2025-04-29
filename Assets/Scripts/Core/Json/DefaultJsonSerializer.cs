@@ -80,6 +80,7 @@ namespace Core.Json
                     if (config is { } && !config.AllowToJson) continue;
                     switch (member.MemberType)
                     {
+                        // TODO: think about disabling serialization of deprecated members (make it a flag?)
                         case MemberTypes.Field:
                             if (!flags.HasFlag(JsonSerializerFlags.SerializeFields)) continue;
                             FieldInfo field = (FieldInfo)member;
@@ -111,7 +112,7 @@ namespace Core.Json
             var customSerializer = JsonSerializerUtility.GetSuperSerializer(type, typeof(object));
             if (customSerializer != null) return customSerializer.FromJson(json, type);
 
-            if (type == typeof(float)) {
+            if (type == typeof(float)) { // We use invariant culture for floats to let parser know we use `0.0` rather than `0,0` 
                 if (float.TryParse(json, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)) return value;
                 throw new JsonSerializerException($"Failed to parse {json} as {type}");
             } else if (type == typeof(double)) {
@@ -122,7 +123,7 @@ namespace Core.Json
             {
                 MethodInfo parser = type.GetMethod("Parse", ParseMethodArguments);
                 if (parser == null)
-                    throw new ArgumentException($"Handling of {type.FullName} type is not supported by BasicJsonSerializer");
+                    throw new ArgumentException($"Handling of {type.FullName} type is not supported by {nameof(DefaultJsonSerializer)}");
 
                 try
                 {
@@ -149,10 +150,11 @@ namespace Core.Json
             var properties = JsonSerializerUtility.GetProperties(json);
 
             MemberInfo[] members = type.GetMembers();
+
             foreach (var jsonProperty in properties)
             {
                 MemberInfo member = members.FirstOrDefault(x => x.Name == jsonProperty.Key);
-                NoJsonSerializationAttribute config = member.GetCustomAttribute<NoJsonSerializationAttribute>();
+                NoJsonSerializationAttribute config = member?.GetCustomAttribute<NoJsonSerializationAttribute>();
                 if (config is { } && !config.AllowFromJson) continue;
 
                 if (member is null)

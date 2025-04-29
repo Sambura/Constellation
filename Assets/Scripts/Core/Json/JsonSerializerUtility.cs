@@ -144,6 +144,8 @@ namespace Core.Json
         /// </summary>
         public static void PrintProperty(StringBuilder json, string name, string value)
         {
+            if (value is null) throw new ArgumentNullException(nameof(value));
+
             PrintPropertyName(json, name);
             json.Append(value);
             json.Append(',');
@@ -299,6 +301,8 @@ namespace Core.Json
         /// </summary>
         public static void PrintPropertyName(StringBuilder json, string name)
         {
+            if (name is null) throw new ArgumentNullException(nameof(name));
+
             json.Append('"');
             json.Append(name);
             json.Append("\":");
@@ -433,6 +437,12 @@ namespace Core.Json
         public Dictionary<string, JsonTree> Properties;
         public string Value;
         public bool IsLeaf => Properties == null;
+
+        public JsonTree this[string propertyName]
+        {
+            get => Properties?.GetValueOrDefault(propertyName);
+            set => Properties[propertyName] = value;
+        }
 
         /// <summary>
         /// Makes a json string using JsonTree data. `Value` field is not used for non-leaf nodes.

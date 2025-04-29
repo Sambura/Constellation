@@ -747,12 +747,26 @@ public class AnalyticsCore : MonoBehaviour
         }
 
         string nextExecutable = _crossBenchmarkConfig.BenchmarkSequence[0].ExecutablePath;
+        string fullExecutablePath = Path.GetFullPath(nextExecutable);
+
+#if ENABLE_IL2CPP
+        string nextConfigPath = CrossBenchmarkPath;
+#elif ENABLE_MONO
         string nextConfigPath = Path.Combine(Path.GetDirectoryName(nextExecutable), CrossBenchmarkPath);
+#endif
         File.WriteAllText(nextConfigPath, DefaultJsonSerializer.Default.ToJson(_crossBenchmarkConfig));
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(nextExecutable))
+
+        // Process.Start does not work in IL2CPP builds (wonders of technology), so we use OpenURL instead
+        // It opens the app in the same working directory as us, so the config is placed in this directory
+#if ENABLE_IL2CPP
+        string formattedPath = "file:///" + fullExecutablePath.Replace('\\', '/');
+        Application.OpenURL(formattedPath);
+#elif ENABLE_MONO
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(fullExecutablePath)
         {
             WorkingDirectory = Path.GetDirectoryName(nextExecutable)
         });
+#endif
         _applicationController.Quit();
     }
 
@@ -860,7 +874,7 @@ public class AnalyticsCore : MonoBehaviour
     {
         System.Text.StringBuilder report = new System.Text.StringBuilder();
         JsonSerializerUtility.BeginObject(report);
-        JsonSerializerUtility.SerializeDefault(report, "ReportVersion", "1.2.0");
+        JsonSerializerUtility.SerializeDefault(report, "ReportVersion", "1.2.1");
         JsonSerializerUtility.SerializeDefault(report, "ConstellationVersion", Application.version);
         JsonSerializerUtility.SerializeDefault(report, "ReportDateTime", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
         JsonSerializerUtility.SerializeDefault(report, "BuiltPlayer", !Application.isEditor);
@@ -871,6 +885,7 @@ public class AnalyticsCore : MonoBehaviour
         JsonSerializerUtility.SerializeDefault(report, "WarmupDuration", data.BenchmarkConfig.WarmupTime);
         JsonSerializerUtility.SerializeDefault(report, "DeviceModel", SystemInfo.deviceModel);
         JsonSerializerUtility.SerializeDefault(report, "OperatingSystem", SystemInfo.operatingSystem);
+        JsonSerializerUtility.SerializeDefault(report, "ExecutableLocation", AppContext.BaseDirectory.Replace('\\', '/'));
         JsonSerializerUtility.PrintProperty(report, "Summary", GenerateSummaryJson(data.Timings));
         JsonSerializerUtility.SerializeDefault(report, "Timings", GenerateTimingsCsv(data.Timings));
         JsonSerializerUtility.PrintProperty(report, "SimulationConfig", data.BenchmarkConfig.SimulationConfigJson);

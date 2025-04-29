@@ -238,7 +238,7 @@ namespace ConstellationUI
                 label.text = text;
                 label.horizontalAlignment = HorizontalAlignmentOptions.Left;
                 label.maskable = false;
-                label.enableWordWrapping = false;
+                label.textWrappingMode = TextWrappingModes.NoWrap;
                 rectTransform.localPosition = UIPositionHelper.NormalizedToLocalPosition(target, normalPos) + worldOffset;
                 _labels.Add(majorLabel);
             }

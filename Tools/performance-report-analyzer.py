@@ -848,7 +848,8 @@ class ReportAnalyzer:
             fs_modes.append(report.fullscreen_mode)
             versions.append(report.program_version)
             res = report.display_resolution
-            resolutions.append(f'{res["width"]}x{res["height"]}@{res["refreshRate"]}')
+            refresh_rate = res['refreshRate'] if 'refreshRate' in res else res['refreshRateRatio']['numerator'] / res['refreshRateRatio']['denominator']
+            resolutions.append(f'{res["width"]}x{res["height"]}@{refresh_rate}')
 
         report = ''
         mismatch_count = 0

@@ -68,9 +68,8 @@ public class TransparentWindow : MonoBehaviour
         Application.runInBackground = true;
 
         _visualizer.ColorBufferClearEnabled = true;
+        _visualizer.ClearColor = new Color(0, 0, 0, 0);
         enabled = true;
-
-        FindObjectOfType<MainVisualizer>().ClearColor = new Color(0, 0, 0, 0);
 
         RawInput.Start();
         RawInput.WorkInBackground = true;

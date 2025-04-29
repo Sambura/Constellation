@@ -24,7 +24,7 @@ namespace ConstellationUI
 
         public FileDialog FileDialog
         {
-            get => _fileDialog != null ? _fileDialog : (_findFileDialog ? _fileDialog = FindObjectOfType<FileDialog>(true) : null);
+            get => _fileDialog != null ? _fileDialog : (_findFileDialog ? _fileDialog = FindFirstObjectByType<FileDialog>(FindObjectsInactive.Include) : null);
             /* Set can be added as needed, but proper support for dynamic property set may be a pain to implement */
         }
 

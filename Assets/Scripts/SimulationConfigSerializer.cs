@@ -26,73 +26,106 @@ public class SimulationConfigSerializer : MonoBehaviour
         public MonoBehaviour Object;
     }
 
-    private string[] _names;
-    private object[] _objects;
+    [SerializeField] private string[] _names;
+    [SerializeField] private object[] _objects;
 
     private const string MetadataSectionName = "Metadata";
 
     private struct UpgradeRule
     {
-        public Func<string, UpgradeResult> Converter;
-        public string SectionName;
-        public string JsonPropertyName;
+        public Func<string, string> Converter;
         public string AppliesSinceVersion;
-        public string ConvertsToVersion;
+        public string UpgradesToVersion;
 
         /// <summary>
-        /// convertsToVersion - when null, defaults to the current app version
+        /// Specify `AppliesSinceVersion` to set the lowest version that the upgrade should apply to <br/>
+        /// Specify `UpgradesToVersion` to set the lowest version that the upgrade should NOT apply to
         /// </summary>
-        public UpgradeRule(Func<string, UpgradeResult> converter, string sectionName, string jsonPropertyName, 
-                string appliesSinceVersion = "1.0.0", string upgradesToVersion = null)
+        /// <param name="converter">input: config file contents (usually json); output: new config file contents</param>
+        public UpgradeRule(Func<string, string> converter, string appliesSinceVersion = null, string upgradeToVersion = null)
         {
             Converter = converter;
-            SectionName = sectionName;
-            JsonPropertyName = jsonPropertyName;
             AppliesSinceVersion = appliesSinceVersion;
-            ConvertsToVersion = upgradesToVersion ?? Application.version;
+            UpgradesToVersion = upgradeToVersion;
         }
     }
 
-    private struct UpgradeResult {
-        public string SectionName;
-        public string JsonPropertyName;
-        public string NewValue;
+    private static string UpgradeSingleProperty(string section, string name, string configJson, Func<string, string> converter, 
+        string newSection = null, string newName = null)
+    {
+        JsonTree fullTree = JsonSerializerUtility.ToJsonTree(configJson);
+        string propertyValue = fullTree[section]?[name]?.ToJson();
+        if (propertyValue is null) return configJson;
 
-        public UpgradeResult(string newValue) {
-            SectionName = null;
-            JsonPropertyName = null;
-            NewValue = newValue;
+        string newValue = converter(propertyValue);
+        newSection ??= section;
+        newName ??= name;
+
+        fullTree[section].Properties.Remove(name);
+        if (fullTree[section].Properties.Count == 0) {
+            fullTree.Properties.Remove(section);
         }
+
+        if (!fullTree.Properties.ContainsKey(newSection))
+            fullTree.Properties.Add(newSection, new JsonTree() { Properties = new Dictionary<string, JsonTree>() });
+
+        fullTree[section].Properties.Add(newName, new JsonTree() { Value = newValue });
+        return fullTree.ToJson();
     }
 
-    private static UpgradeResult InvertLineColorV2(string propValue) {
-        Gradient val = DefaultJsonSerializer.Default.FromJson<Gradient>(propValue);
-        val.alphaKeys = Utility.InvertGradientKeysInplace(val.alphaKeys);
-        val.colorKeys = Utility.InvertGradientKeysInplace(val.colorKeys);
-        return new UpgradeResult(DefaultJsonSerializer.Default.ToJson(val));
-    }
+    // Older version had gradient keys in reverse order
+    private static string InvertLineColorV2(string configJson) => 
+        UpgradeSingleProperty("Visualizer", "LineColor", configJson, value => {
+            Gradient val = DefaultJsonSerializer.Default.FromJson<Gradient>(value);
+            val.alphaKeys = Utility.InvertGradientKeysInplace(val.alphaKeys);
+            val.colorKeys = Utility.InvertGradientKeysInplace(val.colorKeys);
+            return DefaultJsonSerializer.Default.ToJson(val);
+        });
 
-    private static UpgradeResult InvertAlphaCurveV2(string propValue) {
-        AnimationCurve val = DefaultJsonSerializer.Default.FromJson<AnimationCurve>(propValue);
-        val.keys = Utility.InvertAnimationCurveKeysInplace(val.keys);
-        return new UpgradeResult(DefaultJsonSerializer.Default.ToJson(val));
-    }
+    // Older version had animation curve keys in reverse order
+    private static string InvertAlphaCurveV2(string configJson) =>
+        UpgradeSingleProperty("Visualizer", "AlphaCurve", configJson, value => {
+            AnimationCurve val = DefaultJsonSerializer.Default.FromJson<AnimationCurve>(value);
+            val.keys = Utility.InvertAnimationCurveKeysInplace(val.keys);
+            return DefaultJsonSerializer.Default.ToJson(val);
+        });
+
+    // Removes `tangentMode` properties from Keyframes on AnimationCurve
+    private static string StripDeprecatedAnimationCurveProperties(string configJson) =>
+        UpgradeSingleProperty("Visualizer", "AlphaCurve", configJson, value => {
+            JsonTree curveTree = JsonSerializerUtility.ToJsonTree(value);
+            List<string> keys = JsonSerializerUtility.GetArrayElements(curveTree["keys"].Value);
+            StringBuilder keysJson = new StringBuilder();
+            JsonSerializerUtility.BeginArray(keysJson);
+
+            for (int i = 0; i < keys.Count; i++)
+            {
+                JsonTree key = JsonSerializerUtility.ToJsonTree(keys[i]);
+                key.Properties.Remove("tangentMode");
+                keysJson.Append(key.ToJson());
+                keysJson.Append(",");
+            }
+            JsonSerializerUtility.EndArray(keysJson);
+
+            curveTree["keys"].Value = keysJson.ToString();
+            return curveTree.ToJson();
+        });
 
     /// <summary>
     /// Rules for converting older configs to newer ones
     /// </summary>
     private readonly List<UpgradeRule> UpgradeRules = new List<UpgradeRule>() {
-        { new UpgradeRule(InvertLineColorV2, "Visualizer", "LineColor", upgradesToVersion: "1.1.16") },
-        { new UpgradeRule(InvertAlphaCurveV2, "Visualizer", "AlphaCurve", upgradesToVersion: "1.1.16") },
+        { new UpgradeRule(StripDeprecatedAnimationCurveProperties /* no harm in applying this to higher versions? */ ) },
+        { new UpgradeRule(InvertLineColorV2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.1.16") },
+        { new UpgradeRule(InvertAlphaCurveV2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.1.16") },
     };
 
-    // meta should NOT have higher version that ours! AND it should be valid too!
-    private static bool IsMatchingRule(string sectionName, string propName, string propVersion, UpgradeRule rule)
+    private static bool IsMatchingRule(string configVersion, UpgradeRule rule)
     {
-        if (sectionName != rule.SectionName || propName != rule.JsonPropertyName) return false;
-
-        if (Core.Algorithm.CompareVersions(propVersion, rule.AppliesSinceVersion) < 0) return false;
-        if (Core.Algorithm.CompareVersions(propVersion, rule.ConvertsToVersion) >= 0) return false;
+        if (rule.AppliesSinceVersion is { } && Core.Algorithm.CompareVersions(configVersion, rule.AppliesSinceVersion) < 0) 
+            return false;
+        if (rule.UpgradesToVersion is { } && Core.Algorithm.CompareVersions(configVersion, rule.UpgradesToVersion) >= 0)
+            return false;
 
         return true;
     }
@@ -192,85 +225,55 @@ public class SimulationConfigSerializer : MonoBehaviour
 
         return prettyPrint ? JsonSerializerUtility.Prettify(json.ToString()) : json.ToString();
     }
-    
+
     /// <summary>
     /// Apply necessary upgrades to convert from older config version, if applicable
     /// </summary>
+    // And yes, this is the worst implementation performance-wise, feel free to hate it.
     private string UpgradeSimulationConfig(string json)
     {
-        JsonTree config = JsonSerializerUtility.ToJsonTree(json);
-        JsonTree newConfig = null;
         SimulationConfigMetadata meta = new SimulationConfigMetadata() { Version = "1.0.0" };
+        string newConfig = json;
 
-        if (config.Properties.TryGetValue(MetadataSectionName, out JsonTree metaJsonTree)) {
-            ConfigJsonSerializer.OverwriteConfigFromJson(metaJsonTree.ToJson(), meta);
-            config.Properties.Remove(MetadataSectionName);
+        if (JsonSerializerUtility.GetProperties(json).TryGetValue(MetadataSectionName, out string metaJson)) {
+            ConfigJsonSerializer.OverwriteConfigFromJson(metaJson, meta);
             int[] version = Core.Algorithm.ParseVersion(meta.Version);
             if (version is null) {
                 Debug.LogWarning($"Unknown version in simulation config: {meta.Version}");
                 meta.Version = "1.0.0";
             }
-            else if (Core.Algorithm.CompareVersions(version, Core.Algorithm.ParseVersion(Application.version)) > 0) {
+            else if (Core.Algorithm.CompareVersions(version, Core.Algorithm.ParseVersion(Application.version)) > 0)
+            {
                 Debug.LogWarning($"Simulation config was created in a newer version of the app ({meta.Version})");
-                meta.Version = Application.version;
             }
         }
 
-        Dictionary<(string, string), string> propVersionMap = new Dictionary<(string, string), string>();
+        for (int upgradeIndex = 0; upgradeIndex < UpgradeRules.Count; upgradeIndex++) {
+            UpgradeRule rule = UpgradeRules[upgradeIndex];
 
-        while (true) {
-            int upgrades = 0;
+            if (!IsMatchingRule(meta.Version, rule)) continue;
 
-            newConfig = new JsonTree() { Properties = new Dictionary<string, JsonTree>() };
-            foreach (string sectionName in config.Properties.Keys) {
-                JsonTree sectionTree = config.Properties[sectionName];
-                foreach (string propName in sectionTree.Properties.Keys) {
-                    string propVersion = GetPropertyVersion(sectionName, propName);
-                    UpgradeRule? upgradeRule = null;
-
-                    // we will be careful here and only apply a single matching rule at a time for a property
-                    foreach (UpgradeRule rule in UpgradeRules)
-                        if (IsMatchingRule(sectionName, propName, propVersion, rule)) 
-                            upgradeRule = rule;
-
-                    string propValue = sectionTree.Properties[propName].ToJson();
-                    UpgradeResult upgradeResult = upgradeRule?.Converter(propValue) ?? new UpgradeResult(propValue);
-                    upgradeResult.SectionName ??= sectionName;
-                    upgradeResult.JsonPropertyName ??= propName;
-
-                    if (!newConfig.Properties.ContainsKey(upgradeResult.SectionName))
-                        newConfig.Add(upgradeResult.SectionName, new JsonTree());
-                    JsonTree newSectionTree = newConfig.Properties[upgradeResult.SectionName];
-                    newSectionTree.Add(upgradeResult.JsonPropertyName, new JsonTree() { Value = upgradeResult.NewValue });
-
-                    if (upgradeRule.HasValue) {
-                        upgrades++;
-                        // in case section name or prop name change, remove the entry
-                        if (propVersionMap.ContainsKey((sectionName, propName))) propVersionMap.Remove((sectionName, propName));
-                        propVersionMap[(upgradeResult.SectionName, upgradeResult.JsonPropertyName)] = upgradeRule.Value.ConvertsToVersion;
-                    }
-                }
-            }
-
-            if (upgrades == 0) break;
-            config = newConfig;
+            newConfig = rule.Converter(newConfig);
         }
 
-        newConfig.Add(MetadataSectionName, new JsonTree() { Value = ConfigJsonSerializer.ConfigToJson(meta) });
+        JsonTree configTree = JsonSerializerUtility.ToJsonTree(newConfig);
+        meta.Version = Application.version; // make sure now config is exactly current version
+        configTree.Properties.Remove(MetadataSectionName);
+        configTree.Add(MetadataSectionName, new JsonTree() { Value = ConfigJsonSerializer.ConfigToJson(meta) });
 
-        return newConfig.ToJson();
-
-        string GetPropertyVersion(string sectionName, string propName) {
-            if (propVersionMap.TryGetValue((sectionName, propName), out string version))
-                return version;
-
-            return meta.Version;
-        }
+        return configTree.ToJson();
     }
 
     public int MultipleObjectOverwriteFromJson(string json, string[] names, object[] objects)
     {
-        string upgradedJson = UpgradeSimulationConfig(json);
+        string upgradedJson;
+        try {
+            upgradedJson = UpgradeSimulationConfig(json);
+        } catch (Exception e) {
+            Debug.LogError("Upgrade error:");
+            Debug.LogException(e);
+            throw new Exception($"Failed to upgrade simulation config: {e.Message}");
+        }
         Dictionary<string, string> sections = JsonSerializerUtility.GetProperties(upgradedJson);
         if (sections.ContainsKey(MetadataSectionName)) sections.Remove(MetadataSectionName);
 

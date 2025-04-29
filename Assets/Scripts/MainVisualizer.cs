@@ -278,7 +278,7 @@ public class MainVisualizer : MonoBehaviour
 
     private void Awake()
     {
-        ParticleController = FindObjectOfType<ParticleController>();
+        ParticleController = FindFirstObjectByType<ParticleController>();
         _currentLineColorGradient = new Gradient();
 
         SetParticleSize(_particlesSize);
