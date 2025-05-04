@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Bounded Simulation Benchmark (100k particles)",
+    "Description": "Benchmark to evaluate simulation performance when using non-standard bounds",
+    "BenchmarkDuration": 10.0
+}

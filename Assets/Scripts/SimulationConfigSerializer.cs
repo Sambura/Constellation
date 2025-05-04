@@ -111,6 +111,27 @@ public class SimulationConfigSerializer : MonoBehaviour
             return curveTree.ToJson();
         });
 
+    private static string InitializeDefaults_1_2_2(string configJson) {
+        JsonTree curveTree = JsonSerializerUtility.ToJsonTree(configJson);
+        JsonTree particlesTree = curveTree["Particles"];
+        JsonTree debugTree = curveTree["Fragmentation"];
+        debugTree["ShowVelocities"] = JsonTree.MakeValue("false");
+        debugTree["VelocityColor"] = JsonTree.MakeValue(DefaultJsonSerializer.Default.ToJson(Color.green));
+        particlesTree["BounceType"] = JsonTree.MakeValue("\"RandomBounce\"");
+        bool squareShape = particlesTree["BoundsShape"].Value != "\"Viewport\"";
+        particlesTree["BoundsAspect"] = JsonTree.MakeValue(squareShape ? "1.0" : "2.0");
+        particlesTree["BoundsShape"] = JsonTree.MakeValue("\"Rectangle\"");
+        particlesTree["Restitution"] = JsonTree.MakeValue("1.0");
+        particlesTree["RandomFraction"] = JsonTree.MakeValue("0.2");
+        if (squareShape && particlesTree.Properties.TryGetValue("BoundMargins", out JsonTree marginsTree)) {
+            float boundMargins = DefaultJsonSerializer.Default.FromJson<float>(marginsTree.Value);
+            Viewport viewport = GameObject.FindFirstObjectByType<Viewport>();
+            boundMargins -= viewport.MaxX - viewport.MaxY;
+            particlesTree["BoundMargins"] = JsonTree.MakeValue(DefaultJsonSerializer.Default.ToJson(boundMargins));
+        }
+        return curveTree.ToJson();
+    }
+
     /// <summary>
     /// Rules for converting older configs to newer ones
     /// </summary>
@@ -118,6 +139,7 @@ public class SimulationConfigSerializer : MonoBehaviour
         { new UpgradeRule(StripDeprecatedAnimationCurveProperties /* no harm in applying this to higher versions? */ ) },
         { new UpgradeRule(InvertLineColorV2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.1.16") },
         { new UpgradeRule(InvertAlphaCurveV2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.1.16") },
+        { new UpgradeRule(InitializeDefaults_1_2_2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.2.2") },
     };
 
     private static bool IsMatchingRule(string configVersion, UpgradeRule rule)

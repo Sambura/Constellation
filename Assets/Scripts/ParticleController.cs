@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Core;
-using static Core.MathUtility;
 using ConfigSerialization;
 using ConfigSerialization.Structuring;
 
@@ -15,8 +14,11 @@ public class ParticleController : MonoBehaviour
     [SerializeField] private float _minParticleVelocity = 0;
     [SerializeField] private float _maxParticleVelocity = 1;
     [SerializeField] private float _boundMargins = 0;
-    [SerializeField] private BoundsShapes _boundsShape = BoundsShapes.Viewport;
-    //[SerializeField] private bool _warp = true;
+    [SerializeField] private BoundsShapes _boundsShape = BoundsShapes.Rectangle;
+    [SerializeField] private float _boundsAspect = 2;
+    [SerializeField] private BoundsBounceType _bounceType = BoundsBounceType.RandomBounce;
+    [SerializeField] private float _restitution = 1;
+    [SerializeField] private float _randomFraction = 0.2f;
 
     public event System.Action<Particle> ParticleCreated;
 
@@ -42,25 +44,71 @@ public class ParticleController : MonoBehaviour
         set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }
     }
     [ConfigGroupMember]
-    [SliderProperty(-5, 5, -30, 30, "0.0")] public float BoundMargins
+    [ConfigProperty] 
+    public BoundsShapes BoundsShape
+    {
+        get => _boundsShape;
+        set { if (_boundsShape != value) { SetBoundsShape(value); BoundsShapeChanged?.Invoke(value); }; }
+    }
+    [ConfigGroupMember]
+    [SliderProperty(-5, 5, -30, 30, "0.0")]
+    public float BoundMargins
     {
         get => _boundMargins;
         set { if (_boundMargins != value) { SetBoundMargins(value); BoundMarginsChanged?.Invoke(value); }; }
     }
     [ConfigGroupMember]
-    [ConfigProperty] public BoundsShapes BoundsShape
+    [SliderProperty(0, 3, 0, 100)]
+    public float BoundsAspect
     {
-        get => _boundsShape;
-        set { if (_boundsShape != value) { SetBoundsShape(value); BoundsShapeChanged?.Invoke(value); }; }
+        get => _boundsAspect;
+        set { if (_boundsAspect != value) { SetBoundsAspect(value); BoundsAspectChanged?.Invoke(value); }; }
+    }
+    [ConfigGroupMember]
+    [ConfigGroupToggle(null, 1, new object[] { 1, 2 }, null, DoNotReorder = true)]
+    [ConfigProperty]
+    public BoundsBounceType BounceType
+    {
+        get => _bounceType;
+        set { if (_bounceType != value) { _bounceType = value; BounceTypeChanged?.Invoke(value); }; }
+    }
+    [ConfigGroupMember(groupIndex: 1, parentIndex: 0)]
+    [SliderProperty(0, 2)]
+    public float Restitution
+    {
+        get => _restitution;
+        set { if (_restitution != value) { _restitution = value; RestitutionChanged?.Invoke(value); }; }
+    }
+    [ConfigGroupMember(groupIndex: 2, parentIndex: 0)]
+    [SliderProperty(0, 1)]
+    public float RandomFraction
+    {
+        get => _randomFraction;
+        set { if (_randomFraction != value) { _randomFraction = value; RandomFractionChanged?.Invoke(value); }; }
     }
 
-    public enum BoundsShapes { Viewport, Square, /* Circle, Custom */ }
+    public enum BoundsShapes {
+        Rectangle,
+        Ellipse
+    }
+
+    public enum BoundsBounceType
+    {
+        RandomBounce,
+        ElasticBounce,
+        HybridBounce,
+        Wrap
+    }
 
     public event System.Action<int> ParticleCountChanged;
     public event System.Action<float> MinParticleVelocityChanged;
     public event System.Action<float> MaxParticleVelocityChanged;
     public event System.Action<float> BoundMarginsChanged;
     public event System.Action<BoundsShapes> BoundsShapeChanged;
+    public event System.Action<float> BoundsAspectChanged;
+    public event System.Action<BoundsBounceType> BounceTypeChanged;
+    public event System.Action<float> RestitutionChanged;
+    public event System.Action<float> RandomFractionChanged;
 
     private void SetParticlesCount(int value)
     {
@@ -121,6 +169,26 @@ public class ParticleController : MonoBehaviour
     private void SetBoundsShape(BoundsShapes value)
     {
         _boundsShape = value;
+        _boundEffector?.Detach();
+
+        switch (_boundsShape)
+        {
+            case BoundsShapes.Rectangle:
+                _boundEffector = new RectangularBoundParticleEffector();
+                break;
+            case BoundsShapes.Ellipse:
+                _boundEffector = new EllipticalBoundParticleEffector();
+                break;
+            default:
+                throw new System.ArgumentException("Unknown bounds shape");
+        }
+
+        BoundsChanged?.Invoke();
+        _boundEffector.Init(this);
+    }
+    private void SetBoundsAspect(float value)
+    {
+        _boundsAspect = value;
         RecalculateBounds();
     }
     #endregion
@@ -138,8 +206,11 @@ public class ParticleController : MonoBehaviour
     {
         particle.SetRandomVelocity();
 
-        particle.Position = new Vector3(Random.Range(_left, _right),
-            Random.Range(_bottom, _top));
+        // attempts are unnecessary if bounds provide a valid SamplePoint, but just in case they don't -
+        for (int attempts = 0; attempts < 25; attempts++) {
+            particle.Position = _boundEffector.SamplePoint();
+            if (_boundEffector.InBounds(particle.Position)) break;
+        }
     }
 
     private float GetParticleVelocity(Particle particle)
@@ -165,12 +236,11 @@ public class ParticleController : MonoBehaviour
         get => _viewport;
         set { if (_viewport != value) SetViewport(value); }
     }
-    public float BoundLeft => _left;
-    public float BoundRight => _right;
-    public float BoundBottom => _bottom;
-    public float BoundTop => _top;
+    public float HorizontalBase => _horizontalBase;
+    public float VerticalBase => _verticalBase;
 
     public event System.Action<float> FragmentSizeChanged;
+    public event System.Action BoundsChanged;
 
     public void SetFragmentSize(float value)
     {
@@ -195,6 +265,7 @@ public class ParticleController : MonoBehaviour
         _particles = new List<Particle>(_particlesCount);
 
         SetViewport(_viewport);
+        SetBoundsShape(_boundsShape);
         SetParticlesCount(_particlesCount);
     }
 
@@ -206,12 +277,13 @@ public class ParticleController : MonoBehaviour
 
     private void RecalculateBounds()
     {
-        _left = -_viewport.MaxX + _boundMargins;
-        _right = _viewport.MaxX - _boundMargins;
-
-        float verticalMax = BoundsShape == BoundsShapes.Viewport ? _viewport.MaxY : _viewport.MaxX;
-        _bottom = -verticalMax + _boundMargins;
-        _top = verticalMax - _boundMargins;
+        _verticalBase = _viewport.MaxY - _boundMargins;
+        if (BoundsAspect < 1)
+            _horizontalBase = (_viewport.MaxY - _boundMargins) * BoundsAspect;
+        else
+            _horizontalBase = _viewport.MaxY * Mathf.LerpUnclamped(1, _viewport.Aspect, BoundsAspect - 1) - _boundMargins;
+        _horizontalBase = Mathf.Max(_horizontalBase, 0);
+        BoundsChanged?.Invoke();
     }
 
     private void DoFragmentation()
@@ -241,49 +313,25 @@ public class ParticleController : MonoBehaviour
     private int _ySquareOffset;
     private int _maxSquareX;
     private int _maxSquareY;
-    private float _left;
-    private float _right;
-    private float _top;
-    private float _bottom;
+    private float _horizontalBase;
+    private float _verticalBase;
+    private BoundParticleEffector _boundEffector;
 
     private void Update()
     {
-        foreach (var particle in _particles)
-        {
-            particle.Position += particle.Velocity * Time.deltaTime;
-
-            bool leftHit = particle.Position.x < _left;
-            bool rightHit = particle.Position.x > _right;
-            bool bottomHit = particle.Position.y < _bottom;
-            bool topHit = particle.Position.y > _top;
-
-            //if (Warp)
-            //{
-            //    if (leftHit || rightHit && _position.x * _velocity.x > 0) _position.x = -_position.x;
-            //    if (bottomHit || topHit && _position.y * _velocity.y > 0) _position.y = -_position.y;
-            //}
-            //else
-            //{
-            if ((leftHit || rightHit) && particle.Position.x * particle.Velocity.x > 0)
-            {
-                particle.SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
-            }
-            if ((bottomHit || topHit) && particle.Position.y * particle.Velocity.y > 0)
-            {
-                particle.SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
-            }
-            //}
-        }
-        
         for (int ry = 0; ry <= _maxSquareY; ry++)
             for (int rx = 0; rx <= _maxSquareX; rx++)
                 _regionMap[rx, ry].PseudoClear();
 
         for (int i = 0, count = _particles.Count; i < count; i++)
         {
-            Particle p = _particles[i];
-            GetSquare(p.Position, out int x, out int y);
-            _regionMap[x, y].Add(p);
+            Particle particle = _particles[i];
+            particle.Position += particle.Velocity * Time.deltaTime;
+
+            _boundEffector.AffectParticle(particle);
+
+            GetSquare(particle.Position, out int x, out int y);
+            _regionMap[x, y].Add(particle);
         }
     }
 

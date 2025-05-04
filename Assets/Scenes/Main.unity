@@ -1611,6 +1611,8 @@ MonoBehaviour:
   _cellColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 0.18431373}
   _showBounds: 0
   _boundsColor: {r: 0, g: 0.4584198, b: 1, a: 1}
+  _showVelocities: 0
+  _velocityColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!114 &144636867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1629,6 +1631,10 @@ MonoBehaviour:
   _maxParticleVelocity: 1
   _boundMargins: 0
   _boundsShape: 0
+  _boundsAspect: 2
+  _bounceType: 0
+  _restitution: 1
+  _randomFraction: 0.2
 --- !u!114 &144636868
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1651,6 +1657,7 @@ MonoBehaviour:
   _fileDialog: {fileID: 1545749630}
   _particleController: {fileID: 144636867}
   _loadFileSizeLimit: 10485760
+  _names: []
 --- !u!114 &144636869
 MonoBehaviour:
   m_ObjectHideFlags: 0

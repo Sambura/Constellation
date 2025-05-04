@@ -465,5 +465,7 @@ namespace Core.Json
             
             Properties.Add(key, value);
         }
+
+        public static JsonTree MakeValue(string value) { return new JsonTree() { Value = value }; }
     }
 }

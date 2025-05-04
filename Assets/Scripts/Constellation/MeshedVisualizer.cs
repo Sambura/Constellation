@@ -457,6 +457,7 @@ public class MeshedVisualizer : VisualizerBase
             List<Particle> particles = ParticleController.Particles;
             for (int i = 0; i < particles.Count; i++)
                 DrawParticle(particles[i].Position);
+                // DrawParticleExt(particles[i].Position, particles[i].Color);
         }
 
         if (!_showLines && !_showTriangles) {
@@ -621,6 +622,41 @@ public class MeshedVisualizer : VisualizerBase
                 unit.Mesh.SetVertexBufferData(unit.VertexBuffer, 0, 0, unit.VertexBuffer.Length, 0, UpdateFlags);
             }
         }
+    }
+
+    private void DrawParticleExt(Vector2 position, Color color)
+    {
+        float hs = _halfParticleSize;
+        float x = position.x, y = position.y;
+
+        if (_vertexIndex >= MaxVertexCount)
+        {
+            _vertexIndex = 0;
+            _unitIndex++;
+        }
+
+        ColoredVertex[] vertBuffer = _renderUnits[_unitIndex].VertexBuffer;
+        float x_min = x - hs;
+        float x_max = x + hs;
+        float y_min = y - hs;
+        float y_max = y + hs;
+
+        vertBuffer[_vertexIndex].x = x_min;
+        vertBuffer[_vertexIndex].y = y_min;
+        vertBuffer[_vertexIndex].color = color;
+        _vertexIndex++;
+        vertBuffer[_vertexIndex].x = x_max;
+        vertBuffer[_vertexIndex].y = y_min;
+        vertBuffer[_vertexIndex].color = color;
+        _vertexIndex++;
+        vertBuffer[_vertexIndex].x = x_max;
+        vertBuffer[_vertexIndex].y = y_max;
+        vertBuffer[_vertexIndex].color = color;
+        _vertexIndex++;
+        vertBuffer[_vertexIndex].x = x_min;
+        vertBuffer[_vertexIndex].y = y_max;
+        vertBuffer[_vertexIndex].color = color;
+        _vertexIndex++;
     }
 
     private void DrawParticle(Vector2 position)

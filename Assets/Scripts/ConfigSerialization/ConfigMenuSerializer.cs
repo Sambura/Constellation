@@ -184,7 +184,7 @@ namespace ConfigSerialization
         {
             // RectTransform GameObject of this UI element
             public RectTransform Control { get; set; }
-            // Main member that caused this UI element serizlization
+            // Main member that caused this UI element serialization
             public MemberInfo Member { get; set; }
             // Instance containing the main member
             public object MemberContainer { get; set; }
@@ -984,6 +984,8 @@ namespace ConfigSerialization
                 }
                 else
                     parentEvent.AddEventHandler(memberContainer, propToUiHandler);
+            } else if (configProperty.IsPollingAllowed.GetValueOrDefault(false)) {
+                OnPoll += () => propToUiHandler.DynamicInvoke(property.GetValue(memberContainer));
             }
 
             return new UINode(parent)

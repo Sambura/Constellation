@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Default Rendering Benchmark (100k particles)",
+    "Description": "Benchmark to evaluate simulation and rendering performance with default speed parameters",
+    "BenchmarkDuration": 10.0
+}

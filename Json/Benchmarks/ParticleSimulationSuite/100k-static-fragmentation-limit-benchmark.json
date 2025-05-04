@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Static Simulation Benchmark with Fragmentation Limit (100k particles)",
+    "Description": "Benchmark to evaluate the effect of maximum fragmentation on simulation performance",
+    "BenchmarkDuration": 10.0
+}

@@ -1,0 +1,14 @@
+{
+    "BenchmarkSuiteVersion": "1.1.16",
+    "Name": "Particle simulation benchmark suite",
+    "Description": "Benchmark suite focused on evaluating particle simulation performance rather than rendering",
+    "FullscreenMode": "FullScreenWindow",
+    "FpsCap": 0,
+    "BenchmarkDurationOverride": 30,
+    "CooldownDurationOverride": 10,
+    "WarmupDurationOverride": 5,
+    "RepeatCount": 3,
+    "ShuffleBenchmarks": false,
+    "OverrideRngSeed": 42,
+    "BufferSize": 1000000
+}

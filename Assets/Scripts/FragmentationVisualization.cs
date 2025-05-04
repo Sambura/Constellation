@@ -4,6 +4,8 @@ using Core;
 using SimpleGraphics;
 using ConfigSerialization;
 using ConfigSerialization.Structuring;
+using System.Collections.Generic;
+using System.Collections;
 
 public class FragmentationVisualization : MonoBehaviour
 {
@@ -22,6 +24,8 @@ public class FragmentationVisualization : MonoBehaviour
     [SerializeField] private Color _cellColor = Color.yellow;
     [SerializeField] private bool _showBounds = false;
     [SerializeField] private Color _boundsColor = Color.blue;
+    [SerializeField] private bool _showVelocities = false;
+    [SerializeField] private Color _velocityColor = Color.green;
 
     private SimpleDrawBatch _renderBatch;
 
@@ -67,6 +71,27 @@ public class FragmentationVisualization : MonoBehaviour
         get => _boundsColor;
         set { if (_boundsColor != value) { _boundsColor = value; BoundsColorChanged?.Invoke(value); }; }
     }
+    [ConfigGroupToggle(4)]
+    [ConfigGroupMember]
+    [ConfigProperty]
+    public bool ShowVelocities
+    {
+        get => _showVelocities;
+        set { if (_showVelocities != value) { SetShowVelocities(value); ShowVelocitiesChanged?.Invoke(value); }; }
+    }
+    [ConfigGroupMember(4, 0)]
+    [ColorPickerButtonProperty(true, "Select color", "Color")]
+    public Color VelocityColor
+    {
+        get => _velocityColor;
+        set { if (_velocityColor != value) { _velocityColor = value; VelocityColorChanged?.Invoke(value); }; }
+    }
+    /// <summary>
+    /// Assume this is only set by user through UI
+    /// </summary>
+    [ConfigGroupMember]
+    [ConfigProperty(hasEvent: false, AllowPolling = false)]
+    public bool VisualizeBoundsChange { get; set; } = true;
 
     public event Action<bool> ShowCellBordersChanged;
     public event Action<Color> CellBorderColorChanged;
@@ -74,6 +99,13 @@ public class FragmentationVisualization : MonoBehaviour
     public event Action<Color> CellColorChanged;
     public event Action<bool> ShowBoundsChanged;
     public event Action<Color> BoundsColorChanged;
+    public event Action<bool> ShowVelocitiesChanged;
+    public event Action<Color> VelocityColorChanged;
+
+    private int _maxLinesForBounds = 200;
+    private bool _boundsFlash = false;
+    private Coroutine _boundsFlashCoroutine;
+    private AnalyticsCore _analyticsCore;
 
     private void SetShowCellBorders(bool value)
     {
@@ -96,23 +128,31 @@ public class FragmentationVisualization : MonoBehaviour
         OnFragmentSizeChanged(_fragmentator.FragmentSize);
     }
 
+    private void SetShowVelocities(bool value)
+    {
+        _showVelocities = value;
+        UpdateRenderBatch();
+        OnFragmentSizeChanged(_fragmentator.FragmentSize);
+    }
+
     private void OnFragmentSizeChanged(float fragmentSize) {
-        int count = _showBounds ? 4 : 0;
+        int count = _showBounds || _boundsFlash ? _maxLinesForBounds : 0;
         if (_showCellBorders) {
             count += Mathf.CeilToInt((float)_fragmentator.Viewport.Width / _fragmentator.FragmentSize) + 2;
             count += Mathf.CeilToInt((float)_fragmentator.Viewport.Height / _fragmentator.FragmentSize) + 2;
         }
+        if (_showVelocities) count += _fragmentator.ParticleCount * 3;
         _newRenderer.ReserveLineCount(_lineMat, count);
         _newRenderer.ReserveQuadCount(_cellMat, _showCells ? _fragmentator.CellCount : 0);
     }
 
-    private void UpdateRenderBatch() => this.enabled = _showCellBorders || _showCells || _showBounds;
+    private void UpdateRenderBatch() => this.enabled = _showCellBorders || _showCells || _showBounds || _showVelocities;
 
     // private void OnEnable() =>_renderer.AddBatch(_renderQueueIndex, _renderBatch);
     // private void OnDisable() => _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
 
-    private void OnEnable() => _newRenderer.enabled = true;
-    private void OnDisable() => _newRenderer.enabled = false;
+    private void OnEnable() { if (_newRenderer != null) _newRenderer.enabled = true; }
+    private void OnDisable() { if (_newRenderer != null) _newRenderer.enabled = false; }
 
     private void Awake()
     {
@@ -123,6 +163,27 @@ public class FragmentationVisualization : MonoBehaviour
         UpdateRenderBatch();
         _fragmentator.FragmentSizeChanged += OnFragmentSizeChanged;
         OnFragmentSizeChanged(_fragmentator.FragmentSize);
+        _fragmentator.BoundsChanged += OnBoundsChanged;
+        _analyticsCore = FindFirstObjectByType<AnalyticsCore>(FindObjectsInactive.Include);
+    }
+
+    private void OnBoundsChanged() {
+        if (!VisualizeBoundsChange || _analyticsCore.BenchmarkInProgress) return;
+        if (_boundsFlashCoroutine is { }) StopCoroutine(_boundsFlashCoroutine);
+        _boundsFlashCoroutine = StartCoroutine(BoundsFlash());
+        this.enabled = true;
+    }
+
+    private IEnumerator BoundsFlash() {
+        _boundsFlash = true;
+        OnFragmentSizeChanged(_fragmentator.FragmentSize);
+        yield return new WaitForSeconds(0.25f);
+        _boundsFlash = false;
+        yield return null; // ObjectMeshRenderer is garbage so we need to wait here not to break it
+        // to set enabled = false; and destroy any drawings not needed anymore
+        UpdateRenderBatch();
+        OnFragmentSizeChanged(_fragmentator.FragmentSize);
+        _boundsFlashCoroutine = null;
     }
 
     private void Update()
@@ -174,17 +235,59 @@ public class FragmentationVisualization : MonoBehaviour
             }
         }
 
-        if (_showBounds)
+        if (_showBounds || _boundsFlash)
         {
-            (float left, float right, float bottom, float top) = (_fragmentator.BoundLeft, _fragmentator.BoundRight, _fragmentator.BoundBottom, _fragmentator.BoundTop);
-            // _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
-            // _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
-            // _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
-            // _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
-            _newRenderer.DrawLine(left, bottom, left, top, _lineMat, _boundsColor);
-            _newRenderer.DrawLine(right, bottom, right, top, _lineMat, _boundsColor);
-            _newRenderer.DrawLine(left, bottom, right, bottom, _lineMat, _boundsColor);
-            _newRenderer.DrawLine(left, top, right, top, _lineMat, _boundsColor);
+            if (_fragmentator.BoundsShape == ParticleController.BoundsShapes.Rectangle)
+            {
+                (float left, float right, float bottom, float top) = (-_fragmentator.HorizontalBase, _fragmentator.HorizontalBase, -_fragmentator.VerticalBase, _fragmentator.VerticalBase);
+                // _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
+                // _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
+                // _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
+                // _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
+                _newRenderer.DrawLine(left, bottom, left, top, _lineMat, _boundsColor);
+                _newRenderer.DrawLine(right, bottom, right, top, _lineMat, _boundsColor);
+                _newRenderer.DrawLine(left, bottom, right, bottom, _lineMat, _boundsColor);
+                _newRenderer.DrawLine(left, top, right, top, _lineMat, _boundsColor);
+            } else if (_fragmentator.BoundsShape == ParticleController.BoundsShapes.Ellipse)
+            {
+                int pointCount = _maxLinesForBounds;
+                Vector2 prev = new Vector2(_fragmentator.HorizontalBase, 0);
+
+                for (int i = 1; i <= pointCount; i++) {
+                    Vector2 pos = GetEllipsePoint(Mathf.PI * 2 * i / pointCount);
+                    _newRenderer.DrawLine(prev.x, prev.y, pos.x, pos.y, _lineMat, _boundsColor);
+                    prev = pos;
+                }
+
+                Vector2 GetEllipsePoint(float angle)
+                {
+                    float a = _fragmentator.HorizontalBase;
+                    float b = _fragmentator.VerticalBase;
+                    float s = Mathf.Sin(angle);
+                    float c = Mathf.Cos(angle);
+
+                    float d = Mathf.Sqrt(Mathf.Pow(a * s, 2) + Mathf.Pow(b * c, 2));
+                    return new Vector2(c, s) * a * b / d;
+                }
+            }
+        }
+
+        if (_showVelocities) {
+            List<Particle> particles = _fragmentator.Particles;
+            for (int i = 0, count = particles.Count; i < count; i++) {
+                Vector2 source = particles[i].Position;
+                float speed = particles[i].Velocity.magnitude;
+                float size = Mathf.Log(speed + 1.2f) / Mathf.Log(2) / 5;
+                Vector2 dest = particles[i].Position + size * particles[i].Velocity / speed;
+                Vector2 direction = -particles[i].Velocity / speed * size / 4;
+                Vector2 normal = new Vector2(-direction.y, direction.x) * 0.7f;
+                Vector2 arrow1 = dest + normal + direction;
+                Vector2 arrow2 = dest - normal + direction;
+
+                _newRenderer.DrawLine(source.x, source.y, dest.x, dest.y, _lineMat, _velocityColor);
+                _newRenderer.DrawLine(arrow1.x, arrow1.y, dest.x, dest.y, _lineMat, _velocityColor);
+                _newRenderer.DrawLine(arrow2.x, arrow2.y, dest.x, dest.y, _lineMat, _velocityColor);
+            }
         }
     }
 }

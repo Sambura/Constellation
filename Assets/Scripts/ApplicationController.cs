@@ -2,6 +2,8 @@ using UnityEngine;
 using System;
 using ConfigSerialization;
 using ConfigSerialization.Structuring;
+using System.Collections;
+using Core;
 
 public class ApplicationController : MonoBehaviour
 {
@@ -37,9 +39,29 @@ public class ApplicationController : MonoBehaviour
     public event Action<int> TargetFrameRateChanged;
     public event Action<FullScreenMode> FullScreenModeChanged;
 
+    private long _startingTotalMemory;
+    private long _currentTotalMemory;
+
+    [ConfigGroupMember("Other", 2, GroupId = "Misc+other", SetDisplayIndex = -1)]
+    [LabelProperty(typeof(BytesToStringConverter), DisplayPropertyName = true, AllowPolling = true)]
+    public long MemoryDelta => _currentTotalMemory - _startingTotalMemory;
+
     private void Awake()
     {
         _pendingMode = Screen.fullScreenMode;
+#if !UNITY_EDITOR
+        // Look into this later, right now doesn't seem like good idea :(
+        // GarbageCollector.GCMode = GarbageCollector.Mode.Manual;
+#endif
+        _startingTotalMemory = GC.GetTotalMemory(true);
+        StartCoroutine(MemoryMonitor());
+    }
+
+    IEnumerator MemoryMonitor() {
+        while (true) {
+            _currentTotalMemory = GC.GetTotalMemory(false);
+            yield return new WaitForSeconds(1f);
+        }
     }
 
     /// <summary>
@@ -54,5 +76,20 @@ public class ApplicationController : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+}
+
+public class BytesToStringConverter : IObjectConverter<string>
+{
+    public string Convert(object input)
+    {
+        double bytes = (long)input;
+
+        if (bytes < 768) return $"{(int)bytes} B"; bytes /= 1024;
+        if (bytes < 768) return $"{bytes:0.0} KB"; bytes /= 1024;
+        if (bytes < 768) return $"{bytes:0.00} MB"; bytes /= 1024;
+        if (bytes < 768) return $"{bytes:0.00} GB"; bytes /= 1024;
+        
+        return $"{bytes:0.000} TB";;
     }
 }

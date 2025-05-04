@@ -214,7 +214,8 @@ public class AnalyticsCore : MonoBehaviour
 
     [ConfigGroupMember]
     [ConfigMemberOrder(4)]
-    [LabelProperty(typeof(DurationToStringConverter), TextColor = "#cfe0ff", AllowPolling = true)] public float TotalDuration
+    [LabelProperty(typeof(DurationToStringConverter), TextColor = "#cfe0ff", AllowPolling = true)]
+    public float TotalDuration
     {
         get
         {

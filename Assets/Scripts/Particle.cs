@@ -18,4 +18,10 @@ public class Particle
         float magnitude = VelocityDelegate(this);
         Velocity = new Vector3((float)Cos(angle) * magnitude, (float)Sin(angle) * magnitude, 0);
     }
+
+    public void SetVelocityDirection(Vector2 direction)
+    {
+        float magnitude = VelocityDelegate(this);
+        Velocity = direction * magnitude;
+    }
 }

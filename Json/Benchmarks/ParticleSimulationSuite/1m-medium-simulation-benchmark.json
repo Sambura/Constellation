@@ -1,0 +1,6 @@
+{
+    "BenchmarkVersion": "1.0.0",
+    "Name": "Medium Simulation Benchmark (1M particles)",
+    "Description": "Benchmark to evaluate the simulation performance on a large amount of particles. Particle speed is medium",
+    "BenchmarkDuration": 10.0
+}
