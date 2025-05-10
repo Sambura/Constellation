@@ -149,8 +149,9 @@ public class MainVisualizer : MonoBehaviour
         set { if (_strongDistance != value) { _strongDistance = value; StrongDistanceChanged?.Invoke(value); }; }
     }
     // TODO: implement dynamic options for dropdowns?
-    [ConfigGroupMember] [Core.Json.NoJsonSerialization(AllowFromJson = true)]
-    [DropdownListProperty(new object[] { "None", "Classic", "Meshed" }, new string[] { "Disable rendering", "Classic (slower)", "Meshed (faster)" }, name: "Renderer")]
+    [ConfigGroupMember] 
+    [Core.Json.NoJsonSerialization(AllowFromJson = true)]
+    [DropdownProperty(new object[] { "None", "Classic", "Meshed" }, new string[] { "Disable rendering", "Classic (slower)", "Meshed (faster)" }, name: "Renderer")]
     public string SelectedVisualizer
     {
         get => _selectedVisualizer;

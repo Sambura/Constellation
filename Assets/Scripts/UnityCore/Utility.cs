@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace UnityCore {
     public static class Utility
@@ -59,6 +60,13 @@ namespace UnityCore {
             renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
 
             return gameObject;
+        }
+
+        public static void TintAllGraphics(GameObject parent, Color color) {
+            Graphic[] graphics = parent.GetComponentsInChildren<Graphic>(true);
+            foreach (Graphic graphic in graphics) {
+                graphic.color = color;
+            }
         }
     }
 }

@@ -16,7 +16,7 @@ public class ApplicationController : MonoBehaviour
 
     private FullScreenMode _pendingMode;
     [ConfigGroupMember("Display", 1)]
-    [DropdownListProperty(new object[] { FullScreenMode.ExclusiveFullScreen, FullScreenMode.FullScreenWindow, FullScreenMode.Windowed },
+    [DropdownProperty(new object[] { FullScreenMode.ExclusiveFullScreen, FullScreenMode.FullScreenWindow, FullScreenMode.Windowed },
         new string[] { "Fullscreen", "Fullscreen window", "Windowed" }, "Fullscreen mode")] 
     public FullScreenMode FullScreenMode
     {

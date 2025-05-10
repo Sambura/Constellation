@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityCore;
 
@@ -13,19 +14,17 @@ public class VerticalUIStack : MonoBehaviour
 
     private RectTransform _transform;
     private bool _layoutLock = false;
+    private List<RectTransform> _monitoredChildren = new();
     protected RectTransform RectTransform => _transform ?? (_transform = GetComponent<RectTransform>());
 
     private void Start() => RegisterNewChildren();
 
-    private void OnTransformChildrenChanged()
-    {
-        RebuildLayout();
-    }
+    private void OnTransformChildrenChanged() => RegisterNewChildren();
 
-    public void RegisterNewChildren()
-    {
-        foreach (RectTransform child in RectTransform)
-        {
+    public void RegisterNewChildren() {
+        foreach (RectTransform child in RectTransform) {
+            if (_monitoredChildren.Contains(child)) continue;
+
             MonoEvents events = child.gameObject.GetOrAddComponent<MonoEvents>();
 
             events.OnObjectDisable -= RebuildLayout;
@@ -35,6 +34,8 @@ public class VerticalUIStack : MonoBehaviour
             events.OnObjectDisable += RebuildLayout;
             events.OnObjectEnable += RebuildLayout;
             events.OnRectTransformChange += RebuildLayout;
+
+            _monitoredChildren.Add(child);
         }
 
         RebuildLayout();
@@ -42,13 +43,14 @@ public class VerticalUIStack : MonoBehaviour
 
     public void RebuildLayout()
     {
-        if (_layoutLock) return;
+        if (_layoutLock || !enabled) return;
         float y = -_topMargin;
 
         foreach (RectTransform child in RectTransform)
         {
             if (child.gameObject.activeInHierarchy == false) continue;
-            if (child.anchorMax.y != child.anchorMin.y) continue;
+            if (child.anchorMax.y != child.anchorMin.y) continue; // skip vertically stretched children
+            if (child.anchorMax.y != 1) continue; // only consider children that anchor to the top edge
 
             CalculateExtents(child, out float top, out float bottom);
 
@@ -76,6 +78,8 @@ public class VerticalUIStack : MonoBehaviour
         RectTransform.sizeDelta = new Vector2(RectTransform.sizeDelta.x, -y);
     }
 
+    private void OnEnable() => RebuildLayout();
+
     private void OnDestroy()
     {
         foreach (Transform child in transform)
@@ -86,6 +90,10 @@ public class VerticalUIStack : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Computes local y coordinates for the top and bottom of this RectTransform (and contained children)
+    /// Does not account for anchors (assumes the anchor is at y == 1)
+    /// </summary>
     private void CalculateExtents(RectTransform obj, out float topExtent, out float bottomExtent)
     {
         topExtent = obj.rect.height * (1 - obj.pivot.y);

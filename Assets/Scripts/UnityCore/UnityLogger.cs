@@ -158,10 +158,10 @@ public static class UnityLogger
     /// </summary>
     private static void AppendLogSafe(string str)
     {
-        int spaceRemainig = _log.MaxCapacity - _log.Length;
+        int spaceRemaining = _log.MaxCapacity - _log.Length;
 
-        if (str.Length > spaceRemainig)
-            _log.Append(str, str.Length - spaceRemainig, spaceRemainig);
+        if (str.Length > spaceRemaining)
+            _log.Append(str, str.Length - spaceRemaining, spaceRemaining);
         else 
             _log.Append(str);
     }

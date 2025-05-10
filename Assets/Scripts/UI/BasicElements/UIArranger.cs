@@ -5,6 +5,10 @@ public class UIArranger : MonoBehaviour
 {
     [SerializeField] private List<UIConfiguration> _configurations = new List<UIConfiguration>();
     [SerializeField] private int _selectedConfiguration;
+    [SerializeField] private bool _allowSelfTransform = false;
+
+    private RectTransform _transform;
+    protected RectTransform RectTransform => _transform ?? (_transform = GetComponent<RectTransform>());
 
     public int SelectedConfigurationIndex {
         get => _selectedConfiguration;
@@ -33,11 +37,17 @@ public class UIArranger : MonoBehaviour
         {
             RectTransform rt = element.Object;
 
-            rt.pivot = element.Pivot;
-            rt.anchorMin = element.AnchorMin;
-            rt.anchorMax = element.AnchorMax;
-            rt.offsetMin = element.OffsetMin;
-            rt.offsetMax = element.OffsetMax;
+            // be careful with changing offsets/anchors of the parent (i mean self). Let's only change the size
+            if (rt != RectTransform || _allowSelfTransform) {
+                rt.pivot = element.Pivot;
+                rt.anchorMin = element.AnchorMin;
+                rt.anchorMax = element.AnchorMax;
+                rt.offsetMin = element.OffsetMin;
+                rt.offsetMax = element.OffsetMax;
+            } else {
+                rt.sizeDelta = element.OffsetMax - element.OffsetMin;
+            }
+
             rt.localRotation = element.LocalRotation;
         }
     }

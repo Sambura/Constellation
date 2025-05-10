@@ -3,11 +3,16 @@ using UnityEngine.EventSystems;
 using System;
 
 /// <summary>
-/// The class that represents a UI element that can be dragged using mouse
-/// Default implementation ignores all buttons except for left mouse button
+/// The class that represents a UI element that can be dragged using mouse.
+/// Default implementation ignores all buttons except for left mouse button.
+/// Do note this requires some kind of raycasting to be possible for the object
+/// (e.g. it should have an Image component)
 /// </summary>
+/// Note: should we switch to Unity's IDragHandler stuff?
 public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
+    [SerializeField] private bool _restrictMovement;
+    
     /// <summary>
     /// Offset between mouse pointer and MonoDraggable's positions
     /// </summary>
@@ -16,6 +21,11 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     /// Is MonoDraggable being dragged at the moment?
     /// </summary>
     private bool _isDragging;
+    /// <summary>
+    /// Pointer click was registered, but no dragging was done yet
+    /// </summary>
+    private bool _aboutToDrag;
+    private float _dragThreshld = 5;
     /// <summary>
     /// RectTransform that is attached to this gameObject
     /// </summary>
@@ -28,11 +38,12 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     /// <summary>
     /// Event that is raised any time IPointerDownHandler emits its event
     /// That is, it is raised each time a mouse click is registered (not 
-    /// necessarily left mouse buton)
+    /// necessarily left mouse button)
     /// </summary>
     public event Action<MonoDraggable, PointerEventData> PointerDown;
+    public event Action DragStart;
+    public event Action DragEnd;
 
-    private bool _restrictMovement;
     /// <summary>
     /// Whether movement of MonoDraggable should be restricted by a parent container
     /// When true, the RectTransform attached to this gameObject will try to not go
@@ -99,7 +110,25 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         if (eventData.button != PointerEventData.InputButton.Left) return;
 
         _dragOffset = Position - (Vector3)eventData.position;
+        _aboutToDrag = true;
+    }
+
+    public void BeginDrag(Vector2 dragOffset)
+    {
+        _dragOffset = dragOffset;
         _isDragging = true;
+        _aboutToDrag = false;
+        DragStart?.Invoke();
+    }
+
+    public void FinishDrag()
+    {
+        _aboutToDrag = false;
+        if (!_isDragging) return;
+
+        _isDragging = false;
+        Position = (Vector2)Input.mousePosition + _dragOffset;
+        DragEnd?.Invoke();
     }
 
     /// <summary>
@@ -109,12 +138,19 @@ public class MonoDraggable : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     {
         if (eventData.button != PointerEventData.InputButton.Left) return;
 
-        _isDragging = false;
-        Position = (Vector2)Input.mousePosition + _dragOffset;
+        FinishDrag();
     }
 
     protected virtual void Update()
     {
+        if (_aboutToDrag) {
+            Vector2 dragOffset = Position - Input.mousePosition;
+            if (Vector2.Distance(dragOffset, _dragOffset) < _dragThreshld) return;
+            _aboutToDrag = false;
+            _isDragging = true;
+            DragStart?.Invoke();
+        }
+
         if (_isDragging == false) return;
 
         Position = (Vector2)Input.mousePosition + _dragOffset;

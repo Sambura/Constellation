@@ -5,18 +5,15 @@
 ///     - Bounds (Effectors that simulate bounds, keeping particles restricted to a certain area)
 ///     - Friction effector (slows down all particles with time)
 ///     - Distortion effector (distorts particles' trajectories depending on their position)
-///     - Kinetic effector (the very fact that particles are moving every frame in their velocity direction can be implemented as effector)
+///     - Kinematic effector (the very fact that particles are moving every frame in their velocity direction can be implemented as effector)
 /// </summary>
 public interface IParticleEffector
 {
     /// <summary>
-    /// Effector's priority. Priority determines the order of effectors execution
-    /// </summary>
-    public int Priority { get; set; }
-    /// <summary>
     /// Human-readable name of this effector
     /// </summary>
     public string Name { get; set; }
+    public bool Initialized { get; }
 
     /// <summary>
     /// Initialize the effector state from the ParticleController

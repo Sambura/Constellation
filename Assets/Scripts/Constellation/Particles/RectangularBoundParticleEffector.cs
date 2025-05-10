@@ -1,10 +1,9 @@
 using UnityEngine;
 using static Core.MathUtility;
-using static ParticleController;
 
-public sealed class RectangularBoundParticleEffector : BoundParticleEffector
+public sealed class RectangularBoundParticleEffector : BoundsParticleEffector
 {
-    public override string Name { get; set; } = "Rectangular Bounds Effector";
+    public override string Name { get; set; } = "Rectangular Bounds";
 
     private float _left;
     private float _right;
@@ -23,7 +22,7 @@ public sealed class RectangularBoundParticleEffector : BoundParticleEffector
         bool horizontalMisdirection = horizontalHit && p.Position.x * p.Velocity.x > 0;
         bool verticalMisdirection = verticalHit && p.Position.y * p.Velocity.y > 0;
 
-        switch (BounceType) {
+        switch (_bounceType) {
             case BoundsBounceType.RandomBounce:
                 if (horizontalMisdirection)
                     p.SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
@@ -31,26 +30,30 @@ public sealed class RectangularBoundParticleEffector : BoundParticleEffector
                     p.SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
                 break;
             case BoundsBounceType.ElasticBounce:
+                if (!horizontalMisdirection && !verticalMisdirection) return;
+
                 p.Velocity = new Vector2(horizontalMisdirection ? -p.Velocity.x : p.Velocity.x, 
-                    verticalMisdirection ? -p.Velocity.y : p.Velocity.y) * Restitution;
+                    verticalMisdirection ? -p.Velocity.y : p.Velocity.y) * _restitution;
                 break;
             case BoundsBounceType.HybridBounce:
+                if (!horizontalMisdirection && !verticalMisdirection) return;
+
                 Vector3 elasticComponent = new Vector2(horizontalMisdirection ? -p.Velocity.x : p.Velocity.x,
-                    verticalMisdirection ? -p.Velocity.y : p.Velocity.y) * Restitution;
+                    verticalMisdirection ? -p.Velocity.y : p.Velocity.y) * _restitution;
                 if (horizontalMisdirection)
                     p.SetRandomVelocity(leftHit ? -Angle90 : Angle90, leftHit ? Angle90 : Angle270);
                 if (verticalMisdirection)
                     p.SetRandomVelocity(bottomHit ? Angle0 : Angle180, bottomHit ? Angle180 : Angle360);
-                p.Velocity = p.Velocity * RandomFraction + elasticComponent * (1 - RandomFraction);
+                p.Velocity = p.Velocity * _randomFraction + elasticComponent * (1 - _randomFraction);
                 break;
             case BoundsBounceType.Wrap:
-                if (horizontalMisdirection || verticalMisdirection) {
-                    // I advise not to pry into this
-                    if (horizontalHit && verticalHit && (horizontalMisdirection ^ verticalMisdirection))
-                        p.Position = new Vector3(p.Position.x, -p.Position.y);
-                    else
-                        p.Position = new Vector3(-p.Position.x, -p.Position.y);
-                }
+                if (!horizontalMisdirection && !verticalMisdirection) return;
+
+                // I advise not to pry into this
+                if (horizontalHit && verticalHit && (horizontalMisdirection ^ verticalMisdirection))
+                    p.Position = new Vector3(p.Position.x, -p.Position.y);
+                else
+                    p.Position = new Vector3(-p.Position.x, -p.Position.y);
                 break;
         }
     }
@@ -59,12 +62,12 @@ public sealed class RectangularBoundParticleEffector : BoundParticleEffector
         return position.x >= _left && position.x <= _right && position.y >= _bottom & position.y <= _top;
     }
 
-    protected override void OnBoundsUpdated() {
-        base.OnBoundsUpdated();
+    protected override void RecalculateBounds() {
+        base.RecalculateBounds();
 
-        _left = -HorizontalBase;
-        _right = HorizontalBase;
-        _bottom = -VerticalBase;
-        _top = VerticalBase;
+        _left = -_horizontalBase;
+        _right = _horizontalBase;
+        _bottom = -_verticalBaes;
+        _top = _verticalBaes;
     }
 }

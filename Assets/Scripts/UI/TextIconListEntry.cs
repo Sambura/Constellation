@@ -1,13 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 namespace ConstellationUI
 {
-    public class ListEntry : MonoBehaviour
+    public class TextIconListEntry : ListEntryBase
     {
+        [Header("Text/Icon List entry objects")]
         [SerializeField] private Image _icon;
-        [SerializeField] private TextMeshProUGUI _label;
         [SerializeField] private Image _highlight;
 
         public bool Highlighted
@@ -17,9 +16,5 @@ namespace ConstellationUI
         }
 
         public Image Icon => _icon;
-
-        public TextMeshProUGUI Label => _label;
-
-        public object Data { get; set; }
     }
 }

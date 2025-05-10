@@ -25,6 +25,7 @@ namespace ConfigSerialization
         [SerializeField] private GameObject _numericInputFieldPrefab;
         [SerializeField] private GameObject _textInputFieldPrefab;
         [SerializeField] private GameObject _filePathSelectorPrefab;
+        [SerializeField] private GameObject _unboundedListViewPrefab;
 
         [Header("No-input property control prefabs")]
         [SerializeField] private GameObject _colorIndicatorPrefab;
@@ -48,6 +49,8 @@ namespace ConfigSerialization
 
         private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _propertyControlCreators;
         private readonly Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>> _readonlyPropertyControlCreators;
+
+        public static ConfigMenuSerializer MainInstance { get; private set; }
 
         /// <summary>
         /// Configuration for a menu tab to generate. Contains name and the list of scripts 
@@ -177,7 +180,7 @@ namespace ConfigSerialization
             Unknown, Button, Toggle, GradientPickerButton, CurvePickerButton, ColorPickerButton,
             Slider, MinMaxSlider, RadioButtonArray, DropdownList, Container, GroupHeader,
             TexturePickerButton, ColorIndicator, NumericInputField, FilePathSelector,
-            TextInputField, NullableControl, OutputLabel
+            TextInputField, NullableControl, OutputLabel, UnboundedListView
         }
 
         private class UINode
@@ -218,7 +221,7 @@ namespace ConfigSerialization
         /// <summary>
         /// The main function. Analyzes tab config and generates the UI for all the defined ConfigProperty-ies
         /// </summary>
-        public void GenerateMenuUI()
+        public int GenerateMenuUI(RectTransform container = null, object propertySource = null)
         {
             // Global dictionary of groups that have IDs
             var idGroups = new Dictionary<string, Group>();
@@ -227,142 +230,26 @@ namespace ConfigSerialization
             // Groups already bound to some property
             var boundGroups = new Dictionary<Group, PropertyInfo>();
             // UINode without a real GameObject behind it. Used to collect all the tab's UINodes as children
-            UINode rootNode = new UINode();
+            UINode rootNode = new UINode() { Control = container };
+            int serializedCount = 0;
 
             // UI generation
-            foreach (ConfigTab tab in _tabs)
+            if (propertySource is null)
             {
-                // Pseudo group used to collect all the top-level groups and members as its children
-                Group baseGroup = new Group();
-
-                RectTransform tabTransform = _tabView.AddTab(tab.Name);
-                UINode tabNode = new UINode() { Control = tabTransform };
-                tabNode.SetParent(rootNode);
-
-                foreach (var container in tab.ConfigSources)
+                foreach (ConfigTab tab in _tabs)
                 {
-                    Type type = container.GetType();
-                    // index -> (id, name)
-                    Dictionary<int, Group> localGroups = new Dictionary<int, Group>();
-                    List<Member> ungroupedMembers = new List<Member>();
-                    var localToggles = new List<(PropertyInfo, ConfigGroupToggleAttribute)>();
+                    // Pseudo group used to collect all the top-level groups and members as its children
+                    Group baseGroup = new Group();
 
-                    foreach (MemberInfo member in type.GetMembers())
-                    {
-                        ConfigProperty configProperty = member.GetCustomAttribute<ConfigProperty>();
-                        InvokableMethod invokableMethod = member.GetCustomAttribute<InvokableMethod>();
-                        if (configProperty == null && invokableMethod == null) continue;
-                        ConfigGroupToggleAttribute toggleAttribute = member.GetCustomAttribute<ConfigGroupToggleAttribute>();
-                        if (toggleAttribute is { })
-                        {
-                            if (member is PropertyInfo property)
-                                localToggles.Add((property, toggleAttribute));
-                            else
-                                Debug.LogError("Toggle attribute encountered on non-property member");
-                        }
-                        UpdateLocalGroups(member);
-                    }
+                    RectTransform tabTransform = _tabView.AddTab(tab.Name);
+                    UINode tabNode = new UINode() { Control = tabTransform };
+                    tabNode.SetParent(rootNode);
 
-                    foreach (var toggleInfo in localToggles)
-                    {
-                        ConfigGroupToggleAttribute toggleParams = toggleInfo.Item2;
-                        object[] rawBindingMap = toggleParams.Mapping;
-                        List<string>[] groupIds = new List<string>[rawBindingMap.Length];
-                        List<Group>[] toggledGroups = new List<Group>[rawBindingMap.Length];
-
-                        for (int i = 0; i < rawBindingMap.Length; i++)
-                        {
-                            groupIds[i] = new List<string>(); toggledGroups[i] = new List<Group>();
-
-                            ProcessBinding(rawBindingMap[i]);
-
-                            void ProcessBinding(object entry)
-                            {
-                                if (entry is null) return;
-                                if (entry.GetType() == typeof(int))
-                                {
-                                    if (!localGroups.TryGetValue((int)entry, out Group toggledGroup))
-                                        Debug.LogWarning($"Failed to resolve toggle binding for {toggleInfo.Item1}: group index {(int)entry} not found");
-                                    toggledGroups[i].Add(toggledGroup);
-                                }
-                                else if (entry.GetType() == typeof(string))
-                                {
-                                    groupIds[i].Add((string)entry);
-                                }
-                                else if (entry.GetType().IsArray)
-                                {
-                                    Array array = (Array)entry;
-                                    for (int j = 0; j < array.Length; j++) ProcessBinding(array.GetValue(j));
-                                } else
-                                {
-                                    Debug.LogWarning($"Failed to resolve toggle binding for {toggleInfo.Item1}: binding {i} has unsupported " +
-                                        $"type ({entry.GetType()}). The binding type should be null, int, string, or an array of these types");
-                                }
-                            }
-                        }
-
-                        groupToggles.Add(toggleInfo.Item1, (toggledGroups, groupIds));
-                    }
-
-                    MergeGroups(baseGroup, localGroups, ungroupedMembers);
-
-                    void UpdateLocalGroups(MemberInfo member)
-                    {
-                        var groupAttribute = member.GetCustomAttribute<ConfigGroupMemberAttribute>();
-                        var orderAttribute = member.GetCustomAttribute<ConfigMemberOrderAttribute>();
-                        Member newMember = new Member { MemberInfo = member, MemberContainer = container, DisplayIndex = orderAttribute?.DisplayIndex };
-
-                        if (groupAttribute == null)
-                        {
-                            ungroupedMembers.Add(newMember);
-                            return;
-                        }
-
-                        if (localGroups.TryGetValue(groupAttribute.GroupIndex, out Group group))
-                        {
-                            if (!group.UpdateProperties(groupAttribute, container))
-                                Debug.LogWarning($"Group #{groupAttribute.GroupIndex} on {container} has several different {group.LastInvalidUpdatePropertyName}s!");
-                        }
-                        else
-                        {
-                            group = Group.FromAttribute(groupAttribute, container);
-                            localGroups.Add(groupAttribute.GroupIndex, group);
-                        }
-
-                        ValidateParent(group, groupAttribute);
-                        group.Members.Add(newMember);
-
-                        void ValidateParent(Group group, ConfigGroupMemberAttribute groupAttribute)
-                        {
-                            if (groupAttribute.ParentIndex < 0 && groupAttribute.ParentId == null) return;
-
-                            Group parent = groupAttribute.ParentId != null ?
-                                localGroups.Values.FirstOrDefault(x => x.Id == groupAttribute.ParentId) :
-                                (localGroups.ContainsKey(groupAttribute.ParentIndex) ? localGroups[groupAttribute.ParentIndex] : null);
-
-                            if (parent != null)
-                            {
-                                if (group.Parent == null) parent.AddSubgroup(group);
-                                if (parent == group.Parent) return;
-                                Debug.LogError($"Group {group.LocalIndex} on {group.DefiningContainer} has several different parents");
-                                return;
-                            }
-
-                            Group newParentGroup = new Group() { Id = groupAttribute.ParentId };
-                            if (groupAttribute.ParentIndex >= 0)
-                            {
-                                newParentGroup.LocalIndex = groupAttribute.ParentIndex;
-                                newParentGroup.DefiningContainer = container;
-                            }
-
-                            newParentGroup.AddSubgroup(group);
-                            localGroups.Add(groupAttribute.ParentIndex, newParentGroup);
-                        }
-                    }
+                    PrepareTab(tabNode, baseGroup, tab.ConfigSources.Cast<object>().ToList());
                 }
-
-                FinalizeContainer(baseGroup, tabNode, tabTransform);
-                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(tabTransform);
+            } else {
+                Group baseGroup = new Group();
+                PrepareTab(rootNode, baseGroup, new List<object>() { propertySource });
             }
 
             // Resolve toggle bindings
@@ -429,11 +316,141 @@ namespace ConfigSerialization
                 BindPropertyToObjects(toggleInfo.Key, toggleNode.MemberContainer, transforms);
             }
 
-            _tabView.SelectTab(_selectedTab);
+            return serializedCount;
 
             // ##################################################################
             // ###################       Local functions	 ####################
             // ##################################################################
+
+            void PrepareTab(UINode node, Group group, List<object> sources)
+            {
+                foreach (var container in sources)
+                {
+                    Type type = container.GetType();
+                    // index -> (id, name)
+                    Dictionary<int, Group> localGroups = new Dictionary<int, Group>();
+                    List<Member> ungroupedMembers = new List<Member>();
+                    var localToggles = new List<(PropertyInfo, ConfigGroupToggleAttribute)>();
+
+                    foreach (MemberInfo member in type.GetMembers())
+                    {
+                        ConfigProperty configProperty = member.GetCustomAttribute<ConfigProperty>();
+                        InvokableMethod invokableMethod = member.GetCustomAttribute<InvokableMethod>();
+                        if (configProperty == null && invokableMethod == null) continue;
+                        serializedCount++;
+                        ConfigGroupToggleAttribute toggleAttribute = member.GetCustomAttribute<ConfigGroupToggleAttribute>();
+                        if (toggleAttribute is { })
+                        {
+                            if (member is PropertyInfo property)
+                                localToggles.Add((property, toggleAttribute));
+                            else
+                                Debug.LogError("Toggle attribute encountered on non-property member");
+                        }
+                        UpdateLocalGroups(member);
+                    }
+
+                    foreach (var toggleInfo in localToggles)
+                    {
+                        ConfigGroupToggleAttribute toggleParams = toggleInfo.Item2;
+                        object[] rawBindingMap = toggleParams.Mapping;
+                        List<string>[] groupIds = new List<string>[rawBindingMap.Length];
+                        List<Group>[] toggledGroups = new List<Group>[rawBindingMap.Length];
+
+                        for (int i = 0; i < rawBindingMap.Length; i++)
+                        {
+                            groupIds[i] = new List<string>(); toggledGroups[i] = new List<Group>();
+
+                            ProcessBinding(rawBindingMap[i]);
+
+                            void ProcessBinding(object entry)
+                            {
+                                if (entry is null) return;
+                                if (entry.GetType() == typeof(int))
+                                {
+                                    if (!localGroups.TryGetValue((int)entry, out Group toggledGroup))
+                                        Debug.LogWarning($"Failed to resolve toggle binding for {toggleInfo.Item1}: group index {(int)entry} not found");
+                                    toggledGroups[i].Add(toggledGroup);
+                                }
+                                else if (entry.GetType() == typeof(string))
+                                {
+                                    groupIds[i].Add((string)entry);
+                                }
+                                else if (entry.GetType().IsArray)
+                                {
+                                    Array array = (Array)entry;
+                                    for (int j = 0; j < array.Length; j++) ProcessBinding(array.GetValue(j));
+                                }
+                                else
+                                {
+                                    Debug.LogWarning($"Failed to resolve toggle binding for {toggleInfo.Item1}: binding {i} has unsupported " +
+                                        $"type ({entry.GetType()}). The binding type should be null, int, string, or an array of these types");
+                                }
+                            }
+                        }
+
+                        groupToggles.Add(toggleInfo.Item1, (toggledGroups, groupIds));
+                    }
+
+                    MergeGroups(group, localGroups, ungroupedMembers);
+
+                    void UpdateLocalGroups(MemberInfo member)
+                    {
+                        var groupAttribute = member.GetCustomAttribute<ConfigGroupMemberAttribute>();
+                        var orderAttribute = member.GetCustomAttribute<ConfigMemberOrderAttribute>();
+                        Member newMember = new Member { MemberInfo = member, MemberContainer = container, DisplayIndex = orderAttribute?.DisplayIndex };
+
+                        if (groupAttribute == null)
+                        {
+                            ungroupedMembers.Add(newMember);
+                            return;
+                        }
+
+                        if (localGroups.TryGetValue(groupAttribute.GroupIndex, out Group group))
+                        {
+                            if (!group.UpdateProperties(groupAttribute, container))
+                                Debug.LogWarning($"Group #{groupAttribute.GroupIndex} on {container} has several different {group.LastInvalidUpdatePropertyName}s!");
+                        }
+                        else
+                        {
+                            group = Group.FromAttribute(groupAttribute, container);
+                            localGroups.Add(groupAttribute.GroupIndex, group);
+                        }
+
+                        ValidateParent(group, groupAttribute);
+                        group.Members.Add(newMember);
+
+                        void ValidateParent(Group group, ConfigGroupMemberAttribute groupAttribute)
+                        {
+                            if (groupAttribute.ParentIndex < 0 && groupAttribute.ParentId == null) return;
+
+                            Group parent = groupAttribute.ParentId != null ?
+                                localGroups.Values.FirstOrDefault(x => x.Id == groupAttribute.ParentId) :
+                                (localGroups.ContainsKey(groupAttribute.ParentIndex) ? localGroups[groupAttribute.ParentIndex] : null);
+
+                            if (parent != null)
+                            {
+                                if (group.Parent == null) parent.AddSubgroup(group);
+                                if (parent == group.Parent) return;
+                                Debug.LogError($"Group {group.LocalIndex} on {group.DefiningContainer} has several different parents");
+                                return;
+                            }
+
+                            Group newParentGroup = new Group() { Id = groupAttribute.ParentId };
+                            if (groupAttribute.ParentIndex >= 0)
+                            {
+                                newParentGroup.LocalIndex = groupAttribute.ParentIndex;
+                                newParentGroup.DefiningContainer = container;
+                            }
+
+                            newParentGroup.AddSubgroup(group);
+                            localGroups.Add(groupAttribute.ParentIndex, newParentGroup);
+                        }
+                    }
+                }
+
+                FinalizeContainer(group, node, node.Control);
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(node.Control);
+            }
 
             List<UINode> UnwindUITree(UINode root, List<UINode> output = null)
             {
@@ -872,7 +889,7 @@ namespace ConfigSerialization
         {
             if (!property.PropertyType.IsEnum) throw new NotImplementedException("Currently only enums properties can have dropdown list");
 
-            return CreateUniversal<DropdownListProperty, DropdownList>(
+            return CreateUniversal<DropdownProperty, DropdownList>(
                 property, _dropdownPrefab, memberContainer, parent, (x, y, z) =>
                 {
                     x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
@@ -927,7 +944,7 @@ namespace ConfigSerialization
         /// <returns></returns>
         private UINode CreateUniversal<T, V>(PropertyInfo property, GameObject prefab, object memberContainer,
             UINode parent, Action<V, ConfigProperty, T> initDelegate, string propertyName, ControlType controlType,
-            Func<V, T, (Delegate, Delegate)> converterGenerator = null, bool readonlyProperty = false) where T : ConfigProperty where V : Component
+            Func<V, T, (Delegate prop2ui, Delegate ui2prop)> converterGenerator = null, bool readonlyProperty = false) where T : ConfigProperty where V : Component
         {
             ConfigProperty configProperty = GetConfigProperty<ConfigProperty>(property, memberContainer);
             T specificAttribute = configProperty as T;
@@ -970,6 +987,7 @@ namespace ConfigSerialization
                 specificProperty.SetValue(specificControl, property.GetValue(memberContainer));
             }
 
+            // TODO: I don't think we get rid of poll handlers when the UI control is destroyed :( need to fix
             if (!readonlyProperty) controlEvent.AddEventHandler(specificControl, uiToPropHandler);
             if (configProperty.HasEvent)
             {
@@ -1059,6 +1077,61 @@ namespace ConfigSerialization
 
             return property.GetCustomAttribute<T>();
         }
+
+        private UINode CreateUnboundedListView(PropertyInfo property, object memberContainer, UINode parent)
+        {
+            if (GetConfigProperty<ListViewProperty>(property, memberContainer) is null) {
+                Debug.LogWarning($"Cannot serialize a List property {property} without ViewViewProperty attribute");
+                return null;
+            }
+
+            var elementType = property.PropertyType.GetGenericArguments()[0];
+
+            return CreateUniversal<ListViewProperty, UnboundedListView>(
+                property, _unboundedListViewPrefab, memberContainer, parent, (x, y, z) =>
+                {
+                    // Figure out item options
+                    var itemOptions = new List<UnboundedListView.ListItemType>();
+                    if (z.SourcePropertyName is null) {
+                        int length = z.OptionNames?.Length ?? z.DisplayedOptions?.Length ?? 0;
+                        if (length == 0) Debug.LogWarning($"Generating a list for {property} on {memberContainer} with 0 option types");
+                        for (int i = 0; i < length; i++)
+                            itemOptions.Add(new UnboundedListView.ListItemType() { 
+                                Name = z.OptionNames?[i] ?? z.DisplayedOptions[i].ToString(), 
+                                Data = z.DisplayedOptions?[i] ?? z.OptionNames[i]
+                            });
+                    } else {
+                        var options = memberContainer.GetType().GetProperty(z.SourcePropertyName)?.GetValue(memberContainer) as Dictionary<string, object>;
+                        if (options is null) {
+                            Debug.LogWarning("SourceProperty of {property} on {memberContainer} is not of type Dictionary<string, object> or the property is missing");
+                            options = new();
+                        }
+
+                        foreach (var entry in options)
+                            itemOptions.Add(new UnboundedListView.ListItemType() { Name = entry.Key, Data = entry.Value });
+                    }
+
+                    // Actual init
+                    x.LabelText = MakeControlLabel(property, y);
+                    x.ElementType = elementType;
+                    x.SetItemOptions(itemOptions);
+                },
+                nameof(UnboundedListView.Items), ControlType.UnboundedListView, (x, y) =>
+                {
+                    var caster = typeof(ConfigMenuSerializer).GetMethod(nameof(GetListCaster), BindingFlags.Static | BindingFlags.NonPublic);
+
+                    var prop2uiConverter = (Delegate)caster.MakeGenericMethod(elementType, typeof(object)).Invoke(null, Array.Empty<object>());
+                    var ui2propConverter = (Delegate)caster.MakeGenericMethod(typeof(object), elementType).Invoke(null, Array.Empty<object>());
+
+                    return (prop2uiConverter, ui2propConverter);
+                }
+            );
+        }
+
+        /// <summary>
+        /// Makes a delegate that casts input List of Fs to a List of Ts
+        /// </summary>
+        private static Delegate GetListCaster<F, T>() => (Func<List<F>, List<T>>)(x => x.Cast<T>().ToList());
 
         private UINode CreateNullableControl(PropertyInfo property, object memberContainer, UINode parent)
         {
@@ -1153,7 +1226,7 @@ namespace ConfigSerialization
             if (GetConfigProperty<FilePathProperty>(property, memberContainer) is { })
                 return CreateFilePathSelector(property, memberContainer, parent);
 
-            if (GetConfigProperty<DropdownListProperty>(property, memberContainer) is { })
+            if (GetConfigProperty<DropdownProperty>(property, memberContainer) is { })
                 return CreateTextDropdownList(property, memberContainer, parent);
 
             return CreateTextInputField(property, memberContainer, parent);
@@ -1161,7 +1234,7 @@ namespace ConfigSerialization
 
         private UINode CreateTextDropdownList(PropertyInfo property, object memberContainer, UINode parent)
         {
-            return CreateUniversal<DropdownListProperty, DropdownList>(
+            return CreateUniversal<DropdownProperty, DropdownList>(
                 property, _dropdownPrefab, memberContainer, parent, (x, y, z) =>
                 {
                     x.LabelText = y.Name ?? SplitAndLowerCamelCase(property.Name);
@@ -1435,7 +1508,8 @@ namespace ConfigSerialization
 
         private static EventInfo GetEvent(PropertyInfo property) => property.DeclaringType.GetEvent(property.Name + "Changed");
 
-        private void Start() { if (_serializeOnStart) GenerateMenuUI(); }
+        private void Awake() { MainInstance ??= this; }
+        private void Start() { if (_serializeOnStart) { GenerateMenuUI(); _tabView.SelectTab(_selectedTab); } }
 
         private float _lastPoll;
         private float PollInterval => 1 / PollFrequency;
@@ -1466,7 +1540,8 @@ namespace ConfigSerialization
                 { x => x == typeof(AnimationCurve), CreateCurveButton },
                 { x => x == typeof(Texture2D), CreateTextureButton },
                 { x => x == typeof(string), CreateStringPropertyControl },
-                { x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>), CreateNullableControl }
+                { x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>), CreateNullableControl },
+                { x => typeof(System.Collections.IList).IsAssignableFrom(x), CreateUnboundedListView }
             };
             _readonlyPropertyControlCreators = new Dictionary<Func<Type, bool>, Func<PropertyInfo, object, UINode, UINode>>()
             {

@@ -14,13 +14,35 @@ public class ParticleController : MonoBehaviour
     [SerializeField] private float _minParticleVelocity = 0;
     [SerializeField] private float _maxParticleVelocity = 1;
     [SerializeField] private float _boundMargins = 0;
-    [SerializeField] private BoundsShapes _boundsShape = BoundsShapes.Rectangle;
     [SerializeField] private float _boundsAspect = 2;
     [SerializeField] private BoundsBounceType _bounceType = BoundsBounceType.RandomBounce;
     [SerializeField] private float _restitution = 1;
     [SerializeField] private float _randomFraction = 0.2f;
 
-    public event System.Action<Particle> ParticleCreated;
+    // fragmentation
+    private float _fragmentSize;
+    private List<Particle> _particles;
+    private FastList<Particle>[,] _regionMap;
+    private int _xSquareOffset;
+    private int _ySquareOffset;
+    private int _maxSquareX;
+    private int _maxSquareY;
+    // effectors
+    private List<EffectorModule> _rawParticleEffectors = new();
+    // subset of raw particle effectors - only those that are enabled
+    private readonly List<IParticleEffector> _activeParticleEffectors = new();
+    // subset of active particle effectors
+    private readonly List<BoundsParticleEffector> _boundsEffectors = new();
+    // fallback bounds for sampling point locations (for RestartSimulation)
+    private readonly RectangularBoundParticleEffector _defaultBounds = new();
+    private int _activeEffectorsCount;
+
+    public Dictionary<string, object> EffectorTypes { get; set; } = new() {
+        { "Kinematic Effector", typeof(KinematicParticleEffector) },
+        { "Bounds", typeof(BoundsParticleEffectorProxy) },
+        { "Friction Effector", typeof(FrictionParticleEffector) },
+        { "Attractor/Repeller", typeof(AttractionParticleEffector) },
+    };
 
     #region Config properties
 
@@ -31,84 +53,34 @@ public class ParticleController : MonoBehaviour
         set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
     }
     [ConfigGroupMember]
-    [MinMaxSliderProperty(0, 5, 0, 100, "0.00", higherPropertyName: nameof(MaxParticleVelocity), name: "Particle velocity")]
+    [ListViewProperty(sourcePropertyName: nameof(EffectorTypes))]
+    public List<EffectorModule> ParticleEffectors
+    {
+        get => new(_rawParticleEffectors);
+        set
+        {
+            SetParticleEffectors(new List<EffectorModule>(value));
+            ParticleEffectorsChanged?.Invoke(ParticleEffectors);
+        }
+    }
+    [ConfigGroupMember]
+    [MinMaxSliderProperty(0, 5, 0, 100, "0.00", higherPropertyName: nameof(MaxParticleVelocity), name: "Initial velocity")]
     public float MinParticleVelocity
     {
         get => _minParticleVelocity;
-        set { if (_minParticleVelocity != value) { SetMinParticleVelocity(value); MinParticleVelocityChanged?.Invoke(value); }; }
+        set { if (_minParticleVelocity != value) { _minParticleVelocity = value; MinParticleVelocityChanged?.Invoke(value); }; }
     }
     [ConfigGroupMember]
     [MinMaxSliderProperty] public float MaxParticleVelocity
     {
         get => _maxParticleVelocity;
-        set { if (_maxParticleVelocity != value) { SetMaxParticleVelocity(value); MaxParticleVelocityChanged?.Invoke(value); }; }
-    }
-    [ConfigGroupMember]
-    [ConfigProperty] 
-    public BoundsShapes BoundsShape
-    {
-        get => _boundsShape;
-        set { if (_boundsShape != value) { SetBoundsShape(value); BoundsShapeChanged?.Invoke(value); }; }
-    }
-    [ConfigGroupMember]
-    [SliderProperty(-5, 5, -30, 30, "0.0")]
-    public float BoundMargins
-    {
-        get => _boundMargins;
-        set { if (_boundMargins != value) { SetBoundMargins(value); BoundMarginsChanged?.Invoke(value); }; }
-    }
-    [ConfigGroupMember]
-    [SliderProperty(0, 3, 0, 100)]
-    public float BoundsAspect
-    {
-        get => _boundsAspect;
-        set { if (_boundsAspect != value) { SetBoundsAspect(value); BoundsAspectChanged?.Invoke(value); }; }
-    }
-    [ConfigGroupMember]
-    [ConfigGroupToggle(null, 1, new object[] { 1, 2 }, null, DoNotReorder = true)]
-    [ConfigProperty]
-    public BoundsBounceType BounceType
-    {
-        get => _bounceType;
-        set { if (_bounceType != value) { _bounceType = value; BounceTypeChanged?.Invoke(value); }; }
-    }
-    [ConfigGroupMember(groupIndex: 1, parentIndex: 0)]
-    [SliderProperty(0, 2)]
-    public float Restitution
-    {
-        get => _restitution;
-        set { if (_restitution != value) { _restitution = value; RestitutionChanged?.Invoke(value); }; }
-    }
-    [ConfigGroupMember(groupIndex: 2, parentIndex: 0)]
-    [SliderProperty(0, 1)]
-    public float RandomFraction
-    {
-        get => _randomFraction;
-        set { if (_randomFraction != value) { _randomFraction = value; RandomFractionChanged?.Invoke(value); }; }
-    }
-
-    public enum BoundsShapes {
-        Rectangle,
-        Ellipse
-    }
-
-    public enum BoundsBounceType
-    {
-        RandomBounce,
-        ElasticBounce,
-        HybridBounce,
-        Wrap
+        set { if (_maxParticleVelocity != value) { _maxParticleVelocity = value; MaxParticleVelocityChanged?.Invoke(value); }; }
     }
 
     public event System.Action<int> ParticleCountChanged;
     public event System.Action<float> MinParticleVelocityChanged;
     public event System.Action<float> MaxParticleVelocityChanged;
-    public event System.Action<float> BoundMarginsChanged;
-    public event System.Action<BoundsShapes> BoundsShapeChanged;
-    public event System.Action<float> BoundsAspectChanged;
-    public event System.Action<BoundsBounceType> BounceTypeChanged;
-    public event System.Action<float> RestitutionChanged;
-    public event System.Action<float> RandomFractionChanged;
+    public event System.Action<List<EffectorModule>> ParticleEffectorsChanged;
 
     private void SetParticlesCount(int value)
     {
@@ -133,65 +105,49 @@ public class ParticleController : MonoBehaviour
             ParticleCreated?.Invoke(particle);
         }
     }
-    private void SetMinParticleVelocity(float value)
-    {
-        _minParticleVelocity = value;
+    private void SetParticleEffectors(List<EffectorModule> effectors) {
+        _rawParticleEffectors = effectors;
 
-        foreach (Particle p in _particles)
-        {
-            float magnitude = p.Velocity.magnitude;
-            if (magnitude >= _minParticleVelocity) continue;
-            if (magnitude == 0)
-            {
-                p.SetRandomVelocity();
-                continue;
-            }
-            p.Velocity = p.Velocity / magnitude * _minParticleVelocity;
-        }
-    }
-    private void SetMaxParticleVelocity(float value)
-    {
-        _maxParticleVelocity = value;
+        // Add locked kinematic effector if it's not there
+        if (effectors.Count < 1 || effectors[0].Effector is not KinematicParticleEffector)
+            _rawParticleEffectors.Insert(0, new EffectorModule(typeof(KinematicParticleEffector)));
 
-        foreach (Particle p in _particles)
-        {
-            float magnitude = p.Velocity.magnitude;
-            if (magnitude <= _maxParticleVelocity) continue;
+        effectors[0].Enabled = true;
+        effectors[0].Locked = true;
+        effectors[0].Controller = this;
+        (effectors[0].Effector as KinematicParticleEffector).VelocityFactor = 1;
+        (effectors[0].Effector as KinematicParticleEffector).VelocityLimit = null;
 
-            p.Velocity = Vector3.ClampMagnitude(p.Velocity, _maxParticleVelocity);
-        }
-    }
-    private void SetBoundMargins(float value)
-    {
-        _boundMargins = value;
-        RecalculateBounds();
-    }
-    private void SetBoundsShape(BoundsShapes value)
-    {
-        _boundsShape = value;
-        _boundEffector?.Detach();
+        // Detach active effectors that disappeared
+        foreach (IParticleEffector effector in _activeParticleEffectors) {
+            var module = _rawParticleEffectors.Find(x => x.Effector == effector);
 
-        switch (_boundsShape)
-        {
-            case BoundsShapes.Rectangle:
-                _boundEffector = new RectangularBoundParticleEffector();
-                break;
-            case BoundsShapes.Ellipse:
-                _boundEffector = new EllipticalBoundParticleEffector();
-                break;
-            default:
-                throw new System.ArgumentException("Unknown bounds shape");
+            if (module is null || !module.Enabled)
+                effector.Detach();
         }
 
-        BoundsChanged?.Invoke();
-        _boundEffector.Init(this);
+        // Attach new effectors and rebuild active list
+        _activeParticleEffectors.Clear();
+        _boundsEffectors.Clear();
+        foreach (EffectorModule module in effectors.GetRange(1, effectors.Count - 1)) {
+            module.Controller = this;
+            if (!module.Enabled) continue;
+
+            IParticleEffector effector = module.Effector;
+            _activeParticleEffectors.Add(effector);
+            if (effector is BoundsParticleEffector bounds)
+                _boundsEffectors.Add(bounds);
+
+            if (!effector.Initialized)
+                effector.Init(this);
+        }
+
+        _activeEffectorsCount = _activeParticleEffectors.Count;
     }
-    private void SetBoundsAspect(float value)
-    {
-        _boundsAspect = value;
-        RecalculateBounds();
-    }
+
     #endregion
+
+    public event System.Action<Particle> ParticleCreated;
 
     [SetComponentProperty(typeof(UIArranger), nameof(UIArranger.SelectedConfigurationName), "Middle")]
     [ConfigGroupMember] [ConfigMemberOrder(-1)]
@@ -206,10 +162,18 @@ public class ParticleController : MonoBehaviour
     {
         particle.SetRandomVelocity();
 
-        // attempts are unnecessary if bounds provide a valid SamplePoint, but just in case they don't -
+        BoundsParticleEffector baseBounds = _boundsEffectors.Count > 0 ? _boundsEffectors[0] : _defaultBounds;
         for (int attempts = 0; attempts < 25; attempts++) {
-            particle.Position = _boundEffector.SamplePoint();
-            if (_boundEffector.InBounds(particle.Position)) break;
+            bool valid = true;
+            particle.Position = baseBounds.SamplePoint();
+
+            foreach (BoundsParticleEffector bounds in _boundsEffectors) {
+                if (bounds.InBounds(particle.Position)) continue;
+                valid = false;
+                break;
+            }
+
+            if (valid) break;
         }
     }
 
@@ -236,11 +200,10 @@ public class ParticleController : MonoBehaviour
         get => _viewport;
         set { if (_viewport != value) SetViewport(value); }
     }
-    public float HorizontalBase => _horizontalBase;
-    public float VerticalBase => _verticalBase;
+    public List<IParticleEffector> ActiveEffectors => _activeParticleEffectors;
+    public List<BoundsParticleEffector> ActiveBoundsEffectors => _boundsEffectors;
 
     public event System.Action<float> FragmentSizeChanged;
-    public event System.Action BoundsChanged;
 
     public void SetFragmentSize(float value)
     {
@@ -265,26 +228,22 @@ public class ParticleController : MonoBehaviour
         _particles = new List<Particle>(_particlesCount);
 
         SetViewport(_viewport);
-        SetBoundsShape(_boundsShape);
+        SetParticleEffectors(new List<EffectorModule>() {
+            new EffectorModule(typeof(BoundsParticleEffectorProxy))
+        });
+
+        var bounds = _boundsEffectors[0];
+        bounds.BoundsAspect = _boundsAspect;
+        bounds.BoundMargins = _boundMargins;
+        bounds.BounceType = _bounceType;
+        bounds.Restitution = _restitution;
+        bounds.RandomFraction = _randomFraction;
         SetParticlesCount(_particlesCount);
+
+        _defaultBounds.Init(this);
     }
 
-    private void OnViewportChanged()
-    {
-        RecalculateBounds();
-        DoFragmentation();
-    }
-
-    private void RecalculateBounds()
-    {
-        _verticalBase = _viewport.MaxY - _boundMargins;
-        if (BoundsAspect < 1)
-            _horizontalBase = (_viewport.MaxY - _boundMargins) * BoundsAspect;
-        else
-            _horizontalBase = _viewport.MaxY * Mathf.LerpUnclamped(1, _viewport.Aspect, BoundsAspect - 1) - _boundMargins;
-        _horizontalBase = Mathf.Max(_horizontalBase, 0);
-        BoundsChanged?.Invoke();
-    }
+    private void OnViewportChanged() => DoFragmentation();
 
     private void DoFragmentation()
     {
@@ -306,17 +265,6 @@ public class ParticleController : MonoBehaviour
                 _regionMap[i, j] = new FastList<Particle>(Mathf.CeilToInt(2 * AveragePerCell));
     }
 
-    private float _fragmentSize;
-    private List<Particle> _particles;
-    private FastList<Particle>[,] _regionMap;
-    private int _xSquareOffset;
-    private int _ySquareOffset;
-    private int _maxSquareX;
-    private int _maxSquareY;
-    private float _horizontalBase;
-    private float _verticalBase;
-    private BoundParticleEffector _boundEffector;
-
     private void Update()
     {
         for (int ry = 0; ry <= _maxSquareY; ry++)
@@ -327,8 +275,9 @@ public class ParticleController : MonoBehaviour
         {
             Particle particle = _particles[i];
             particle.Position += particle.Velocity * Time.deltaTime;
-
-            _boundEffector.AffectParticle(particle);
+            
+            for (int j = 0; j < _activeEffectorsCount; j++)
+                _activeParticleEffectors[j].AffectParticle(particle);
 
             GetSquare(particle.Position, out int x, out int y);
             _regionMap[x, y].Add(particle);

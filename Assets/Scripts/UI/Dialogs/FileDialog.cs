@@ -35,7 +35,7 @@ namespace ConstellationUI
 
         private List<GameObject> _fileObjects = new List<GameObject>();
         private DirectoryInfo _currentDirectory;
-        private ListEntry _selected;
+        private TextIconListEntry _selected;
         private string _fileFilter;
         private Dictionary<object, DirectoryInfo> _boundCallersDirectories = new Dictionary<object, DirectoryInfo>();
         private object _currentCaller;
@@ -130,12 +130,12 @@ namespace ConstellationUI
             UpdateFileView();
         }
 
-        private void OnFileClicked(ListEntry file)
+        private void OnFileClicked(TextIconListEntry file)
         {
             if (_selected) _selected.Highlighted = false;
             _selected = file;
             _selected.Highlighted = true;
-            _fileNameInputField.text = (file.Data as FileInfo).Name;
+            _fileNameInputField.text = (file.EntryData as FileInfo).Name;
             SelectedFileChanged?.Invoke(FileName);
         }
 
@@ -196,11 +196,10 @@ namespace ConstellationUI
 
                     GameObject newFileObject = Instantiate(_filePrefab, _filesView);
                     _fileObjects.Add(newFileObject);
-                    TextMeshProUGUI label = newFileObject.GetComponentInChildren<TextMeshProUGUI>();
-                    label.text = file.Name;
 
-                    ListEntry fileEntry = newFileObject.GetComponentInChildren<ListEntry>();
-                    fileEntry.Data = file;
+                    TextIconListEntry fileEntry = newFileObject.GetComponentInChildren<TextIconListEntry>();
+                    fileEntry.EntryData = file;
+                    fileEntry.LabelText = file.Name;
 
                     var button = newFileObject.GetComponentInChildren<UnityEngine.UI.Button>();
                     button.onClick.AddListener(() => OnFileClicked(fileEntry));

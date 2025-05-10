@@ -18,7 +18,8 @@ public class UIArrangerEditor : Editor
 		UIArranger uiArranger = (UIArranger)target;
 		SerializedObject serialized = new SerializedObject(uiArranger);
 		SerializedProperty selectedConfigIndex = serialized.FindProperty("_selectedConfiguration");
-		var configurations = (List<UIArranger.UIConfiguration>)typeof(UIArranger)
+        SerializedProperty allowSelfTransform = serialized.FindProperty("_allowSelfTransform");
+        var configurations = (List<UIArranger.UIConfiguration>)typeof(UIArranger)
 			.GetField("_configurations", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(uiArranger);
 
 		int selectedIndex = selectedConfigIndex.intValue;
@@ -79,6 +80,8 @@ public class UIArrangerEditor : Editor
 		}
 
 		EditorGUILayout.EndFoldoutHeaderGroup();
+
+        allowSelfTransform.boolValue = EditorGUILayout.Toggle("Allow transforming self", allowSelfTransform.boolValue);
 
 		if (configurations.Count > 0) 
 			configurations[selectedConfigIndex.intValue].SyncAllElements();

@@ -1047,6 +1047,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 078fb5d9a8650f54aa49770c57bc3a96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 2060586804}
   _cancelButton: {fileID: 0}
   _titleLabel: {fileID: 52774571}
@@ -1630,7 +1631,6 @@ MonoBehaviour:
   _minParticleVelocity: 0.1
   _maxParticleVelocity: 1
   _boundMargins: 0
-  _boundsShape: 0
   _boundsAspect: 2
   _bounceType: 0
   _restitution: 1
@@ -4187,6 +4187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ab3b2c5754b8c94c86cbcbd4561d770, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 1467822305}
   _cancelButton: {fileID: 0}
   _titleLabel: {fileID: 842234627}
@@ -4635,6 +4636,81 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 589714652}
+  m_CullTransparentMesh: 1
+--- !u!1 &590978330
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 590978331}
+  - component: {fileID: 590978333}
+  - component: {fileID: 590978332}
+  m_Layer: 5
+  m_Name: Fill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &590978331
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590978330}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1278842187}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: -6.0000076, y: -6}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &590978332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590978330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.47058824}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: 33cc94da16bcd9a4b99ccfda5a9b9522, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &590978333
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590978330}
   m_CullTransparentMesh: 1
 --- !u!1001 &591842323
 PrefabInstance:
@@ -5582,6 +5658,10 @@ PrefabInstance:
     - target: {fileID: 6080415381334213265, guid: f6539bbd80a7cfa48ac5ee6ed25b838e, type: 3}
       propertyPath: m_Options.m_Options.Array.data[1].m_Text
       value: All files "*"
+      objectReference: {fileID: 0}
+    - target: {fileID: 6714978872440298755, guid: f6539bbd80a7cfa48ac5ee6ed25b838e, type: 3}
+      propertyPath: _label
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 6080415379687491527, guid: f6539bbd80a7cfa48ac5ee6ed25b838e, type: 3}
@@ -7179,6 +7259,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8000336553768623330, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
+      propertyPath: _label
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 3877502789485936802, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
     - {fileID: 2311941150480031998, guid: 4bd02430169c7f445a65e211837b1e48, type: 3}
@@ -7442,7 +7526,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2712113877676417123, guid: 379b89f8fff5a1448af773591bb17640, type: 3}
       propertyPath: m_KeyboardType
-      value: 4
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2712113877676417123, guid: 379b89f8fff5a1448af773591bb17640, type: 3}
       propertyPath: m_CharacterLimit
@@ -8009,6 +8093,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0925a36e492cbab4bab1896d6d5012b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _selectedColor: {r: 1, g: 0.97587866, b: 0.23113209, a: 1}
   _deselectedColor: {r: 0.8113208, g: 0.8113208, b: 0.8113208, a: 1}
   _selectedSize: {x: 8, y: 8}
@@ -9229,6 +9314,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 590978331}
   - {fileID: 1710569543}
   - {fileID: 6927597821654063489}
   - {fileID: 217285057}
@@ -9334,6 +9420,7 @@ MonoBehaviour:
   _numericInputFieldPrefab: {fileID: 1313137866628742332, guid: e0138174b29fb534780f30c9ae232c7e, type: 3}
   _textInputFieldPrefab: {fileID: 1313137866628742332, guid: 01f9899fe9b203f419f76876aeeaa437, type: 3}
   _filePathSelectorPrefab: {fileID: 2263990515473673909, guid: 4fadaf381f9c72f47b6992a9ba86806d, type: 3}
+  _unboundedListViewPrefab: {fileID: 7126245044245970949, guid: 0bb9fa9df0333af4d879d6eada6ba93e, type: 3}
   _colorIndicatorPrefab: {fileID: 3910889304232484068, guid: 2f9bda56b9ef186458e4700e87d60543, type: 3}
   _labelPrefab: {fileID: 6718685849855497418, guid: 839bf9baef8eeae4e945503295424e83, type: 3}
   _collapsableHeaderPrefab: {fileID: 9203055433040285812, guid: a5d0535cb1072b547a4c0dad663af467, type: 3}
@@ -11370,6 +11457,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddcaa14617160ad4b9854fe6e0c77323, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 1059566259}
   _cancelButton: {fileID: 0}
   _titleLabel: {fileID: 928553089}
@@ -11839,12 +11927,12 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 655140699}
   - {fileID: 2073817535}
   - {fileID: 999297655}
   - {fileID: 1168711374}
   - {fileID: 999187297}
   - {fileID: 2092262618}
-  - {fileID: 655140699}
   - {fileID: 1993736182}
   - {fileID: 1310534706}
   - {fileID: 636944584}
@@ -11869,6 +11957,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e96717d0562130c4b8a60ca4beed36c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 1376026878}
   _cancelButton: {fileID: 1652680637}
   _titleLabel: {fileID: 1168711375}
@@ -12095,6 +12184,7 @@ MonoBehaviour:
       OffsetMax: {x: 600, y: 325}
       LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   _selectedConfiguration: 0
+  _allowSelfTransform: 0
 --- !u!1 &1555557848
 GameObject:
   m_ObjectHideFlags: 0
@@ -12335,6 +12425,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54cd2d21d061f674c91f895548f4de8f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 1293460941}
   _cancelButton: {fileID: 0}
   _titleLabel: {fileID: 1422340227}
@@ -13051,6 +13142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3732cd61963e70d43971da6af0a84261, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 1711234495}
   _cancelButton: {fileID: 599527611}
   _titleLabel: {fileID: 312682891}
@@ -13280,6 +13372,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0925a36e492cbab4bab1896d6d5012b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _selectedColor: {r: 1, g: 0.97587866, b: 0.23113209, a: 1}
   _deselectedColor: {r: 0.8113208, g: 0.8113208, b: 0.8113208, a: 1}
   _selectedSize: {x: 8, y: 8}
@@ -14864,6 +14957,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55bad1ae732c57142900b325b15beb0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 0}
   _cancelButton: {fileID: 1960737296}
   _titleLabel: {fileID: 1465017007}
@@ -15159,6 +15253,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93cabf71d1f597b429d453f8bc933e63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 1477279850}
   _cancelButton: {fileID: 591842325}
   _titleLabel: {fileID: 1202020076}
@@ -16058,6 +16153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8530560a60b815d4a8d386a282b69084, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _restrictMovement: 0
   _okButton: {fileID: 0}
   _cancelButton: {fileID: 1586021850}
   _titleLabel: {fileID: 1555557850}

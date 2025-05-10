@@ -6,7 +6,6 @@ using System.Text;
 using UnityCore;
 using ConstellationUI;
 using Core.Json;
-using System.Reflection;
 
 /// <summary>
 /// This class is responsible for collecting configs from several classes (ParticleController, MainVisualizer, etc.)
@@ -42,11 +41,11 @@ public class SimulationConfigSerializer : MonoBehaviour
         /// Specify `UpgradesToVersion` to set the lowest version that the upgrade should NOT apply to
         /// </summary>
         /// <param name="converter">input: config file contents (usually json); output: new config file contents</param>
-        public UpgradeRule(Func<string, string> converter, string appliesSinceVersion = null, string upgradeToVersion = null)
+        public UpgradeRule(Func<string, string> converter, string appliesSinceVersion = null, string upgradesToVersion = null)
         {
             Converter = converter;
             AppliesSinceVersion = appliesSinceVersion;
-            UpgradesToVersion = upgradeToVersion;
+            UpgradesToVersion = upgradesToVersion;
         }
     }
 
@@ -111,10 +110,11 @@ public class SimulationConfigSerializer : MonoBehaviour
             return curveTree.ToJson();
         });
 
+    // `Bounds upgrade` : elliptical bounds, new bounce types + velocity visualization
     private static string InitializeDefaults_1_2_2(string configJson) {
-        JsonTree curveTree = JsonSerializerUtility.ToJsonTree(configJson);
-        JsonTree particlesTree = curveTree["Particles"];
-        JsonTree debugTree = curveTree["Fragmentation"];
+        JsonTree configTree = JsonSerializerUtility.ToJsonTree(configJson);
+        JsonTree particlesTree = configTree["Particles"];
+        JsonTree debugTree = configTree["Fragmentation"];
         debugTree["ShowVelocities"] = JsonTree.MakeValue("false");
         debugTree["VelocityColor"] = JsonTree.MakeValue(DefaultJsonSerializer.Default.ToJson(Color.green));
         particlesTree["BounceType"] = JsonTree.MakeValue("\"RandomBounce\"");
@@ -129,7 +129,34 @@ public class SimulationConfigSerializer : MonoBehaviour
             boundMargins -= viewport.MaxX - viewport.MaxY;
             particlesTree["BoundMargins"] = JsonTree.MakeValue(DefaultJsonSerializer.Default.ToJson(boundMargins));
         }
-        return curveTree.ToJson();
+        return configTree.ToJson();
+    }
+
+    // `Effector upgrade` : particle effectors introduced
+    private static string InitializeDefaults_1_2_3(string configJson) {
+        JsonTree configTree = JsonSerializerUtility.ToJsonTree(configJson);
+        JsonTree particlesTree = configTree["Particles"];
+
+        // if you ever wondered how peak version upgrade code looks like, that's how:
+        // perfect forward-compatibility guaranteed. Will survive (almost) any code refactors
+        string boundMargin = particlesTree["BoundMargins"]?.Value ?? "0";
+        string boundAspect = particlesTree["BoundsAspect"]?.Value ?? "0";
+        string bounceType = particlesTree["BounceType"]?.Value ?? "\"RandomBounce\"";
+        string restitution = particlesTree["Restitution"]?.Value ?? "1";
+        string randomFraction = particlesTree["RandomFraction"]?.Value ?? "0.2";
+        string boundsShape = particlesTree["BoundsShape"]?.Value ?? "\"Rectangle\"";
+        string effectorsListJson = $"[{{\"$EffectorType\":\"BoundsParticleEffectorProxy\",\"Enabled\":true,\"Locked\":false,\"ModuleData\":" +
+            $"{{\"Name\":\"Bounds\",\"BoundsShape\":{boundsShape},\"BoundMargins\":{boundMargin},\"BoundsAspect\":{boundAspect}," +
+            $"\"BounceType\":{bounceType},\"Restitution\":{restitution},\"RandomFraction\":{randomFraction}}}}}]";
+        particlesTree.Properties.Remove("BoundMargins");
+        particlesTree.Properties.Remove("BoundsAspect");
+        particlesTree.Properties.Remove("BounceType");
+        particlesTree.Properties.Remove("Restitution");
+        particlesTree.Properties.Remove("RandomFraction");
+        particlesTree.Properties.Remove("BoundsShape");
+        particlesTree["ParticleEffectors"] = JsonTree.MakeValue(effectorsListJson);
+
+        return configTree.ToJson();
     }
 
     /// <summary>
@@ -137,9 +164,10 @@ public class SimulationConfigSerializer : MonoBehaviour
     /// </summary>
     private readonly List<UpgradeRule> UpgradeRules = new List<UpgradeRule>() {
         { new UpgradeRule(StripDeprecatedAnimationCurveProperties /* no harm in applying this to higher versions? */ ) },
-        { new UpgradeRule(InvertLineColorV2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.1.16") },
-        { new UpgradeRule(InvertAlphaCurveV2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.1.16") },
-        { new UpgradeRule(InitializeDefaults_1_2_2, appliesSinceVersion: "1.0.0", upgradeToVersion: "1.2.2") },
+        { new UpgradeRule(InvertLineColorV2, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.1.16") },
+        { new UpgradeRule(InvertAlphaCurveV2, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.1.16") },
+        { new UpgradeRule(InitializeDefaults_1_2_2, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.2.2") },
+        { new UpgradeRule(InitializeDefaults_1_2_3, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.2.3") },
     };
 
     private static bool IsMatchingRule(string configVersion, UpgradeRule rule)

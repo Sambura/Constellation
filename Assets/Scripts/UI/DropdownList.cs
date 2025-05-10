@@ -22,6 +22,8 @@ namespace ConstellationUI
 
         public event System.Action<int> SelectedValueChanged;
 
+        public CustomDropdown WrappedDropdown => _dropdown;
+
         public void SetOptions(List<string> options)
         {
             _dropdown.ClearOptions();

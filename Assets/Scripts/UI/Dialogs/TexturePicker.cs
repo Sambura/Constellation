@@ -29,7 +29,7 @@ namespace ConstellationUI
         }
 
         private readonly List<GameObject> _listEntryObjects = new List<GameObject>();
-        private ListEntry _selected;
+        private TextIconListEntry _selected;
         private Texture2D _texture;
 
         protected override void Awake()
@@ -45,12 +45,12 @@ namespace ConstellationUI
 
         private void InvokeOnTextureChanged(Texture2D texture) => OnTextureChanged?.Invoke(texture);
 
-        private void OnListEntryClicked(ListEntry entry)
+        private void OnListEntryClicked(TextIconListEntry entry)
         {
             if (_selected) _selected.Highlighted = false;
             _selected = entry;
             _selected.Highlighted = true;
-            Texture = _selected.Data as Texture2D;
+            Texture = _selected.EntryData as Texture2D;
         }
 
         public void UpdateSpriteList()
@@ -63,10 +63,10 @@ namespace ConstellationUI
             {
                 Texture2D texture = fileTexture.Texture;
                 GameObject newFileObject = Instantiate(_textureListEntryPrefab, _texturesListView);
-                ListEntry listEntry = newFileObject.GetComponent<ListEntry>();
-                listEntry.Label.text = texture.name;
+                TextIconListEntry listEntry = newFileObject.GetComponent<TextIconListEntry>();
+                listEntry.LabelText = texture.name;
                 listEntry.Icon.sprite = TextureManager.ToSprite(texture);
-                listEntry.Data = texture;
+                listEntry.EntryData = texture;
 
                 UnityEngine.UI.Button button = newFileObject.GetComponent<UnityEngine.UI.Button>();
                 button.onClick.AddListener(() => OnListEntryClicked(listEntry));
@@ -132,7 +132,7 @@ namespace ConstellationUI
                 }
 
                 UpdateSpriteList();
-                OnListEntryClicked(_listEntryObjects[_listEntryObjects.Count - 1].GetComponent<ListEntry>());
+                OnListEntryClicked(_listEntryObjects[^1].GetComponent<TextIconListEntry>());
                 return true;
             }
         }
@@ -140,12 +140,12 @@ namespace ConstellationUI
         public void RemoveSelected()
         {
             if (_selected == null || _textureManager.Textures.Count <= 1) return;
-            // We could use `Texture` property instead, but we don't have gurantees on that it 
+            // We could use `Texture` property instead, but we don't have guarantees on that it 
             // is currently selected in the list
-            _textureManager.RemoveTexture(_selected.Data as Texture2D);
+            _textureManager.RemoveTexture(_selected.EntryData as Texture2D);
             UpdateSpriteList();
             _selected = null;
-            OnListEntryClicked(_listEntryObjects[0].GetComponent<ListEntry>());
+            OnListEntryClicked(_listEntryObjects[0].GetComponent<TextIconListEntry>());
         }
     }
 }

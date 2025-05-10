@@ -14,6 +14,7 @@ namespace Core.Json
         SerializeFields = 1,
         SerializeProperties = 2,
         SerializeReadonlyProperties = 4,
+        SerializeNonPublicMembers = 8,
     }
 
     /// <summary>
@@ -36,6 +37,7 @@ namespace Core.Json
             return value + ".0";
         }
 
+        // TODO: detect serialization cycles (when object A has object B as its property, and B has A as its property)
         public string ToJson(object obj)
         {
             if (obj == null) return "null";
@@ -74,16 +76,21 @@ namespace Core.Json
                 MemberInfo[] members = type.GetMembers();
                 JsonSerializerFlags flags = JsonSerializerFlags.Default;
                 if (_typeSpecificFlags.ContainsKey(type)) flags = _typeSpecificFlags[type];
+                bool requirePublic = !flags.HasFlag(JsonSerializerFlags.SerializeNonPublicMembers);
+                bool requireWriteable = !flags.HasFlag(JsonSerializerFlags.SerializeReadonlyProperties);
+
                 foreach (MemberInfo member in members)
                 {
                     NoJsonSerializationAttribute config = member.GetCustomAttribute<NoJsonSerializationAttribute>();
                     if (config is { } && !config.AllowToJson) continue;
+
                     switch (member.MemberType)
                     {
                         // TODO: think about disabling serialization of deprecated members (make it a flag?)
                         case MemberTypes.Field:
                             if (!flags.HasFlag(JsonSerializerFlags.SerializeFields)) continue;
                             FieldInfo field = (FieldInfo)member;
+                            if (requirePublic && !field.IsPublic) continue;
                             JsonSerializerUtility.SerializeDefault(json, field.Name, field.GetValue(obj));
                             break;
                         case MemberTypes.Property:
@@ -92,7 +99,9 @@ namespace Core.Json
                             // TODO: what do we do with indexable properties?
                             if (property.GetIndexParameters().Length > 0) continue;
                             if (!property.CanRead) continue;
-                            if (!property.CanWrite && !flags.HasFlag(JsonSerializerFlags.SerializeReadonlyProperties)) continue;
+                            if (requirePublic && !property.GetMethod.IsPublic) continue;
+                            if (requireWriteable && !property.CanWrite) continue;
+                            if (requireWriteable && requirePublic && !property.SetMethod.IsPublic) continue;
                             JsonSerializerUtility.SerializeDefault(json, property.Name, property.GetValue(obj));
                             break;
                         default:

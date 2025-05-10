@@ -17,30 +17,27 @@ namespace ConstellationUI
         [SerializeField] private float _paddingBottom;
 
         private RectTransform _transform;
+        protected RectTransform RectTransform => _transform ?? (_transform = GetComponent<RectTransform>());
 
         private void Awake()
         {
-            _transform = GetComponent<RectTransform>();
             MonoEvents events = _referenceChild.gameObject.GetOrAddComponent<MonoEvents>();
             events.OnRectTransformChange += UpdateLayout;
         }
 
-        private void OnEnable()
-        {
-            UpdateLayout();
-        }
+        private void OnEnable() => UpdateLayout();
 
         public void UpdateLayout()
         {
             if (!enabled) return;
 
             // This is kindof (?) a hack for it to work nicely with VerticalUILayout
-            float y = (_transform.offsetMin.y + _transform.offsetMax.y) / 2;
+            float y = (RectTransform.offsetMin.y + RectTransform.offsetMax.y) / 2;
             // ??????
-            float x = (_transform.offsetMin.x + _transform.offsetMax.x) / 2;
+            float x = (RectTransform.offsetMin.x + RectTransform.offsetMax.x) / 2;
 
-            _transform.offsetMin = new Vector2(x - _referenceChild.rect.width / 2 - _paddingLeft, y - _referenceChild.rect.height / 2 - _paddingBottom);
-            _transform.offsetMax = new Vector2(x + _referenceChild.rect.width / 2 + _paddingRight, y + _referenceChild.rect.height / 2 + _paddingTop);
+            RectTransform.offsetMin = new Vector2(x - _referenceChild.rect.width / 2 - _paddingLeft, y - _referenceChild.rect.height / 2 - _paddingBottom);
+            RectTransform.offsetMax = new Vector2(x + _referenceChild.rect.width / 2 + _paddingRight, y + _referenceChild.rect.height / 2 + _paddingTop);
 
             // ?????????????????????????
             GetComponent<MonoEvents>()?.InvokeRectTransformChange();

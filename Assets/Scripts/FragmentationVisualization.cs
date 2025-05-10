@@ -91,6 +91,7 @@ public class FragmentationVisualization : MonoBehaviour
     /// </summary>
     [ConfigGroupMember]
     [ConfigProperty(hasEvent: false, AllowPolling = false)]
+    [Core.Json.NoJsonSerialization(AllowFromJson = true)]
     public bool VisualizeBoundsChange { get; set; } = true;
 
     public event Action<bool> ShowCellBordersChanged;
@@ -106,6 +107,7 @@ public class FragmentationVisualization : MonoBehaviour
     private bool _boundsFlash = false;
     private Coroutine _boundsFlashCoroutine;
     private AnalyticsCore _analyticsCore;
+    private List<BoundsParticleEffector> _registeredEffectors = new List<BoundsParticleEffector>(); 
 
     private void SetShowCellBorders(bool value)
     {
@@ -137,6 +139,7 @@ public class FragmentationVisualization : MonoBehaviour
 
     private void OnFragmentSizeChanged(float fragmentSize) {
         int count = _showBounds || _boundsFlash ? _maxLinesForBounds : 0;
+        count *= _registeredEffectors.Count;
         if (_showCellBorders) {
             count += Mathf.CeilToInt((float)_fragmentator.Viewport.Width / _fragmentator.FragmentSize) + 2;
             count += Mathf.CeilToInt((float)_fragmentator.Viewport.Height / _fragmentator.FragmentSize) + 2;
@@ -162,9 +165,35 @@ public class FragmentationVisualization : MonoBehaviour
 
         UpdateRenderBatch();
         _fragmentator.FragmentSizeChanged += OnFragmentSizeChanged;
+        _fragmentator.ParticleEffectorsChanged += OnEffectorsChanged;
         OnFragmentSizeChanged(_fragmentator.FragmentSize);
-        _fragmentator.BoundsChanged += OnBoundsChanged;
         _analyticsCore = FindFirstObjectByType<AnalyticsCore>(FindObjectsInactive.Include);
+        OnEffectorsChanged(_fragmentator.ParticleEffectors);
+    }
+
+    private void OnEffectorsChanged(List<EffectorModule> modules)
+    {
+        var newBoundEffectors = _fragmentator.ActiveBoundsEffectors;
+        int matches = 0;
+
+        // compare old and new bound effectors. If same - do nothing
+        foreach (var effector in newBoundEffectors) {
+            if (_registeredEffectors.Contains(effector))
+                matches++;
+        }
+        if (_registeredEffectors.Count == newBoundEffectors.Count && newBoundEffectors.Count == matches) return;
+
+        // bound effectors changed: rebuild registered list
+        foreach (var effector in _registeredEffectors)
+            effector.BoundsChanged -= OnBoundsChanged;
+
+        _registeredEffectors.Clear();
+        _registeredEffectors.AddRange(newBoundEffectors);
+
+        foreach (var effector in newBoundEffectors)
+            effector.BoundsChanged += OnBoundsChanged;
+
+        OnBoundsChanged();
     }
 
     private void OnBoundsChanged() {
@@ -237,37 +266,39 @@ public class FragmentationVisualization : MonoBehaviour
 
         if (_showBounds || _boundsFlash)
         {
-            if (_fragmentator.BoundsShape == ParticleController.BoundsShapes.Rectangle)
-            {
-                (float left, float right, float bottom, float top) = (-_fragmentator.HorizontalBase, _fragmentator.HorizontalBase, -_fragmentator.VerticalBase, _fragmentator.VerticalBase);
-                // _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
-                // _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
-                // _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
-                // _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
-                _newRenderer.DrawLine(left, bottom, left, top, _lineMat, _boundsColor);
-                _newRenderer.DrawLine(right, bottom, right, top, _lineMat, _boundsColor);
-                _newRenderer.DrawLine(left, bottom, right, bottom, _lineMat, _boundsColor);
-                _newRenderer.DrawLine(left, top, right, top, _lineMat, _boundsColor);
-            } else if (_fragmentator.BoundsShape == ParticleController.BoundsShapes.Ellipse)
-            {
-                int pointCount = _maxLinesForBounds;
-                Vector2 prev = new Vector2(_fragmentator.HorizontalBase, 0);
-
-                for (int i = 1; i <= pointCount; i++) {
-                    Vector2 pos = GetEllipsePoint(Mathf.PI * 2 * i / pointCount);
-                    _newRenderer.DrawLine(prev.x, prev.y, pos.x, pos.y, _lineMat, _boundsColor);
-                    prev = pos;
-                }
-
-                Vector2 GetEllipsePoint(float angle)
+            foreach (var bounds in _registeredEffectors) {
+                if (bounds is RectangularBoundParticleEffector)
                 {
-                    float a = _fragmentator.HorizontalBase;
-                    float b = _fragmentator.VerticalBase;
-                    float s = Mathf.Sin(angle);
-                    float c = Mathf.Cos(angle);
+                    (float left, float right, float bottom, float top) = (-bounds.HorizontalBase, bounds.HorizontalBase, -bounds.VerticalBase, bounds.VerticalBase);
+                    // _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
+                    // _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
+                    // _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
+                    // _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
+                    _newRenderer.DrawLine(left, bottom, left, top, _lineMat, _boundsColor);
+                    _newRenderer.DrawLine(right, bottom, right, top, _lineMat, _boundsColor);
+                    _newRenderer.DrawLine(left, bottom, right, bottom, _lineMat, _boundsColor);
+                    _newRenderer.DrawLine(left, top, right, top, _lineMat, _boundsColor);
+                } else if (bounds is EllipticalBoundParticleEffector)
+                {
+                    int pointCount = _maxLinesForBounds;
+                    Vector2 prev = new Vector2(bounds.HorizontalBase, 0);
 
-                    float d = Mathf.Sqrt(Mathf.Pow(a * s, 2) + Mathf.Pow(b * c, 2));
-                    return new Vector2(c, s) * a * b / d;
+                    for (int i = 1; i <= pointCount; i++) {
+                        Vector2 pos = GetEllipsePoint(Mathf.PI * 2 * i / pointCount);
+                        _newRenderer.DrawLine(prev.x, prev.y, pos.x, pos.y, _lineMat, _boundsColor);
+                        prev = pos;
+                    }
+
+                    Vector2 GetEllipsePoint(float angle)
+                    {
+                        float a = bounds.HorizontalBase;
+                        float b = bounds.VerticalBase;
+                        float s = Mathf.Sin(angle);
+                        float c = Mathf.Cos(angle);
+
+                        float d = Mathf.Sqrt(Mathf.Pow(a * s, 2) + Mathf.Pow(b * c, 2));
+                        return new Vector2(c, s) * a * b / d;
+                    }
                 }
             }
         }

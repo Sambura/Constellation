@@ -56,7 +56,7 @@ namespace ConstellationUI
 
                 while (_nodes.Count > value.length)
                 {
-                    Destroy(_nodes[_nodes.Count - 1].gameObject);
+                    Destroy(_nodes[^1].gameObject);
                     _nodes.RemoveAt(_nodes.Count - 1);
                 }
 
@@ -68,7 +68,6 @@ namespace ConstellationUI
                     Keyframe key = value[i];
                     _nodes[i].SetNormalizedPosition(new Vector2(key.time, key.value));
                     _nodes[i].Data = key;
-                    _nodes[i].Data.weightedMode = WeightedMode.Both;
                 }
                 _curve = value;
 
@@ -125,7 +124,7 @@ namespace ConstellationUI
         private void PlaceKnots()
         {
             _leftKnot.gameObject.SetActive(SelectedNode != _nodes[0]);
-            _rightKnot.gameObject.SetActive(SelectedNode != _nodes[_nodes.Count - 1]);
+            _rightKnot.gameObject.SetActive(SelectedNode != _nodes[^1]);
 
             Vector3 position = SelectedNode.Position;
 

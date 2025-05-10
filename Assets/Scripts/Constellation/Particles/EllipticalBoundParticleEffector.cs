@@ -1,9 +1,8 @@
 using UnityEngine;
-using static ParticleController;
 
-public sealed class EllipticalBoundParticleEffector : BoundParticleEffector
+public sealed class EllipticalBoundParticleEffector : BoundsParticleEffector
 {
-    public override string Name { get; set; } = "Elliptical Bounds Effector";
+    public override string Name { get; set; } = "Elliptical Bounds";
 
     private float _hBaseSquare;
     private float _vBaseSquare;
@@ -25,7 +24,7 @@ public sealed class EllipticalBoundParticleEffector : BoundParticleEffector
 
         Vector2 normal = new Vector2(normalX, normalY);
         float tangentWeight, normalWeight, tangentFraction;
-        switch (BounceType) {
+        switch (_bounceType) {
             case BoundsBounceType.RandomBounce:
                 tangentWeight = Random.value * 2 - 1;
                 normalWeight = System.MathF.Sqrt(1 - tangentWeight * tangentWeight);
@@ -33,15 +32,15 @@ public sealed class EllipticalBoundParticleEffector : BoundParticleEffector
                 break;
             case BoundsBounceType.ElasticBounce:
                 tangentFraction = tangent.x * p.Velocity.x + tangent.y * p.Velocity.y;
-                p.Velocity = (-p.Velocity + 2 * tangentFraction * (Vector3)tangent) * Restitution;
+                p.Velocity = (-p.Velocity + 2 * tangentFraction * (Vector3)tangent) * _restitution;
                 break;
             case BoundsBounceType.HybridBounce:
                 tangentWeight = Random.value * 2 - 1;
                 normalWeight = System.MathF.Sqrt(1 - tangentWeight * tangentWeight);
                 tangentFraction = tangent.x * p.Velocity.x + tangent.y * p.Velocity.y;
-                Vector3 elasticComponent = (-p.Velocity + 2 * tangentFraction * (Vector3)tangent) * Restitution;
+                Vector3 elasticComponent = (-p.Velocity + 2 * tangentFraction * (Vector3)tangent) * _restitution;
                 p.SetVelocityDirection(normalWeight * normal + tangentWeight * tangent);
-                p.Velocity = p.Velocity * RandomFraction + elasticComponent * (1 - RandomFraction);
+                p.Velocity = p.Velocity * _randomFraction + elasticComponent * (1 - _randomFraction);
                 break;
             case BoundsBounceType.Wrap:
                 p.Position = new Vector3(-p.Position.x, -p.Position.y);
@@ -54,13 +53,13 @@ public sealed class EllipticalBoundParticleEffector : BoundParticleEffector
     }
 
     public override Vector2 SamplePoint() {
-        return Random.insideUnitCircle * new Vector2(HorizontalBase, VerticalBase);
+        return Random.insideUnitCircle * new Vector2(_horizontalBase, _verticalBaes);
     }
 
-    protected override void OnBoundsUpdated() {
-        base.OnBoundsUpdated();
+    protected override void RecalculateBounds() {
+        base.RecalculateBounds();
 
-        _hBaseSquare = HorizontalBase * HorizontalBase;
-        _vBaseSquare = VerticalBase * VerticalBase;
+        _hBaseSquare = _horizontalBase * _horizontalBase;
+        _vBaseSquare = _verticalBaes * _verticalBaes;
     }
 }
