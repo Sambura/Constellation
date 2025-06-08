@@ -31,6 +31,12 @@ public sealed class BoundsParticleEffectorProxy : BoundsParticleEffector, IParti
     {
         _boundsShape = value;
 
+        // We assume only these can change from inside the proxied effector
+        if (Effector is not null) {
+            BoundsEffector.BoundMarginsChanged -= PropagateBoundMargins;
+            BoundsEffector.BoundsAspectChanged -= PropagateBoundsAspect;
+        }
+
         Effector = _boundsShape switch {
             BoundsShapes.Rectangle => new RectangularBoundParticleEffector(),
             BoundsShapes.Ellipse => new EllipticalBoundParticleEffector(),
@@ -42,6 +48,10 @@ public sealed class BoundsParticleEffectorProxy : BoundsParticleEffector, IParti
         PropagateBounceType(BounceType);
         PropagateRestitution(Restitution);
         PropagateRandomFraction(RandomFraction);
+        PropagateShowBounds(ShowBounds);
+        PropagateBoundsColor(BoundsColor);
+        BoundsEffector.BoundMarginsChanged += PropagateBoundMargins;
+        BoundsEffector.BoundsAspectChanged += PropagateBoundsAspect;
 
         EffectorChanged?.Invoke(Effector);
     }
@@ -60,15 +70,21 @@ public sealed class BoundsParticleEffectorProxy : BoundsParticleEffector, IParti
         BounceTypeChanged += PropagateBounceType;
         RestitutionChanged += PropagateRestitution;
         RandomFractionChanged += PropagateRandomFraction;
+        ShowBoundsChanged += PropagateShowBounds;
+        BoundsColorChanged += PropagateBoundsColor;
         
         SetBoundsShape(_boundsShape);
     }
 
-    private void PropagateBoundMargins(float margins) => BoundsEffector.BoundMargins = margins;
-    private void PropagateBoundsAspect(float aspect) => BoundsEffector.BoundsAspect = aspect;
+    private void PropagateBoundMargins(float margins) { BoundsEffector.BoundMargins = margins; BoundMargins = margins; }
+    private void PropagateBoundsAspect(float aspect) { BoundsEffector.BoundsAspect = aspect; BoundsAspect = aspect; }
     private void PropagateBounceType(BoundsBounceType bounceType) => BoundsEffector.BounceType = bounceType;
     private void PropagateRestitution(float restitution) => BoundsEffector.Restitution = restitution;
     private void PropagateRandomFraction(float fraction) => BoundsEffector.RandomFraction = fraction;
+    private void PropagateShowBounds(bool showBounds) => BoundsEffector.ShowBounds = showBounds;
+    private void PropagateBoundsColor(Color boundsColor) => BoundsEffector.BoundsColor = boundsColor;
+
+    public override void RenderControls(ControlType controlTypes) => throw new InvalidOperationException();
 }
 
 public enum BoundsShapes

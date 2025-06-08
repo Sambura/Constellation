@@ -1,5 +1,6 @@
-using System;
+using System.Collections.Generic;
 using System.Text;
+using System;
 using Core.Json;
 
 public class EffectorModuleJsonSerializer : IJsonPropertySerializer<EffectorModule>
@@ -17,6 +18,7 @@ public class EffectorModuleJsonSerializer : IJsonPropertySerializer<EffectorModu
         JsonSerializerUtility.SerializeDefault(json, nameof(module.Enabled), module.Enabled);
         JsonSerializerUtility.SerializeDefault(json, nameof(module.Locked), module.Locked);
         JsonSerializerUtility.SerializeDefault(json, nameof(module.ModuleData), module.ModuleData);
+        JsonSerializerUtility.SerializeDefault(json, nameof(module.QuickToggleStates), module.QuickToggleStates);
         JsonSerializerUtility.EndObject(json);
         return json.ToString();
     }
@@ -31,8 +33,8 @@ public class EffectorModuleJsonSerializer : IJsonPropertySerializer<EffectorModu
 
         string effectorTypeName = (string)DefaultJsonSerializer.Default.FromJson(typeJson, typeof(string));
         Type effectorType = GetType().Assembly.GetType(effectorTypeName);
-        bool isEffector = effectorType.GetInterface(nameof(IParticleEffector)) is { };
-        bool isProxy = effectorType.GetInterface(nameof(IParticleEffectorProxy)) is { };
+        bool isEffector = effectorType?.GetInterface(nameof(IParticleEffector)) is { };
+        bool isProxy = effectorType?.GetInterface(nameof(IParticleEffectorProxy)) is { };
         if (effectorType is null || (!isEffector && !isProxy)) 
             throw new JsonSerializerException($"The effector type {effectorTypeName} is invalid");
 
@@ -46,6 +48,14 @@ public class EffectorModuleJsonSerializer : IJsonPropertySerializer<EffectorModu
             module.Enabled = (bool)DefaultJsonSerializer.Default.FromJson(enabled, typeof(bool));
         if (properties.TryGetValue(nameof(module.Locked), out string locked))
             module.Locked = (bool)DefaultJsonSerializer.Default.FromJson(locked, typeof(bool));
+        if (properties.TryGetValue(nameof(module.QuickToggleStates), out string toggleStates)) {
+            module.QuickToggleStates = (List<int>)DefaultJsonSerializer.Default.FromJson(toggleStates, typeof(List<int>));
+            // filter values
+            int toggleCount = module.GetQuickToggles().Count;
+            while (module.QuickToggleStates.Count < toggleCount)
+                module.QuickToggleStates.Add(0);
+            module.QuickToggleStates.RemoveRange(toggleCount, module.QuickToggleStates.Count - toggleCount);
+        }
 
         return module;
     }

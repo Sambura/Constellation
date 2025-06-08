@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using static UnityCore.Utility;
+using static Core.MathUtility;
+using UnityCore;
 
 public class ObjectMeshRenderer : MonoBehaviour
 {
@@ -30,11 +32,13 @@ public class ObjectMeshRenderer : MonoBehaviour
         public int UnitIndex;
         public int LastVertexIndex;
         public int LastUnitIndex;
+        public float RunningUnitCount;
     }
 
     private List<Dictionary<Material, RenderUnitEntry>> _renderUnits = new List<Dictionary<Material, RenderUnitEntry>>();
     private Dictionary<Material, RenderUnitEntry> _quadRenderUnits = new Dictionary<Material, RenderUnitEntry>();
     private Dictionary<Material, RenderUnitEntry> _lineRenderUnits = new Dictionary<Material, RenderUnitEntry>();
+    private int _drawcalls;
 
     // a bit less than the actual max (it seems it's discouraged to go to the actual max)
     private static readonly int MaxVertexCount = 65200;
@@ -45,9 +49,12 @@ public class ObjectMeshRenderer : MonoBehaviour
     private static readonly MeshUpdateFlags UpdateFlags = MeshUpdateFlags.DontValidateIndices |
         MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontResetBoneBounds | MeshUpdateFlags.DontNotifyMeshUsers;
 
+    public static ObjectMeshRenderer Instance { get; private set; }
+
     private void Awake() {
         _renderUnits.Add(_quadRenderUnits);
         _renderUnits.Add(_lineRenderUnits);
+        Instance ??= this;
     }
 
     private RenderUnit MakeLineRenderUnit(Material mat, int lineCount = -1)
@@ -111,7 +118,10 @@ public class ObjectMeshRenderer : MonoBehaviour
     }
 
     private void LateUpdate() {
+        if (_drawcalls == 0) return;
+
         SubmitFrame();
+        _drawcalls = _drawcalls > 1 ? 1 : 0;
 
         foreach (var units in _renderUnits) {
             foreach (var entry in units.Values) {
@@ -119,6 +129,13 @@ public class ObjectMeshRenderer : MonoBehaviour
                 entry.LastUnitIndex = entry.UnitIndex;
                 entry.VertexIndex = 0;
                 entry.UnitIndex = 0;
+
+                entry.RunningUnitCount = (1 - Time.deltaTime) * entry.RunningUnitCount + Time.deltaTime * (entry.LastUnitIndex + 0.5f);
+                float maxUnits = System.MathF.Max(entry.LastUnitIndex + 1, entry.RunningUnitCount);
+                while (maxUnits < entry.Units.Count) {
+                    Destroy(entry.Units[0].Parent);
+                    entry.Units.RemoveAt(0);
+                }
             }
         }
     }
@@ -140,7 +157,7 @@ public class ObjectMeshRenderer : MonoBehaviour
             // Activate / deactivate render units
             for (int i = 0; i < renderUnits.Count; i++)
             {
-                bool enabled = i <= unitIndex;
+                bool enabled = i <= unitIndex && (unitIndex > 0 || vIndex > 0);
                 if (renderUnits[i].Parent.activeSelf == enabled) continue;
                 renderUnits[i].Parent.SetActive(enabled);
                 if (enabled) continue;
@@ -177,54 +194,9 @@ public class ObjectMeshRenderer : MonoBehaviour
         }
     }
 
-    public void ReserveQuadCount(Material mat, int quadCount) {
-        mat ??= _defaultMat;
-        if (!_quadRenderUnits.TryGetValue(mat, out RenderUnitEntry entry))
-        {
-            entry = new RenderUnitEntry() { Units = new List<RenderUnit>() };
-            _quadRenderUnits.Add(mat, entry);
-        }
-
-        int unitsCount = Mathf.CeilToInt((float)quadCount / QuadsPerUnit);
-        while (entry.Units.Count > 0) {
-            Destroy(entry.Units[0].Parent);
-            entry.Units.RemoveAt(0);
-        }
-        entry.LastUnitIndex = 0;
-        entry.LastVertexIndex = 0;
-
-        while (unitsCount > entry.Units.Count) {
-            int count = Mathf.Min(quadCount, QuadsPerUnit);
-            quadCount -= count;
-            entry.Units.Add(MakeQuadRenderUnit(mat, count));
-        }
-    }
-
-    public void ReserveLineCount(Material mat, int lineCount) {
-        mat ??= _defaultMat;
-        if (!_lineRenderUnits.TryGetValue(mat, out RenderUnitEntry entry)) {
-            entry = new RenderUnitEntry() { Units = new List<RenderUnit>() };
-            _lineRenderUnits.Add(mat, entry);
-        }
-
-        int unitsCount = Mathf.CeilToInt((float)lineCount / LinesPerUnit);
-        while (entry.Units.Count > 0) {
-            int lastIndex = entry.Units.Count - 1;
-            Destroy(entry.Units[lastIndex].Parent);
-            entry.Units.RemoveAt(lastIndex);
-        }
-        entry.LastUnitIndex = 0;
-        entry.LastVertexIndex = 0;
-
-        while (unitsCount > entry.Units.Count) {
-            int count = Mathf.Min(lineCount, LinesPerUnit);
-            lineCount -= count;
-            entry.Units.Add(MakeLineRenderUnit(mat, count));
-        }
-    }
-
     public void DrawQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, Material mat, Color color)
     {
+        _drawcalls++;
         mat ??= _defaultMat;
         if (!_quadRenderUnits.TryGetValue(mat, out RenderUnitEntry entry)) {
             entry = new RenderUnitEntry() { Units = new List<RenderUnit>() { MakeQuadRenderUnit(mat) } };
@@ -262,6 +234,7 @@ public class ObjectMeshRenderer : MonoBehaviour
 
     public void DrawLine(float x1, float y1, float x2, float y2, Material mat, Color color)
     {
+        _drawcalls++;
         mat ??= _defaultMat;
         if (!_lineRenderUnits.TryGetValue(mat, out RenderUnitEntry entry)) {
             entry = new RenderUnitEntry() { Units = new List<RenderUnit>() { MakeLineRenderUnit(mat) } };
@@ -287,5 +260,44 @@ public class ObjectMeshRenderer : MonoBehaviour
         vertBuffer[entry.VertexIndex].y = y2;
         vertBuffer[entry.VertexIndex].color = color;
         entry.VertexIndex++;
+    }
+
+    public void DrawArrow(Vector2 src, Vector2 direction, Material mat, Color color, float sideFactor = 17f / 40f, float sharpness = 10f / 17f)
+    {
+        Vector2 dest = src + direction;
+        Vector2 sideDirection = -direction * sideFactor;
+        Vector2 normal = sideDirection.Rotate90CCW();
+        Vector2 arrow1 = dest + normal * (1 - sharpness) + sideDirection * sharpness;
+        Vector2 arrow2 = dest - normal * (1 - sharpness) + sideDirection * sharpness;
+
+        DrawLine(src.x, src.y, dest.x, dest.y, mat, color);
+        DrawLine(arrow1.x, arrow1.y, dest.x, dest.y, mat, color);
+        DrawLine(arrow2.x, arrow2.y, dest.x, dest.y, mat, color);
+    }
+
+    public void DrawEllipse(Vector2 center, float radiusA, float radiusB, bool dashed, Material mat, Color color, float pointCountFactor = 80)
+    {
+        int pointCount = Mathf.CeilToInt((radiusA + radiusB) * pointCountFactor);
+        Vector2 prev = center + new Vector2(radiusA, 0);
+        for (int i = 1; i <= pointCount; i++)
+        {
+            Vector2 pos = center + GetEllipsePoint(radiusA, radiusB, Mathf.PI * 2 * i / pointCount).ToVector2();
+            if (!dashed || i % 2 == 1)
+                DrawLine(prev.x, prev.y, pos.x, pos.y, mat, color);
+            prev = pos;
+        }
+    }
+
+    public void DrawCircle(Vector2 center, float radius, bool dashed, Material mat, Color color, float pointCountFactor = 80)
+    {
+        int pointCount = Mathf.CeilToInt(2 * radius * pointCountFactor);
+        Vector2 prev = center + new Vector2(radius, 0);
+        for (int i = 1; i <= pointCount; i++)
+        {
+            Vector2 pos = center + GetCirclePoint(radius, Mathf.PI * 2 * i / pointCount).ToVector2();
+            if (!dashed || i % 2 == 1)
+                DrawLine(prev.x, prev.y, pos.x, pos.y, mat, color);
+            prev = pos;
+        }
     }
 }

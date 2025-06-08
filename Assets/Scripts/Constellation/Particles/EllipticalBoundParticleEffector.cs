@@ -1,4 +1,6 @@
+using UnityCore;
 using UnityEngine;
+using static Core.MathUtility;
 
 public sealed class EllipticalBoundParticleEffector : BoundsParticleEffector
 {
@@ -53,13 +55,25 @@ public sealed class EllipticalBoundParticleEffector : BoundsParticleEffector
     }
 
     public override Vector2 SamplePoint() {
-        return Random.insideUnitCircle * new Vector2(_horizontalBase, _verticalBaes);
+        return Random.insideUnitCircle * new Vector2(_horizontalBase, _verticalBase);
     }
 
     protected override void RecalculateBounds() {
         base.RecalculateBounds();
 
         _hBaseSquare = _horizontalBase * _horizontalBase;
-        _vBaseSquare = _verticalBaes * _verticalBaes;
+        _vBaseSquare = _verticalBase * _verticalBase;
+    }
+
+    public override void RenderControls(ControlType controlTypes)
+    {
+        bool hasControl = controlTypes.HasFlag(ControlType.Interactable);
+        if (!controlTypes.HasFlag(ControlType.Visualizers) && !hasControl) return;
+        if (!ShowBounds && !ForceShowBounds && !hasControl) return;
+
+        Vector2 radius = new Vector2(HorizontalBase, VerticalBase);
+        Vector2 newCorner = GraphicControls.EllipseRadius(Vector2.zero, radius, BoundsColor, interactable: hasControl);
+        
+        if (newCorner != radius) BoundsFromHalfSize(newCorner);
     }
 }

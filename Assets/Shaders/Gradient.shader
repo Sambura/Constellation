@@ -44,12 +44,14 @@ Shader "Unlit/GradientShader"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
+                float4 color    : COLOR;
             };
 
             struct v2f
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
+                float4 color    : COLOR;
             };
 
             sampler2D _MainTex;
@@ -60,6 +62,7 @@ Shader "Unlit/GradientShader"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
+                o.color = v.color;
                 return o;
             }
 
@@ -86,6 +89,8 @@ Shader "Unlit/GradientShader"
                 fixed4 col;
                 col.rgb = get_gradient_color(i.uv.x);
                 col.a = 1;
+                col *= i.color;
+                col.rgb *= col.a;
                 return col;
             }
             ENDCG

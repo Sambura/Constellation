@@ -1733,6 +1733,12 @@ MonoBehaviour:
     _texture: {fileID: 2800000, guid: 074ba47758f22c14e9c33a3255dcaf35, type: 3}
   - _path: 
     _texture: {fileID: 2800000, guid: c0d8a23e42280ea46afae336c93cbb36, type: 3}
+  - _path: 
+    _texture: {fileID: 2800000, guid: 84e1a3209542be6438d9945cb058a4d1, type: 3}
+  - _path: 
+    _texture: {fileID: 2800000, guid: 407e95d2710e23a42b1ef9ea5931efa4, type: 3}
+  - _path: 
+    _texture: {fileID: 2800000, guid: 8e400600d79c06548bf92008e9bb43be, type: 3}
 --- !u!114 &144636873
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3681,6 +3687,7 @@ GameObject:
   - component: {fileID: 519420030}
   - component: {fileID: 519420034}
   - component: {fileID: 519420029}
+  - component: {fileID: 519420035}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -3695,12 +3702,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae6f9ac2c4e5628489411d77323195ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _defaultMat: {fileID: 2100000, guid: 2376d2d7cc17572429a23f84cbdc59b9, type: 2}
+  _defaultMat: {fileID: 2100000, guid: 1d61f330512a1a0459f6ba96164b0ffb, type: 2}
 --- !u!114 &519420030
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3808,6 +3815,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb3821436f2f01042975a83f1e3d5657, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &519420035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0208908e8d42a654394095c1d81b5d46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _interactThreshold: 0.07
+  _camera: {fileID: 519420031}
+  _eventSystem: {fileID: 1066340811}
 --- !u!1 &521061375
 GameObject:
   m_ObjectHideFlags: 0
@@ -9423,7 +9445,7 @@ MonoBehaviour:
   _unboundedListViewPrefab: {fileID: 7126245044245970949, guid: 0bb9fa9df0333af4d879d6eada6ba93e, type: 3}
   _colorIndicatorPrefab: {fileID: 3910889304232484068, guid: 2f9bda56b9ef186458e4700e87d60543, type: 3}
   _labelPrefab: {fileID: 6718685849855497418, guid: 839bf9baef8eeae4e945503295424e83, type: 3}
-  _collapsableHeaderPrefab: {fileID: 9203055433040285812, guid: a5d0535cb1072b547a4c0dad663af467, type: 3}
+  _collapsibleHeaderPrefab: {fileID: 9203055433040285812, guid: a5d0535cb1072b547a4c0dad663af467, type: 3}
   _groupHeaderPrefab: {fileID: 9203055433040285812, guid: 71da2459154ceb54d855e69a80f85c83, type: 3}
   _buttonPrefab: {fileID: 3877502789024712507, guid: f416cd2a2ba25a6448231659b4c7fb7c, type: 3}
   _tabs:

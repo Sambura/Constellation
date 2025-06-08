@@ -8,6 +8,7 @@ namespace ConstellationUI
     {
         [Header("Objects")]
         [SerializeField] private UnityEngine.UI.Toggle _toggle;
+        [SerializeField] private Image _icon;
 
         [Header("Parameters")]
         [SerializeField] private bool _isChecked;
@@ -27,6 +28,12 @@ namespace ConstellationUI
         {
             get => _toggle.group;
             set => _toggle.group = value;
+        }
+
+        public Sprite Icon
+        {
+            get => _icon != null ? _icon.sprite : null;
+            set { if (_icon != null) _icon.sprite = value; }
         }
 
         public UnityEngine.UI.Toggle WrappedToggle => _toggle;

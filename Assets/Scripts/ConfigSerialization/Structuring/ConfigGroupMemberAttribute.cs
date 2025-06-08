@@ -54,7 +54,7 @@ namespace ConfigSerialization.Structuring
         {
             if (GroupIndex == ParentIndex)
                 throw new ArgumentException("Group cannot be a child of itself");
-            if (GroupIndex < 0) throw new ArgumentException("Gruop index should be non-negative");
+            if (GroupIndex < 0) throw new ArgumentException("Group index should be non-negative");
         }
 
         public ConfigGroupMemberAttribute(int groupIndex = 0, int parentIndex = -1)

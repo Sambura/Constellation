@@ -62,10 +62,10 @@ namespace Core.Json
         {
             int openingBrace = SkipPrettyChars(json, 0);
             if (json[openingBrace] != '{')
-                throw new JsonSerializerException($"Failed to read object's properties: expected `{{`, got `{json[openingBrace]}`");
+                throw new JsonSerializerException($"Failed to read object's properties: expected `{{`, got `{json[openingBrace]}`", json: json);
             int closingBrace = FindClosingBrace(json, openingBrace, '}');
             if (SkipPrettyChars(json, closingBrace + 1) < json.Length)
-                throw new JsonSerializerException($"Failed to read object's properties: expected EOF, got {json[SkipPrettyChars(json, closingBrace + 1)]}");
+                throw new JsonSerializerException($"Failed to read object's properties: expected EOF, got {json[SkipPrettyChars(json, closingBrace + 1)]}", json: json);
 
             string objectBody = json.Substring(openingBrace + 1, closingBrace - openingBrace - 1);
 
@@ -89,37 +89,43 @@ namespace Core.Json
         /// <param name="keepRawNodeValue">When false, only leaf nodes in the tree will have a non-null 
         ///     Value field. When true, all nodes will have their raw json representations stored in 
         ///     them as well</param>
-        /// <returns>JsonTree representation of the json. If input string only contains whitespaces, returns null</returns>
-        public static JsonTree ToJsonTree(string json, bool keepRawNodeValue = false) {
+        /// <returns>JsonObject representation of the json. If input string only contains whitespaces, returns null</returns>
+        public static JsonObject ToJsonObject(string json, bool keepRawNodeValue = false, bool compressionRequired = true) {
             try { System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack(); }
             catch (InsufficientExecutionStackException) { 
                 throw new ArgumentException("Provided json is too deep");
             }
 
-            int startIndex = SkipPrettyChars(json, 0);
-            if (startIndex >= json.Length) return null;
-            if (json[startIndex] != '{') return new JsonTree() { Value = Compress(json) };
-            int endIndex = FindClosingBrace(json, startIndex, '}', throwOnError: true);
-
-            JsonTree tree = new JsonTree() { Properties = new Dictionary<string, JsonTree>() };
-            if (keepRawNodeValue) tree.Value = json.Substring(startIndex, endIndex - startIndex + 1);
-            Dictionary<string, string> properties = GetProperties(json);
-
-            foreach (KeyValuePair<string, string> property in properties) {
-                tree.Properties.Add(property.Key, ToJsonTree(property.Value, keepRawNodeValue));
+            if (compressionRequired) json = Compress(json);
+            if (json.Length <= 0) return null;
+            if (json[0] == '[') {
+                return new JsonArray(
+                    GetArrayElements(json).Select(x => ToJsonObject(x, keepRawNodeValue, false)).ToList(),
+                    keepRawNodeValue ? json : null
+                );
+            }
+            if (json[0] == '{') {
+                return new JsonTree(
+                    new Dictionary<string, JsonObject>(GetProperties(json).Select(
+                        x => new KeyValuePair<string, JsonObject>(x.Key, ToJsonObject(x.Value, keepRawNodeValue, false)))),
+                    keepRawNodeValue ? json : null
+                );
             }
 
-            return tree;
+            return new JsonLeaf(json);
         }
 
+        /// <summary>
+        /// Get elements stored in a json array. The input json should start with `[` and end with `]`
+        /// </summary>
         public static List<string> GetArrayElements(string json)
         {
             int openingBrace = SkipPrettyChars(json, 0);
             if (json[openingBrace] != '[')
-                throw new JsonSerializerException($"Failed to read an array: expected `[`, got `{json[openingBrace]}`");
+                throw new JsonSerializerException($"Failed to read an array: expected `[`, got `{json[openingBrace]}`", json: json);
             int closingBrace = FindClosingBrace(json, openingBrace, ']');
             if (SkipPrettyChars(json, closingBrace + 1) < json.Length)
-                throw new JsonSerializerException($"Failed to read an array: expected EOF, got {json[SkipPrettyChars(json, closingBrace + 1)]}");
+                throw new JsonSerializerException($"Failed to read an array: expected EOF, got {json[SkipPrettyChars(json, closingBrace + 1)]}", json: json);
 
             string arrayBody = json.Substring(openingBrace + 1, closingBrace - openingBrace - 1);
             List<string> elements = new List<string>();
@@ -130,12 +136,13 @@ namespace Core.Json
             return elements;
         }
 
+        /// <summary>      Prints an opening object character `{`      </summary>
         public static void BeginObject(StringBuilder json) { json.Append('{'); }
-
+        /// <summary>    Prints a closing object character `}`, removing a trailing comma if required    </summary>
         public static void EndObject(StringBuilder json) { StripComma(json); json.Append('}'); }
-
+        /// <summary>      Prints an opening array character `[`      </summary>
         public static void BeginArray(StringBuilder json) { json.Append('['); }
-
+        /// <summary>    Prints a closing array character `]`, removing a trailing comma if required    </summary>
         public static void EndArray(StringBuilder json) { StripComma(json); json.Append(']'); }
 
         /// <summary>
@@ -148,6 +155,17 @@ namespace Core.Json
 
             PrintPropertyName(json, name);
             json.Append(value);
+            json.Append(',');
+        }
+
+        /// <summary>
+        /// Prints element as is and adds a comma at the end. Should be called after BeginArray or after another AppendArray
+        /// </summary>
+        public static void AppendArray(StringBuilder json, string element)
+        {
+            if (element is null) throw new ArgumentNullException(nameof(element));
+
+            json.Append(element);
             json.Append(',');
         }
 
@@ -433,39 +451,126 @@ namespace Core.Json
         }
     }
 
-    public class JsonTree {
-        public Dictionary<string, JsonTree> Properties;
-        public string Value;
-        public bool IsLeaf => Properties == null;
+    public abstract class JsonObject
+    {
+        public abstract string Value { get; set; }
+        public virtual bool IsLeaf { get; } = false;
+        public virtual bool IsTree { get; } = false;
+        public virtual bool IsArray { get; } = false;
+        public virtual int Count { get; } = 1;
+        public JsonObject this[string propertyName] {
+            get => IsTree ? ToTree()[propertyName] : null;
+            set { if (IsTree) ToTree()[propertyName] = value; }
+        }
+        public virtual void Remove(string propertyName) { ToTree().Remove(propertyName); }
+        public virtual string ToJson() => Value;
+        public virtual JsonTree ToTree() { if (!IsTree) throw new JsonSerializerException("The provided json is not a tree", Value); return (JsonTree)this; }
+        public virtual JsonArray ToArray() { if (!IsArray) throw new JsonSerializerException("The provided json is not an array", Value); return (JsonArray)this; }
+        public virtual JsonLeaf ToLeaf() { if (!IsLeaf) throw new JsonSerializerException("The provided json is not a leaf", Value); return (JsonLeaf)this; }
+    }
 
-        public JsonTree this[string propertyName]
+    public class JsonTree : JsonObject {
+        private string _value = null;
+        private Dictionary<string, JsonObject> _properties = null;
+
+        public override bool IsTree { get; } = true;
+        public override string Value
         {
-            get => Properties?.GetValueOrDefault(propertyName);
-            set => Properties[propertyName] = value;
+            get => _value ??= ToJson();
+            set { _value = JsonSerializerUtility.Compress(value); _properties = null; }
+        }
+        public override int Count => Properties.Count;
+        public Dictionary<string, JsonObject> Properties
+        {
+            get => _properties ??= JsonSerializerUtility.ToJsonObject(_value, false).ToTree().Properties;
+            set {  _properties = value; _value = null; }
+        }
+        public new JsonObject this[string propertyName]
+        {
+            get => Properties.GetValueOrDefault(propertyName);
+            set { Properties[propertyName] = value; _value = null; }
         }
 
-        /// <summary>
-        /// Makes a json string using JsonTree data. `Value` field is not used for non-leaf nodes.
-        /// The result is a minimal json representation, no prettyfication is performed.
-        /// </summary>
-        public string ToJson() {
-            if (IsLeaf) return Value;
+        public override void Remove(string propertyName) {
+            Properties.Remove(propertyName);
+        }
+
+        public override string ToJson() {
+            if (_value is not null) return _value;
 
             StringBuilder json = new StringBuilder();
             JsonSerializerUtility.BeginObject(json);
-            foreach (KeyValuePair<string, JsonTree> property in Properties)
-                JsonSerializerUtility.PrintProperty(json, property.Key, property.Value.ToJson());
+            foreach (KeyValuePair<string, JsonObject> property in Properties)
+                JsonSerializerUtility.PrintProperty(json, property.Key, property.Value.Value);
             JsonSerializerUtility.EndObject(json);
             
             return json.ToString();
         }
 
-        public void Add(string key, JsonTree value) {
-            Properties ??= new Dictionary<string, JsonTree>();
-            
-            Properties.Add(key, value);
+        public JsonTree(Dictionary<string, JsonObject> properties = null, string rawValue = null)
+        {
+            _properties = properties;
+            _value = rawValue;
+            if (_properties is null && _value is null) _properties = new Dictionary<string, JsonObject>();
+        }
+    }
+
+    public class JsonArray : JsonObject
+    {
+        private string _value = null;
+        private List<JsonObject> _elements = null;
+
+        public override bool IsArray { get; } = true;
+        public override string Value
+        {
+            get => _value ??= ToJson();
+            set { _value = JsonSerializerUtility.Compress(value); _elements = null; }
+        }
+        public List<JsonObject> Elements
+        {
+            get => _elements ??= JsonSerializerUtility.ToJsonObject(_value, false).ToArray().Elements;
+            set { _elements = value; _value = null; }
+        }
+        public JsonObject this[int index]
+        {
+            get => index < 0 || index >= Count ? null : Elements[index];
+            set { Elements[index] = value; _value = null; }
+        }
+        public override int Count => Elements.Count;
+
+        public override string ToJson()
+        {
+            if (_value is not null) return _value;
+
+            StringBuilder json = new StringBuilder();
+            JsonSerializerUtility.BeginArray(json);
+            foreach (JsonObject element in Elements)
+                JsonSerializerUtility.AppendArray(json, element.Value);
+            JsonSerializerUtility.EndArray(json);
+
+            return json.ToString();
         }
 
-        public static JsonTree MakeValue(string value) { return new JsonTree() { Value = value }; }
+        public JsonArray(List<JsonObject> elements, string rawValue = null)
+        {
+            _elements = elements;
+            _value = rawValue;
+        }
+    }
+
+    public class JsonLeaf : JsonObject
+    {
+        private string _value = null;
+
+        public override bool IsLeaf { get; } = true;
+        public override string Value
+        {
+            get => _value ?? throw new JsonSerializerException("The leaf json object is null");
+            set => _value = JsonSerializerUtility.Compress(value);
+        }
+
+        public JsonLeaf(string value) {
+            Value = value;
+        }
     }
 }

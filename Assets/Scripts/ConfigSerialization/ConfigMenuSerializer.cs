@@ -32,7 +32,7 @@ namespace ConfigSerialization
         [SerializeField] private GameObject _labelPrefab;
 
         [Header("Other prefabs")]
-        [SerializeField] private GameObject _collapsableHeaderPrefab;
+        [SerializeField] private GameObject _collapsibleHeaderPrefab;
         [SerializeField] private GameObject _groupHeaderPrefab;
         [SerializeField] private GameObject _buttonPrefab;
 
@@ -221,7 +221,7 @@ namespace ConfigSerialization
         /// <summary>
         /// The main function. Analyzes tab config and generates the UI for all the defined ConfigProperty-ies
         /// </summary>
-        public int GenerateMenuUI(RectTransform container = null, object propertySource = null)
+        public int GenerateMenuUI(RectTransform container = null, object propertySource = null, float extraTopLevelIndent = 10)
         {
             // Global dictionary of groups that have IDs
             var idGroups = new Dictionary<string, Group>();
@@ -448,7 +448,7 @@ namespace ConfigSerialization
                     }
                 }
 
-                FinalizeContainer(group, node, node.Control);
+                FinalizeContainer(group, node, node.Control, extraTopLevelIndent);
                 UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(node.Control);
             }
 
@@ -547,13 +547,13 @@ namespace ConfigSerialization
             groupTransform.offsetMin = new Vector2(indent, groupTransform.offsetMin.y);
         }
 
-        private UINode CreateGroupContainer(Group group, UINode parent, float indent, bool collapsable = true)
+        private UINode CreateGroupContainer(Group group, UINode parent, float indent, bool collapsible = true)
         {
             GameObject header = null;
 
             if (group.Name != null)
             {
-                header = Instantiate(collapsable ? _collapsableHeaderPrefab : _groupHeaderPrefab, parent.Control);
+                header = Instantiate(collapsible ? _collapsibleHeaderPrefab : _groupHeaderPrefab, parent.Control);
                 LabeledUIElement label = header.GetComponent<LabeledUIElement>();
                 label.LabelText = group.Name;
             }
@@ -562,7 +562,7 @@ namespace ConfigSerialization
             IndentContainer(containerNode, indent);
             containerNode.Group = group;
 
-            if (header is { } && collapsable)
+            if (header is { } && collapsible)
                 BindToggleToObject(header, containerNode.Control, false);
 
             return containerNode;
@@ -1199,7 +1199,7 @@ namespace ConfigSerialization
 
             public T? NullableValue
             {
-                get => HasValue ? Value : new Nullable<T>();
+                get => HasValue ? Value : null;
                 set
                 {
                     if (!HasValue && !value.HasValue) return;
@@ -1419,7 +1419,7 @@ namespace ConfigSerialization
             slider.MaxSliderValue = sliderProperty.MaxSliderValue;
             slider.MinValue = sliderProperty.MinValue;
             slider.MaxValue = sliderProperty.MaxValue;
-            slider.InputFormatting = sliderProperty.InputFormatting ?? (isInt ? "0" : "0.000");
+            slider.InputFormatting = sliderProperty.InputFormatting ?? (isInt ? "0" : "0.00");
             slider.InputRegex = sliderProperty.InputRegex ?? @"([-+]?[0-9]*\.?[0-9]+)";
             slider.RegexGroupIndex = sliderProperty.RegexGroupIndex ?? 1;
             slider.LabelText = sliderProperty.Name ?? SplitAndLowerCamelCase(lower.Name);

@@ -1,11 +1,14 @@
 using Core.Json;
 using Core;
+using System.Collections.Generic;
 
 public class EffectorModule : ModuleDescriptor
 {
     [NoJsonSerialization] public ParticleController Controller { get; set; }
     [NoJsonSerialization] public IParticleEffector Effector { get; private set; }
     [NoJsonSerialization] public IParticleEffectorProxy Proxy { get; private set; }
+
+    private List<(string icon, int stateCount, object data)> _quickToggles;
 
     public EffectorModule(object effectorType) {
         ModuleData = System.Activator.CreateInstance(effectorType as System.Type);
@@ -36,10 +39,31 @@ public class EffectorModule : ModuleDescriptor
         Locked = false;
         HasProperties = true;
         Name = (Proxy as IParticleEffector)?.Name ?? Effector.Name;
+        QuickToggleStates = new List<int>();
+
+        for (int i = 0; i < GetQuickToggles().Count; i++) {
+            (string icon, int stateCount, object data) toggle = GetQuickToggles()[i];
+            QuickToggleStates.Add(Effector.DefaultControlType.HasFlag((ControlType)toggle.data) ? 1 : 0);
+        }
     }
 
     private void OnEffectorChanged(IParticleEffector effector) {
         Effector = effector;
         Controller.ParticleEffectors = Controller.ParticleEffectors;
+    }
+
+    public override List<(string icon, int stateCount, object data)> GetQuickToggles() {
+        if (_quickToggles is null)
+        {
+            _quickToggles = new();
+
+            if (Effector.ControlType.HasFlag(ControlType.Visualizers))
+                _quickToggles.Add(("VisualsIcon", 2, ControlType.Visualizers));
+
+            if (Effector.ControlType.HasFlag(ControlType.Interactable))
+                _quickToggles.Add(("MoveIcon2", 2, ControlType.Interactable));
+        }
+
+        return _quickToggles;
     }
 }

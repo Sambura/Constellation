@@ -30,5 +30,35 @@ namespace Core
 
             return Math.Min(v1, v2);
         }
+
+        /// <summary>
+        /// Computes a point on an axis-aligned ellipse with horizontal radius a, vertical radius b at a specified 
+        /// angle in radians, centered at (0, 0)
+        /// </summary>
+        public static (float x, float y) GetEllipsePoint(float a, float b, float angle)
+        {
+            float s = MathF.Sin(angle);
+            float c = MathF.Cos(angle);
+
+            float x = a * s;
+            float y = b * c;
+            float d = MathF.Sqrt(x * x + y * y);
+            float factor = a * b / d;
+
+            return (factor * c, factor * s);
+        }
+
+        /// <summary>
+        /// Computes a point on a circle of radius r at a specified angle in radians, centered at (0, 0)
+        /// </summary>
+        public static (float x, float y) GetCirclePoint(float r, float angle)
+        {
+            float s = MathF.Sin(angle);
+            float c = MathF.Cos(angle);
+
+            return (r * c, r * s);
+        }
+
+        public static double LerpUnclamped(double a, double b, double t) => a * (1 - t) + b * t;
     }
 }

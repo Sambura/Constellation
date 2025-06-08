@@ -36,18 +36,20 @@ public class ParticleController : MonoBehaviour
     // fallback bounds for sampling point locations (for RestartSimulation)
     private readonly RectangularBoundParticleEffector _defaultBounds = new();
     private int _activeEffectorsCount;
+    private readonly List<(IParticleEffector effector, ControlType flags)> _drawableEffectors = new();
 
     public Dictionary<string, object> EffectorTypes { get; set; } = new() {
         { "Kinematic Effector", typeof(KinematicParticleEffector) },
         { "Bounds", typeof(BoundsParticleEffectorProxy) },
         { "Friction Effector", typeof(FrictionParticleEffector) },
         { "Attractor/Repeller", typeof(AttractionParticleEffector) },
+        { "Field Analyzer", typeof(FieldAnalyzerEffector) },
     };
 
     #region Config properties
 
     [ConfigGroupMember("Simulation parameters", GroupId = "PC+sim_params")]
-    [SliderProperty(0, 2500, 0, 100000000, name: "Particles count")] public int ParticleCount
+    [SliderProperty(0, 15000, 0, 100000000, name: "Particles count")] public int ParticleCount
     {
         get => _particlesCount;
         set { if (_particlesCount != value) { SetParticlesCount(value); ParticleCountChanged?.Invoke(value); } }
@@ -64,7 +66,7 @@ public class ParticleController : MonoBehaviour
         }
     }
     [ConfigGroupMember]
-    [MinMaxSliderProperty(0, 5, 0, 100, "0.00", higherPropertyName: nameof(MaxParticleVelocity), name: "Initial velocity")]
+    [MinMaxSliderProperty(0, 5, 0, 100, higherPropertyName: nameof(MaxParticleVelocity), name: "Initial velocity")]
     public float MinParticleVelocity
     {
         get => _minParticleVelocity;
@@ -129,17 +131,28 @@ public class ParticleController : MonoBehaviour
         // Attach new effectors and rebuild active list
         _activeParticleEffectors.Clear();
         _boundsEffectors.Clear();
+        _drawableEffectors.Clear();
         foreach (EffectorModule module in effectors.GetRange(1, effectors.Count - 1)) {
             module.Controller = this;
             if (!module.Enabled) continue;
 
             IParticleEffector effector = module.Effector;
-            _activeParticleEffectors.Add(effector);
-            if (effector is BoundsParticleEffector bounds)
-                _boundsEffectors.Add(bounds);
+            if (effector.EffectorType.HasFlag(EffectorType.PerParticle)) {
+                _activeParticleEffectors.Add(effector);
+                if (effector is BoundsParticleEffector bounds)
+                    _boundsEffectors.Add(bounds);
+            }
 
             if (!effector.Initialized)
                 effector.Init(this);
+
+            ControlType flags = ControlType.None;
+            for (int i = 0; i < module.QuickToggleStates.Count; i++) {
+                if (module.QuickToggleStates[i] <= 0) continue;
+                flags |= (ControlType)module.GetQuickToggles()[i].data;
+            }
+            if (flags != ControlType.None) 
+                _drawableEffectors.Add((effector, flags));
         }
 
         _activeEffectorsCount = _activeParticleEffectors.Count;
@@ -177,7 +190,7 @@ public class ParticleController : MonoBehaviour
         }
     }
 
-    private float GetParticleVelocity(Particle particle)
+    public float GetParticleVelocity(Particle particle)
     {
         return Random.Range(_minParticleVelocity, _maxParticleVelocity);
     }
@@ -271,6 +284,9 @@ public class ParticleController : MonoBehaviour
             for (int rx = 0; rx <= _maxSquareX; rx++)
                 _regionMap[rx, ry].PseudoClear();
 
+        foreach ((var effector, var flags) in _drawableEffectors)
+            effector.RenderControls(flags);
+        
         for (int i = 0, count = _particles.Count; i < count; i++)
         {
             Particle particle = _particles[i];

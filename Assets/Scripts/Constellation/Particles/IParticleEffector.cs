@@ -14,6 +14,9 @@ public interface IParticleEffector
     /// </summary>
     public string Name { get; set; }
     public bool Initialized { get; }
+    public ControlType ControlType { get; }
+    public ControlType DefaultControlType { get; }
+    public EffectorType EffectorType { get; }
 
     /// <summary>
     /// Initialize the effector state from the ParticleController
@@ -27,4 +30,28 @@ public interface IParticleEffector
     /// Destructor method to call to detach from ParticleController's events
     /// </summary>
     public void Detach();
+    /// <summary>
+    /// Displays controls for this effector, as well as handles provided mouse input.
+    /// Returns true if this effector was changed by the current mouse input.
+    /// </summary>
+    public void RenderControls(ControlType controlTypes);
+}
+
+[System.Flags]
+public enum ControlType
+{
+    None = 0,
+    Interactable = 1,
+    Visualizers = 2,
+    Both = 3,
+}
+
+/// <summary>
+/// PerParticle - implements non-trivial AffectParticle method
+/// </summary>
+[System.Flags]
+public enum EffectorType
+{
+    Passive = 0,
+    PerParticle = 1
 }

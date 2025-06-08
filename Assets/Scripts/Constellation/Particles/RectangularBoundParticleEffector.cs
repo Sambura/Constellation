@@ -67,7 +67,31 @@ public sealed class RectangularBoundParticleEffector : BoundsParticleEffector
 
         _left = -_horizontalBase;
         _right = _horizontalBase;
-        _bottom = -_verticalBaes;
-        _top = _verticalBaes;
+        _bottom = -_verticalBase;
+        _top = _verticalBase;
+    }
+
+    public override void RenderControls(ControlType controlTypes)
+    {
+        bool hasControl = controlTypes.HasFlag(ControlType.Interactable);
+        if (!controlTypes.HasFlag(ControlType.Visualizers) && !hasControl) return;
+        if (!ShowBounds && !ForceShowBounds && !hasControl) return;
+
+        Vector2 newCorner = Vector2.zero;
+        Vector2 current = new Vector2(HorizontalBase, VerticalBase);
+        if (hasControl) {
+            newCorner = GraphicControls.DragSquare(current, BoundsColor, angleDegrees: 180);
+        }
+
+        (float left, float right, float bottom, float top) = (-HorizontalBase, HorizontalBase, -VerticalBase, VerticalBase);
+        float leftDelta = GraphicControls.Line(left, bottom, left, top, BoundsColor, interactable: hasControl);
+        float rightDelta = GraphicControls.Line(right, bottom, right, top, BoundsColor, interactable: hasControl);
+        float bottomDelta = GraphicControls.Line(left, bottom, right, bottom, BoundsColor, interactable: hasControl);
+        float topDelta = GraphicControls.Line(left, top, right, top, BoundsColor, interactable: hasControl);
+
+        if (!hasControl) return;
+        Vector2 sideDelta = new Vector2(leftDelta - rightDelta, topDelta - bottomDelta);
+        newCorner += sideDelta;
+        if (newCorner != current) BoundsFromHalfSize(newCorner);
     }
 }

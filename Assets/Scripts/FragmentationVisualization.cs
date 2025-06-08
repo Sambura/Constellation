@@ -22,8 +22,6 @@ public class FragmentationVisualization : MonoBehaviour
     [SerializeField] private Color _cellBorderColor = Color.red;
     [SerializeField] private bool _showCells = false;
     [SerializeField] private Color _cellColor = Color.yellow;
-    [SerializeField] private bool _showBounds = false;
-    [SerializeField] private Color _boundsColor = Color.blue;
     [SerializeField] private bool _showVelocities = false;
     [SerializeField] private Color _velocityColor = Color.green;
 
@@ -57,20 +55,6 @@ public class FragmentationVisualization : MonoBehaviour
         get => _cellColor;
         set { if (_cellColor != value) { _cellColor = value; CellColorChanged?.Invoke(value); }; }
     }
-    [ConfigGroupToggle(3)] [ConfigGroupMember]
-    [ConfigProperty]
-    public bool ShowBounds
-    {
-        get => _showBounds;
-        set { if (_showBounds != value) { SetShowBounds(value); ShowBoundsChanged?.Invoke(value); }; }
-    }
-    [ConfigGroupMember(3, 0)]
-    [ColorPickerButtonProperty(true, "Select color", "Color")]
-    public Color BoundsColor
-    {
-        get => _boundsColor;
-        set { if (_boundsColor != value) { _boundsColor = value; BoundsColorChanged?.Invoke(value); }; }
-    }
     [ConfigGroupToggle(4)]
     [ConfigGroupMember]
     [ConfigProperty]
@@ -98,64 +82,35 @@ public class FragmentationVisualization : MonoBehaviour
     public event Action<Color> CellBorderColorChanged;
     public event Action<bool> ShowCellsChanged;
     public event Action<Color> CellColorChanged;
-    public event Action<bool> ShowBoundsChanged;
-    public event Action<Color> BoundsColorChanged;
     public event Action<bool> ShowVelocitiesChanged;
     public event Action<Color> VelocityColorChanged;
 
-    private int _maxLinesForBounds = 200;
-    private bool _boundsFlash = false;
-    private Coroutine _boundsFlashCoroutine;
     private AnalyticsCore _analyticsCore;
-    private List<BoundsParticleEffector> _registeredEffectors = new List<BoundsParticleEffector>(); 
+    private readonly List<BoundsParticleEffector> _registeredEffectors = new();
+    private readonly List<BoundsParticleEffector> _flashingBounds = new();
 
     private void SetShowCellBorders(bool value)
     {
         _showCellBorders = value;
         UpdateRenderBatch();
-        OnFragmentSizeChanged(_fragmentator.FragmentSize);
     }
 
     private void SetShowCells(bool value)
     {
         _showCells = value;
         UpdateRenderBatch();
-        OnFragmentSizeChanged(_fragmentator.FragmentSize);
-    }
-
-    private void SetShowBounds(bool value)
-    {
-        _showBounds = value;
-        UpdateRenderBatch();
-        OnFragmentSizeChanged(_fragmentator.FragmentSize);
     }
 
     private void SetShowVelocities(bool value)
     {
         _showVelocities = value;
         UpdateRenderBatch();
-        OnFragmentSizeChanged(_fragmentator.FragmentSize);
     }
 
-    private void OnFragmentSizeChanged(float fragmentSize) {
-        int count = _showBounds || _boundsFlash ? _maxLinesForBounds : 0;
-        count *= _registeredEffectors.Count;
-        if (_showCellBorders) {
-            count += Mathf.CeilToInt((float)_fragmentator.Viewport.Width / _fragmentator.FragmentSize) + 2;
-            count += Mathf.CeilToInt((float)_fragmentator.Viewport.Height / _fragmentator.FragmentSize) + 2;
-        }
-        if (_showVelocities) count += _fragmentator.ParticleCount * 3;
-        _newRenderer.ReserveLineCount(_lineMat, count);
-        _newRenderer.ReserveQuadCount(_cellMat, _showCells ? _fragmentator.CellCount : 0);
-    }
-
-    private void UpdateRenderBatch() => this.enabled = _showCellBorders || _showCells || _showBounds || _showVelocities;
+    private void UpdateRenderBatch() => this.enabled = _showCellBorders || _showCells || _showVelocities;
 
     // private void OnEnable() =>_renderer.AddBatch(_renderQueueIndex, _renderBatch);
     // private void OnDisable() => _renderer.RemoveBatch(_renderQueueIndex, _renderBatch);
-
-    private void OnEnable() { if (_newRenderer != null) _newRenderer.enabled = true; }
-    private void OnDisable() { if (_newRenderer != null) _newRenderer.enabled = false; }
 
     private void Awake()
     {
@@ -164,11 +119,14 @@ public class FragmentationVisualization : MonoBehaviour
         _renderBatch.quads = new FastList<QuadEntry>();
 
         UpdateRenderBatch();
-        _fragmentator.FragmentSizeChanged += OnFragmentSizeChanged;
         _fragmentator.ParticleEffectorsChanged += OnEffectorsChanged;
-        OnFragmentSizeChanged(_fragmentator.FragmentSize);
         _analyticsCore = FindFirstObjectByType<AnalyticsCore>(FindObjectsInactive.Include);
         OnEffectorsChanged(_fragmentator.ParticleEffectors);
+    }
+
+    private void Start()
+    {
+        _newRenderer ??= ObjectMeshRenderer.Instance;
     }
 
     private void OnEffectorsChanged(List<EffectorModule> modules)
@@ -198,21 +156,21 @@ public class FragmentationVisualization : MonoBehaviour
 
     private void OnBoundsChanged() {
         if (!VisualizeBoundsChange || _analyticsCore.BenchmarkInProgress) return;
-        if (_boundsFlashCoroutine is { }) StopCoroutine(_boundsFlashCoroutine);
-        _boundsFlashCoroutine = StartCoroutine(BoundsFlash());
+        StartCoroutine(BoundsFlash());
         this.enabled = true;
     }
 
     private IEnumerator BoundsFlash() {
-        _boundsFlash = true;
-        OnFragmentSizeChanged(_fragmentator.FragmentSize);
+        int effectorCount = _registeredEffectors.Count;
+        _flashingBounds.AddRange(_registeredEffectors);
+        foreach (var bounds in _registeredEffectors) bounds.ForceShowBounds = true;
         yield return new WaitForSeconds(0.25f);
-        _boundsFlash = false;
-        yield return null; // ObjectMeshRenderer is garbage so we need to wait here not to break it
-        // to set enabled = false; and destroy any drawings not needed anymore
-        UpdateRenderBatch();
-        OnFragmentSizeChanged(_fragmentator.FragmentSize);
-        _boundsFlashCoroutine = null;
+        // assuming our bounds are first in the list (which should be true i think?)
+        for (int i = 0; i < effectorCount; i++) {
+            _flashingBounds[0].ForceShowBounds = false;
+            _flashingBounds.RemoveAt(0);
+        }
+        foreach (var bounds in _flashingBounds) bounds.ForceShowBounds = true;
     }
 
     private void Update()
@@ -264,60 +222,14 @@ public class FragmentationVisualization : MonoBehaviour
             }
         }
 
-        if (_showBounds || _boundsFlash)
-        {
-            foreach (var bounds in _registeredEffectors) {
-                if (bounds is RectangularBoundParticleEffector)
-                {
-                    (float left, float right, float bottom, float top) = (-bounds.HorizontalBase, bounds.HorizontalBase, -bounds.VerticalBase, bounds.VerticalBase);
-                    // _renderBatch.lines.Add(new LineEntry(left, bottom, left, top, _boundsColor));
-                    // _renderBatch.lines.Add(new LineEntry(right, bottom, right, top, _boundsColor));
-                    // _renderBatch.lines.Add(new LineEntry(left, bottom, right, bottom, _boundsColor));
-                    // _renderBatch.lines.Add(new LineEntry(left, top, right, top, _boundsColor));
-                    _newRenderer.DrawLine(left, bottom, left, top, _lineMat, _boundsColor);
-                    _newRenderer.DrawLine(right, bottom, right, top, _lineMat, _boundsColor);
-                    _newRenderer.DrawLine(left, bottom, right, bottom, _lineMat, _boundsColor);
-                    _newRenderer.DrawLine(left, top, right, top, _lineMat, _boundsColor);
-                } else if (bounds is EllipticalBoundParticleEffector)
-                {
-                    int pointCount = _maxLinesForBounds;
-                    Vector2 prev = new Vector2(bounds.HorizontalBase, 0);
-
-                    for (int i = 1; i <= pointCount; i++) {
-                        Vector2 pos = GetEllipsePoint(Mathf.PI * 2 * i / pointCount);
-                        _newRenderer.DrawLine(prev.x, prev.y, pos.x, pos.y, _lineMat, _boundsColor);
-                        prev = pos;
-                    }
-
-                    Vector2 GetEllipsePoint(float angle)
-                    {
-                        float a = bounds.HorizontalBase;
-                        float b = bounds.VerticalBase;
-                        float s = Mathf.Sin(angle);
-                        float c = Mathf.Cos(angle);
-
-                        float d = Mathf.Sqrt(Mathf.Pow(a * s, 2) + Mathf.Pow(b * c, 2));
-                        return new Vector2(c, s) * a * b / d;
-                    }
-                }
-            }
-        }
-
         if (_showVelocities) {
             List<Particle> particles = _fragmentator.Particles;
             for (int i = 0, count = particles.Count; i < count; i++) {
                 Vector2 source = particles[i].Position;
                 float speed = particles[i].Velocity.magnitude;
                 float size = Mathf.Log(speed + 1.2f) / Mathf.Log(2) / 5;
-                Vector2 dest = particles[i].Position + size * particles[i].Velocity / speed;
-                Vector2 direction = -particles[i].Velocity / speed * size / 4;
-                Vector2 normal = new Vector2(-direction.y, direction.x) * 0.7f;
-                Vector2 arrow1 = dest + normal + direction;
-                Vector2 arrow2 = dest - normal + direction;
 
-                _newRenderer.DrawLine(source.x, source.y, dest.x, dest.y, _lineMat, _velocityColor);
-                _newRenderer.DrawLine(arrow1.x, arrow1.y, dest.x, dest.y, _lineMat, _velocityColor);
-                _newRenderer.DrawLine(arrow2.x, arrow2.y, dest.x, dest.y, _lineMat, _velocityColor);
+                _newRenderer.DrawArrow(source, (size / speed) * particles[i].Velocity, _lineMat, _velocityColor);
             }
         }
     }

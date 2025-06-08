@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using ConfigSerialization;
 using ConfigSerialization.Structuring;
 
@@ -8,6 +9,7 @@ public sealed class AttractionParticleEffector : IParticleEffector
     private bool _useRadius = true;
     private Vector2 _position = Vector2.zero;
     private float _exponentMinusOne = -1;
+    private List<float> _intensityMap = new();
 
     [SliderProperty(-10, 10, hasEvent: false, AllowPolling = true)]
     public float Strength { get; set; } = 1;
@@ -32,6 +34,9 @@ public sealed class AttractionParticleEffector : IParticleEffector
 
     public string Name { get; set; } = "Attractor";
     public bool Initialized { get; private set; }
+    public ControlType ControlType { get; } = ControlType.Both;
+    public ControlType DefaultControlType { get; } = ControlType.Interactable;
+    public EffectorType EffectorType { get; } = EffectorType.PerParticle;
 
     public void AffectParticle(Particle p) {
         Vector2 toParticle = (Vector2)p.Position - _position;
@@ -58,4 +63,52 @@ public sealed class AttractionParticleEffector : IParticleEffector
     }
 
     public void Detach() { Initialized = false; }
+
+    public void RenderControls(ControlType controlTypes)
+    {
+        if (_useRadius && controlTypes != ControlType.None)
+            Radius = GraphicControls.CircleRadius(_position, Radius, Color.yellow, interactable: controlTypes.HasFlag(ControlType.Interactable));
+
+        if (controlTypes.HasFlag(ControlType.Interactable)) {
+            _position = GraphicControls.TranslatePosition(_position);
+        }
+
+        // needlessly complicated code just to visualize pull intensity vs. distance
+        if (!controlTypes.HasFlag(ControlType.Visualizers)) return;
+        const int maxInterRings = 40;
+        const int sampleCount = 1000;
+        Color interColor = new Color(1, 0, 1, 0.6f);
+        float maxRadius = UseRadius ? Radius : _particleController.Viewport.GetRadius(_position);
+        int interRings = Mathf.CeilToInt(maxInterRings * maxRadius / _particleController.Viewport.Radius);
+        float sampleStep = maxRadius / (sampleCount + 1);
+        _intensityMap.Clear();
+
+        float totalIntensity = 0;
+        for (float radius = sampleStep; radius < maxRadius; radius += sampleStep) {
+            float intensity = UseRadius ? IntensityCurve.Evaluate(radius / maxRadius) : Mathf.Pow(radius, _exponentMinusOne + 1);
+            _intensityMap.Add(intensity);
+            if (_intensityMap.Count <= 1) continue;
+            float lastIntensity = _intensityMap[^2];
+            totalIntensity += (Mathf.Min(intensity, lastIntensity) + Mathf.Abs(intensity - lastIntensity) / 2) * sampleStep;
+        }
+
+        float currentRadius = 0;
+        float currentIntensity = 0;
+        int currentIndex = 0;
+        for (int i = 0; i < interRings; i++) {
+            // (i+1) to avoid drawing 0-radius ring. (interRings+1) to avoid drawing maxRadius ring (?)
+            float targetIntensity = totalIntensity * (i + 1) / (interRings + 1);
+            do {
+                float intensity = _intensityMap[currentIndex];
+                float nextIntensity = _intensityMap[currentIndex + 1];
+
+                float area = (Mathf.Min(intensity, nextIntensity) + Mathf.Abs(intensity - nextIntensity) / 2) * sampleStep;
+                currentIntensity += area;
+                currentIndex = Mathf.Clamp(currentIndex + 1, 0, _intensityMap.Count - 2);
+                currentRadius += sampleStep;
+            } while (currentIntensity < targetIntensity);
+
+            GraphicControls.CircleRadius(_position, currentRadius, interColor, dashed: true, interactable: false);
+        }
+    }
 }

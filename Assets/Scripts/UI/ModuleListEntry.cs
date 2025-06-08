@@ -20,6 +20,7 @@ namespace ConstellationUI
         [SerializeField] private CanvasGroup _containerCanvasGroup;
         [SerializeField] private GameObject _dragItemPrefab;
         [SerializeField] private UnityEngine.UI.Image _mainGraphic;
+        [SerializeField] private GameObject _quickTogglePrefab;
 
         [Header("Decorative parameters")]
         [SerializeField] private List<GameObject> _extendedElements;
@@ -79,11 +80,32 @@ namespace ConstellationUI
             SetExtended(_extended);
             OnChildrenUpdated();
 
+            TextureManager textures = FindFirstObjectByType<TextureManager>(FindObjectsInactive.Include);
+            var quickToggles = ModuleDescriptor.GetQuickToggles();
+            ModuleDescriptor.QuickToggleStates ??= new List<int>();
+            for (int i = 0; i < quickToggles.Count; i++) {
+                var quickToggle = quickToggles[i];
+                Toggle toggle = Instantiate(_quickTogglePrefab, _quickTogglePrefab.transform.parent).GetComponent<Toggle>();
+                toggle.gameObject.SetActive(true);
+                toggle.Icon = TextureManager.ToSprite(textures.FindTexture(quickToggle.icon)?.Texture);
+                if (ModuleDescriptor.QuickToggleStates.Count >= i + 1) {
+                    toggle.WrappedToggle.isOn = ModuleDescriptor.QuickToggleStates[i] > 0;
+                    toggle.IsChecked = toggle.WrappedToggle.isOn;
+                } else 
+                    ModuleDescriptor.QuickToggleStates.Add(toggle.IsChecked ? 1 : 0);
+
+                int copy = i;
+                toggle.IsCheckedChanged += x => {
+                    ModuleDescriptor.QuickToggleStates[copy] = x ? 1 : 0;
+                    EmitItemChanged();
+                };
+            }
+
             if (!ModuleDescriptor.HasProperties) return;
             MonoEvents events = Container.gameObject.GetOrAddComponent<MonoEvents>();
             events.OnRectTransformChange += OnChildrenUpdated;
 
-            ConfigMenuSerializer.MainInstance.GenerateMenuUI(Container, ModuleDescriptor.ModuleData);
+            ConfigMenuSerializer.MainInstance.GenerateMenuUI(Container, ModuleDescriptor.ModuleData, 0);
         }
 
         private void OnEnabledCheckedChanged(bool value) {

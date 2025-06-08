@@ -19,7 +19,7 @@ public class UnityLogMonitor : MonoBehaviour
 
     private Color _bubbleColor = new Color(0, 0, 0, 0);
 
-    [ConfigGroupMember(1, 0, Layout = ConfigGroupLayout.Horizontal, SetIndent = false)] [ConfigMemberOrder(1)] [ConfigProperty("")] 
+    [ConfigGroupMember(1, 0, Layout = ConfigGroupLayout.Horizontal, SetIndent = false)] [ConfigMemberOrder(1)] [ConfigProperty("")]
     public Color BubbleColor => _bubbleColor;
 
     public event System.Action<Color> BubbleColorChanged;

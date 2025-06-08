@@ -95,4 +95,16 @@ public class Viewport : MonoBehaviour
         PixelHeight = _camera.pixelHeight;
         CameraDimensionsChanged?.Invoke();
     }
+
+    /// <summary>
+    /// Same as <see cref="Radius"/> but with custom specified center
+    /// </summary>
+    public float GetRadius(Vector2 worldPosition)
+    {
+        float radius = Radius;
+        Vector2 diagonal = new Vector2(MaxX, MaxY);
+        worldPosition = new Vector2(Mathf.Abs(worldPosition.x), Mathf.Abs(worldPosition.y));
+        float projection = Vector2.Dot(diagonal, worldPosition) / radius;
+        return projection + radius;
+    }
 }

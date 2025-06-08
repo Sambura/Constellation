@@ -52,7 +52,7 @@ public class SimulationConfigSerializer : MonoBehaviour
     private static string UpgradeSingleProperty(string section, string name, string configJson, Func<string, string> converter, 
         string newSection = null, string newName = null)
     {
-        JsonTree fullTree = JsonSerializerUtility.ToJsonTree(configJson);
+        JsonObject fullTree = JsonSerializerUtility.ToJsonObject(configJson);
         string propertyValue = fullTree[section]?[name]?.ToJson();
         if (propertyValue is null) return configJson;
 
@@ -60,15 +60,14 @@ public class SimulationConfigSerializer : MonoBehaviour
         newSection ??= section;
         newName ??= name;
 
-        fullTree[section].Properties.Remove(name);
-        if (fullTree[section].Properties.Count == 0) {
-            fullTree.Properties.Remove(section);
+        fullTree[section].Remove(name);
+        if (fullTree[section].Count == 0) {
+            fullTree.Remove(section);
         }
 
-        if (!fullTree.Properties.ContainsKey(newSection))
-            fullTree.Properties.Add(newSection, new JsonTree() { Properties = new Dictionary<string, JsonTree>() });
+        fullTree[newSection] ??= new JsonTree();
+        fullTree[section][newName] = new JsonLeaf(newValue);
 
-        fullTree[section].Properties.Add(newName, new JsonTree() { Value = newValue });
         return fullTree.ToJson();
     }
 
@@ -92,15 +91,15 @@ public class SimulationConfigSerializer : MonoBehaviour
     // Removes `tangentMode` properties from Keyframes on AnimationCurve
     private static string StripDeprecatedAnimationCurveProperties(string configJson) =>
         UpgradeSingleProperty("Visualizer", "AlphaCurve", configJson, value => {
-            JsonTree curveTree = JsonSerializerUtility.ToJsonTree(value);
+            JsonObject curveTree = JsonSerializerUtility.ToJsonObject(value);
             List<string> keys = JsonSerializerUtility.GetArrayElements(curveTree["keys"].Value);
             StringBuilder keysJson = new StringBuilder();
             JsonSerializerUtility.BeginArray(keysJson);
 
             for (int i = 0; i < keys.Count; i++)
             {
-                JsonTree key = JsonSerializerUtility.ToJsonTree(keys[i]);
-                key.Properties.Remove("tangentMode");
+                JsonObject key = JsonSerializerUtility.ToJsonObject(keys[i]);
+                key.Remove("tangentMode");
                 keysJson.Append(key.ToJson());
                 keysJson.Append(",");
             }
@@ -112,30 +111,30 @@ public class SimulationConfigSerializer : MonoBehaviour
 
     // `Bounds upgrade` : elliptical bounds, new bounce types + velocity visualization
     private static string InitializeDefaults_1_2_2(string configJson) {
-        JsonTree configTree = JsonSerializerUtility.ToJsonTree(configJson);
-        JsonTree particlesTree = configTree["Particles"];
-        JsonTree debugTree = configTree["Fragmentation"];
-        debugTree["ShowVelocities"] = JsonTree.MakeValue("false");
-        debugTree["VelocityColor"] = JsonTree.MakeValue(DefaultJsonSerializer.Default.ToJson(Color.green));
-        particlesTree["BounceType"] = JsonTree.MakeValue("\"RandomBounce\"");
+        JsonObject configTree = JsonSerializerUtility.ToJsonObject(configJson);
+        JsonObject particlesTree = configTree["Particles"];
+        JsonObject debugTree = configTree["Fragmentation"];
+        debugTree["ShowVelocities"] = new JsonLeaf("false");
+        debugTree["VelocityColor"] = new JsonLeaf(DefaultJsonSerializer.Default.ToJson(Color.green));
+        particlesTree["BounceType"] = new JsonLeaf("\"RandomBounce\"");
         bool squareShape = particlesTree["BoundsShape"].Value != "\"Viewport\"";
-        particlesTree["BoundsAspect"] = JsonTree.MakeValue(squareShape ? "1.0" : "2.0");
-        particlesTree["BoundsShape"] = JsonTree.MakeValue("\"Rectangle\"");
-        particlesTree["Restitution"] = JsonTree.MakeValue("1.0");
-        particlesTree["RandomFraction"] = JsonTree.MakeValue("0.2");
-        if (squareShape && particlesTree.Properties.TryGetValue("BoundMargins", out JsonTree marginsTree)) {
+        particlesTree["BoundsAspect"] = new JsonLeaf(squareShape ? "1.0" : "2.0");
+        particlesTree["BoundsShape"] = new JsonLeaf("\"Rectangle\"");
+        particlesTree["Restitution"] =  new JsonLeaf("1.0");
+        particlesTree["RandomFraction"] = new JsonLeaf("0.2");
+        if (squareShape && particlesTree.ToTree().Properties.TryGetValue("BoundMargins", out JsonObject marginsTree)) {
             float boundMargins = DefaultJsonSerializer.Default.FromJson<float>(marginsTree.Value);
             Viewport viewport = GameObject.FindFirstObjectByType<Viewport>();
             boundMargins -= viewport.MaxX - viewport.MaxY;
-            particlesTree["BoundMargins"] = JsonTree.MakeValue(DefaultJsonSerializer.Default.ToJson(boundMargins));
+            particlesTree["BoundMargins"] = new JsonLeaf(DefaultJsonSerializer.Default.ToJson(boundMargins));
         }
         return configTree.ToJson();
     }
 
     // `Effector upgrade` : particle effectors introduced
     private static string InitializeDefaults_1_2_3(string configJson) {
-        JsonTree configTree = JsonSerializerUtility.ToJsonTree(configJson);
-        JsonTree particlesTree = configTree["Particles"];
+        JsonObject configTree = JsonSerializerUtility.ToJsonObject(configJson);
+        JsonObject particlesTree = configTree["Particles"];
 
         // if you ever wondered how peak version upgrade code looks like, that's how:
         // perfect forward-compatibility guaranteed. Will survive (almost) any code refactors
@@ -148,13 +147,46 @@ public class SimulationConfigSerializer : MonoBehaviour
         string effectorsListJson = $"[{{\"$EffectorType\":\"BoundsParticleEffectorProxy\",\"Enabled\":true,\"Locked\":false,\"ModuleData\":" +
             $"{{\"Name\":\"Bounds\",\"BoundsShape\":{boundsShape},\"BoundMargins\":{boundMargin},\"BoundsAspect\":{boundAspect}," +
             $"\"BounceType\":{bounceType},\"Restitution\":{restitution},\"RandomFraction\":{randomFraction}}}}}]";
-        particlesTree.Properties.Remove("BoundMargins");
-        particlesTree.Properties.Remove("BoundsAspect");
-        particlesTree.Properties.Remove("BounceType");
-        particlesTree.Properties.Remove("Restitution");
-        particlesTree.Properties.Remove("RandomFraction");
-        particlesTree.Properties.Remove("BoundsShape");
-        particlesTree["ParticleEffectors"] = JsonTree.MakeValue(effectorsListJson);
+        particlesTree.Remove("BoundMargins");
+        particlesTree.Remove("BoundsAspect");
+        particlesTree.Remove("BounceType");
+        particlesTree.Remove("Restitution");
+        particlesTree.Remove("RandomFraction");
+        particlesTree.Remove("BoundsShape");
+        particlesTree["ParticleEffectors"] = new JsonLeaf(effectorsListJson);
+
+        return configTree.ToJson();
+    }
+
+    // `Visual effector upgrade`: Effectors now support drawing their visuals and offer UI controls
+    private static string InitializeDefaults_1_2_4(string configJson)
+    {
+        JsonObject configTree = JsonSerializerUtility.ToJsonObject(configJson);
+        JsonObject particlesTree = configTree["Particles"];
+        JsonObject debugTree = configTree["Fragmentation"];
+        string showBounds = debugTree["ShowBounds"]?.Value ?? "false";
+        string boundsColor = debugTree["BoundsColor"]?.Value ?? "{\"r\": 0.0, \"g\": 0.4584198, \"b\": 1.0, \"a\": 1.0}";
+        debugTree.Remove("ShowBounds");
+        debugTree.Remove("BoundsColor");
+        List<JsonObject> effectorsList = particlesTree["ParticleEffectors"]?.ToArray().Elements ?? new List<JsonObject>();
+        for (int i = 0; i < effectorsList.Count; i++) {
+            JsonObject effector = effectorsList[i];
+            string effectorType = effector["$EffectorType"].Value[1..^1];
+            string toggles = effectorType switch {
+                "BoundsParticleEffectorProxy" => "[1,0]",
+                "AttractionParticleEffector" => "[0,0]",
+                "FrictionParticleEffector" => "[0]",
+                "KinematicParticleEffector" => "[]",
+                _ => throw new JsonSerializerException($"Unknown effector type for 1.2.4 upgrade: {effectorType}")
+            };
+            effector["QuickToggleStates"] = new JsonLeaf(toggles);
+            if (toggles == "[1,0]") { // == bounds effector
+                JsonObject bounds = effector["ModuleData"];
+                bounds["ShowBounds"] = new JsonLeaf(showBounds);
+                bounds["BoundsColor"] = new JsonLeaf(boundsColor);
+            }
+        }
+        particlesTree["ParticleEffectors"] = new JsonArray(effectorsList);
 
         return configTree.ToJson();
     }
@@ -168,6 +200,7 @@ public class SimulationConfigSerializer : MonoBehaviour
         { new UpgradeRule(InvertAlphaCurveV2, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.1.16") },
         { new UpgradeRule(InitializeDefaults_1_2_2, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.2.2") },
         { new UpgradeRule(InitializeDefaults_1_2_3, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.2.3") },
+        { new UpgradeRule(InitializeDefaults_1_2_4, appliesSinceVersion: "1.0.0", upgradesToVersion: "1.2.4") },
     };
 
     private static bool IsMatchingRule(string configVersion, UpgradeRule rule)
@@ -306,10 +339,9 @@ public class SimulationConfigSerializer : MonoBehaviour
             newConfig = rule.Converter(newConfig);
         }
 
-        JsonTree configTree = JsonSerializerUtility.ToJsonTree(newConfig);
+        JsonTree configTree = JsonSerializerUtility.ToJsonObject(newConfig).ToTree();
         meta.Version = Application.version; // make sure now config is exactly current version
-        configTree.Properties.Remove(MetadataSectionName);
-        configTree.Add(MetadataSectionName, new JsonTree() { Value = ConfigJsonSerializer.ConfigToJson(meta) });
+        configTree[MetadataSectionName] = new JsonLeaf(ConfigJsonSerializer.ConfigToJson(meta));
 
         return configTree.ToJson();
     }
@@ -427,6 +459,8 @@ public class SimulationConfigSerializer : MonoBehaviour
         {
             _fileDialog.Manager.ShowMessageBox("Error", "Failed to parse json. " +
                 $"Message:\n<color=red>{e.Message}</color>", StandardMessageBoxIcons.Error, _fileDialog);
+            Debug.LogError(e.Message);
+            Debug.LogError($"Json subtree causing the problem:\n{e.JsonSource}");
             return false;
         }
         catch (Exception ex)

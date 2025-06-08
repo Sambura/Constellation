@@ -19,6 +19,9 @@ public sealed class KinematicParticleEffector : IParticleEffector
 
     public string Name { get; set; } = "Kinematic Effector";
     public bool Initialized { get; private set; }
+    public ControlType ControlType { get; } = ControlType.None;
+    public ControlType DefaultControlType { get; } = ControlType.None;
+    public EffectorType EffectorType { get; } = EffectorType.PerParticle;
 
     public void AffectParticle(Particle p) {
         if (_velocityLimit.HasValue) {
@@ -39,4 +42,6 @@ public sealed class KinematicParticleEffector : IParticleEffector
     }
 
     public void Detach() { Initialized = false; }
+
+    public void RenderControls(ControlType controlTypes) { }
 }
